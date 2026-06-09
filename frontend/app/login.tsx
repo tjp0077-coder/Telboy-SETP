@@ -29,7 +29,8 @@ export default function LoginScreen() {
     const r = await login(username.trim(), password);
     setLoading(false);
     if (r.ok) {
-      router.back();
+      if (router.canGoBack()) router.back();
+      else router.replace("/(tabs)/profile");
     } else {
       setError(r.error || "Login failed");
     }
@@ -41,7 +42,7 @@ export default function LoginScreen() {
       style={styles.root}
     >
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable onPress={() => router.back()} hitSlop={10} testID="login-close">
+        <Pressable onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/profile")} hitSlop={10} testID="login-close">
           <Ionicons name="close" size={26} color={colors.onSurface} />
         </Pressable>
       </View>
