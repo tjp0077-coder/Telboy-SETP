@@ -94,8 +94,13 @@ export default function ScheduleScreen() {
             <View style={styles.hero}>
               <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
               <LinearGradient
-                colors={["rgba(18,24,34,0.15)", "rgba(18,24,34,0.85)"]}
+                colors={["rgba(18,24,34,0.25)", "rgba(18,24,34,0.9)"]}
                 style={StyleSheet.absoluteFill}
+              />
+              <Image
+                source={require("@/assets/images/brand/badge.png")}
+                style={styles.heroBadge}
+                contentFit="contain"
               />
               <View style={styles.heroContent}>
                 <Text style={styles.heroEyebrow}>EDI SETP 2026</Text>
@@ -190,7 +195,11 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { height: 180, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
+  hero: { height: 220, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
+  heroBadge: {
+    position: "absolute", top: spacing.md, right: spacing.md,
+    width: 78, height: 78,
+  },
   heroContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: spacing.lg },
   heroEyebrow: { color: "#D4A373", fontSize: 11, fontWeight: "700", letterSpacing: 1.4, marginBottom: 4 },
   heroTitle: { color: "#fff", fontSize: 28, fontWeight: "700", fontFamily: "Georgia" },

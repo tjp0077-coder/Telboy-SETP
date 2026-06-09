@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -36,9 +37,11 @@ export default function ProfileScreen() {
       testID="profile-screen"
     >
       <View style={styles.headerWrap}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={32} color="#fff" />
-        </View>
+        <Image
+          source={require("@/assets/images/brand/badge.png")}
+          style={styles.brandBadge}
+          contentFit="contain"
+        />
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>
             {auth.name ? auth.name : "Delegate"}
@@ -149,10 +152,17 @@ export default function ProfileScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
       </Pressable>
 
-      <Text style={styles.footnote}>
-        EDI SETP 2026 · v1.0{"\n"}
-        Built for American delegates with ❤
-      </Text>
+      <View style={styles.footerWrap}>
+        <Image
+          source={require("@/assets/images/brand/setpx.png")}
+          style={styles.footerMark}
+          contentFit="contain"
+        />
+        <Text style={styles.footnote}>
+          EDI SETP 2026 · v1.0{"\n"}
+          Built for American delegates with ❤
+        </Text>
+      </View>
     </ScrollView>
   );
 }
@@ -167,6 +177,7 @@ const styles = StyleSheet.create({
     width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand,
     alignItems: "center", justifyContent: "center",
   },
+  brandBadge: { width: 72, height: 72 },
   name: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
   role: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: 2 },
 
@@ -227,8 +238,10 @@ const styles = StyleSheet.create({
   },
   logoutText: { color: colors.error, fontWeight: "700", fontSize: 14 },
 
+  footerWrap: { alignItems: "center", marginTop: spacing.xxl },
+  footerMark: { width: 36, height: 36, opacity: 0.55, marginBottom: spacing.sm },
   footnote: {
     textAlign: "center", fontSize: 11, color: colors.onSurfaceMuted,
-    marginTop: spacing.xxl, lineHeight: 17,
+    lineHeight: 17,
   },
 });

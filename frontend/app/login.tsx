@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, TextInput, Pressable, KeyboardAvoidingView,
   Platform, ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -48,9 +49,11 @@ export default function LoginScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.badge}>
-          <Ionicons name="shield-checkmark" size={24} color={colors.brand} />
-        </View>
+        <Image
+          source={require("@/assets/images/brand/badge.png")}
+          style={styles.badgeImage}
+          contentFit="contain"
+        />
         <Text style={styles.title}>Admin Sign-In</Text>
         <Text style={styles.sub}>
           Only authorised symposium staff. Three admins are configured.
@@ -118,6 +121,9 @@ const styles = StyleSheet.create({
   badge: {
     width: 56, height: 56, borderRadius: 28, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center", alignSelf: "center", marginBottom: spacing.md,
+  },
+  badgeImage: {
+    width: 120, height: 120, alignSelf: "center", marginBottom: spacing.md,
   },
   title: {
     fontSize: 26, fontWeight: "700", color: colors.onSurface,
