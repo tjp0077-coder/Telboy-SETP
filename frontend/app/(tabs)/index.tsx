@@ -86,7 +86,7 @@ export default function ScheduleScreen() {
         />
         <View style={styles.heroContent}>
           <Text style={styles.heroEyebrow}>SETP SYMPOSIUM · EDINBURGH</Text>
-          <Text style={styles.heroTitle}>25–30 July 2026</Text>
+          <Text style={styles.heroTitle}>26–30 July 2026</Text>
           <Text style={styles.heroSub}>Welcome, delegate. Plan your symposium.</Text>
         </View>
       </View>

@@ -146,17 +146,11 @@ class MessageCreate(BaseModel):
 
 # ---------- Seed data ----------
 SEED_SCHEDULE = [
-    # Fri 25 July - Registration
-    {"date": "2026-07-25", "day_label": "Fri 25 July", "time": "16:00", "end_time": "20:00",
+    # Sun 26 July - Registration day
+    {"date": "2026-07-26", "day_label": "Sun 26 July", "time": "16:00", "end_time": "20:00",
      "title": "Registration & Welcome Reception", "location": "Edinburgh Marriott Hotel",
      "description": "Collect delegate badges, welcome packs, and meet fellow attendees over drinks and canapés.",
      "category": "social"},
-
-    # Sat 26 July - Social
-    {"date": "2026-07-26", "day_label": "Sat 26 July", "time": "10:00", "end_time": "16:00",
-     "title": "Optional: Edinburgh Castle & Royal Mile Tour", "location": "Departs Marriott",
-     "description": "Self-guided or group tour of Edinburgh's iconic castle and historic Royal Mile.",
-     "category": "tour"},
 
     # Mon 27 July
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:00", "title": "Check In",
