@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/api";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
 const TRAM = "https://images.unsplash.com/photo-1729639316718-c148801e55bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjB0cmFtfGVufDB8fHx8MTc4MTAyNTMyNnww&ixlib=rb-4.1.0&q=85";
@@ -50,12 +51,13 @@ export default function CityGuideScreen() {
   const openMap = (url: string) => { Linking.openURL(url).catch(() => {}); };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={{ paddingBottom: 120 }}
-      showsVerticalScrollIndicator={false}
-      testID="city-guide-screen"
-    >
+    <View style={{ flex: 1 }} testID="city-guide-screen">
+      <ScreenBg />
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={{ paddingBottom: 120 }}
+        showsVerticalScrollIndicator={false}
+      >
       {/* Hero */}
       <View style={[styles.hero, { paddingTop: insets.top + spacing.xl }]}>
         <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
@@ -141,13 +143,14 @@ export default function CityGuideScreen() {
           </Pressable>
         </View>
       ))}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
-  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: colors.surface },
+  screen: { flex: 1 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
 
   hero: { height: 240, paddingHorizontal: spacing.lg, justifyContent: "flex-end", paddingBottom: spacing.lg },
   heroContent: {},
@@ -156,7 +159,7 @@ const styles = StyleSheet.create({
   heroSub: { color: "#E2DFD8", fontSize: 13, marginTop: 6 },
 
   sectionTitle: {
-    fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,
+    fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: onSunset.primary,
     paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md,
   },
 

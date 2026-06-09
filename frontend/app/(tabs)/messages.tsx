@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { api, FeedItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 const PRIORITY_STYLE: Record<string, { bg: string; tint: string; label: string }> = {
   info: { bg: "#E8ECF2", tint: colors.info, label: "INFO" },
@@ -75,6 +76,7 @@ export default function MessagesScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="messages-screen">
+      <ScreenBg />
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Comms Feed</Text>
         <Text style={styles.headerSub}>
@@ -300,22 +302,22 @@ function formatDate(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
+  screen: { flex: 1 },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
-  headerTitle: { fontSize: 28, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
-  headerSub: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: 4 },
+  headerTitle: { fontSize: 28, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
+  headerSub: { fontSize: 13, color: onSunset.secondary, marginTop: 4 },
 
   filterRow: { flexDirection: "row", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   filterChip: {
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
-    backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: "rgba(245,240,230,0.12)", borderWidth: 1, borderColor: "rgba(245,240,230,0.18)",
   },
-  filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  filterChipText: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted },
-  filterChipTextActive: { color: "#fff" },
+  filterChipActive: { backgroundColor: "#F2C265", borderColor: "#F2C265" },
+  filterChipText: { fontSize: 12, fontWeight: "700", color: onSunset.secondary },
+  filterChipTextActive: { color: "#1A2841" },
 
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
-  emptyText: { color: colors.onSurfaceMuted },
+  emptyText: { color: onSunset.secondary },
 
   msg: { backgroundColor: colors.surfaceSecondary, padding: spacing.lg, borderRadius: radius.md, marginBottom: spacing.md },
   noteMsg: { borderLeftWidth: 3, borderLeftColor: colors.success },

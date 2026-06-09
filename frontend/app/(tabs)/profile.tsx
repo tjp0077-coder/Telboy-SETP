@@ -10,6 +10,7 @@ import { api, SessionItem } from "@/src/api";
 import { useFavorites } from "@/src/useFavorites";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -31,11 +32,12 @@ export default function ProfileScreen() {
   const saved = items.filter((i) => favorites.has(i.id));
 
   return (
-    <ScrollView
-      style={[styles.screen, { paddingTop: insets.top }]}
-      contentContainerStyle={{ paddingBottom: 140 }}
-      testID="profile-screen"
-    >
+    <View style={[styles.screen, { paddingTop: insets.top }]} testID="profile-screen">
+      <ScreenBg />
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.headerWrap}>
         <Image
           source={require("@/assets/images/brand/badge.png")}
@@ -164,11 +166,12 @@ export default function ProfileScreen() {
         </Text>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
+  screen: { flex: 1 },
   headerWrap: {
     flexDirection: "row", alignItems: "center", gap: spacing.md,
     paddingHorizontal: spacing.lg, paddingVertical: spacing.lg,
@@ -178,11 +181,11 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center",
   },
   brandBadge: { width: 72, height: 72 },
-  name: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
-  role: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: 2 },
+  name: { fontSize: 22, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
+  role: { fontSize: 13, color: onSunset.secondary, marginTop: 2 },
 
   sectionTitle: {
-    fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,
+    fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: onSunset.primary,
     paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md,
   },
 
@@ -239,9 +242,9 @@ const styles = StyleSheet.create({
   logoutText: { color: colors.error, fontWeight: "700", fontSize: 14 },
 
   footerWrap: { alignItems: "center", marginTop: spacing.xxl },
-  footerMark: { width: 36, height: 36, opacity: 0.55, marginBottom: spacing.sm },
+  footerMark: { width: 36, height: 36, opacity: 0.65, marginBottom: spacing.sm },
   footnote: {
-    textAlign: "center", fontSize: 11, color: colors.onSurfaceMuted,
+    textAlign: "center", fontSize: 11, color: onSunset.secondary,
     lineHeight: 17,
   },
 });

@@ -12,6 +12,7 @@ import { api, SessionItem } from "@/src/api";
 import { useFavorites } from "@/src/useFavorites";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
 
@@ -77,6 +78,7 @@ export default function ScheduleScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
+      <ScreenBg />
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
@@ -193,7 +195,7 @@ export default function ScheduleScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: colors.surface },
+  screen: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   hero: { height: 220, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
   heroBadge: {
