@@ -1,0 +1,164 @@
+{
+  "app_name": "Test Pilot Symposium",
+  "personality": "1 iOS-Native Clean structure with 3 Editorial Mobile typography and warmth",
+  "personality_one_liner": "A precision-engineered yet warmly traditional event experience for elite aviation professionals.",
+  "color": {
+    "surface": "#F5F4F0",
+    "onSurface": "#1A1C20",
+    "surfaceSecondary": "#FFFFFF",
+    "onSurfaceSecondary": "#1A1C20",
+    "surfaceTertiary": "#EAE8E3",
+    "onSurfaceTertiary": "#4A4D54",
+    "surfaceInverse": "#121822",
+    "onSurfaceInverse": "#F5F4F0",
+    "brand": "#1A2841",
+    "brandPrimary": "#1A2841",
+    "onBrandPrimary": "#FFFFFF",
+    "brandSecondary": "#4D5D78",
+    "onBrandSecondary": "#FFFFFF",
+    "brandTertiary": "#AD4C3B",
+    "onBrandTertiary": "#FFFFFF",
+    "success": "#2D6A4F",
+    "onSuccess": "#FFFFFF",
+    "warning": "#D4A373",
+    "onWarning": "#1A1C20",
+    "error": "#9E2A2B",
+    "onError": "#FFFFFF",
+    "info": "#4D5D78",
+    "onInfo": "#FFFFFF",
+    "border": "#E2DFD8",
+    "borderStrong": "#C2BDB2",
+    "divider": "#E2DFD8"
+  },
+  "typography": {
+    "displayFontFamily": "Playfair Display",
+    "textFontFamily": "Satoshi",
+    "scale": {
+      "sm": 12,
+      "base": 14,
+      "lg": 16,
+      "xl": 20,
+      "2xl": 24
+    }
+  },
+  "spacing": {
+    "rule": "Generous vertical rhythm. Use md/lg for internal card padding, lg/xl for screen edges. Group related metadata tightly (sm).",
+    "xs": 4,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "2xl": 32,
+    "3xl": 48
+  },
+  "radius_tokens": {
+    "sm": 6,
+    "md": 12,
+    "lg": 20,
+    "pill": 999
+  },
+  "shadow_tier": "1",
+  "navigation": "bottom_tabs",
+  "icon_set": "Phosphor",
+  "glassmorphism": {
+    "enabled": "true",
+    "do's": [
+      "Use glass effect for the bottom tab bar as content scrolls behind it.",
+      "Apply frosted glass overlay to featured event cards over hero imagery (e.g., Royal Yacht Banquet card).",
+      "Use glass for sticky date-selector headers over the scrolling schedule."
+    ],
+    "dont's": [
+      "Never blur standard list rows or session cards.",
+      "Do not use glassmorphism on forms or the live message feed cards.",
+      "Avoid stacking multiple blur layers."
+    ]
+  },
+  "platform_libraries": {
+    "glass": {
+      "ios": "expo-blur",
+      "android": "expo-blur",
+      "low_end_android_fallback": "solid surfaceSecondary"
+    },
+    "image": "expo-image",
+    "blur": "expo-blur",
+    "bottom_sheet": "@gorhom/bottom-sheet",
+    "animation": "react-native-reanimated",
+    "gesture": "react-native-gesture-handler"
+  },
+  "screens": [
+    {
+      "name": "Schedule",
+      "purpose": "A precision timeline of the 3-day symposium and registration, allowing pilots to plan their days and save sessions.",
+      "states": {
+        "loading": "Centered spinner with a subtle aviation icon.",
+        "empty": "Illustration of a calendar with 'No sessions found for this day'.",
+        "error": "Message 'Unable to load schedule. Working offline?' with Retry button."
+      },
+      "layout": "Sticky top date selector (glassmorphism) for Jul 25-29. Below, a vertical list of session cards. Each card uses `surfaceSecondary`, 12px radius, left-aligned time column, bold title, and location pin. Primary CTA (Save session) on the right. 'Favorite/Saved' indicated by a `brandTertiary` (tartan ochre) filled icon."
+    },
+    {
+      "name": "Messages",
+      "purpose": "Live, real-time feed of announcements and updates from the 3 seeded admins.",
+      "states": {
+        "loading": "Skeleton loaders mimicking message bubbles.",
+        "empty": "Illustration of an aircraft comms headset with 'No announcements yet'.",
+        "error": "Message 'Cannot connect to comms.' with Retry button."
+      },
+      "layout": "Vertical feed. Message cards have admin initials/avatar, timestamp (top right), and message body. Clean, high-contrast typography. For admins: A floating action button (FAB) with glassmorphism to post new messages."
+    },
+    {
+      "name": "City Guide",
+      "purpose": "A curated, offline-ready local guide tailored for American delegates navigating Edinburgh.",
+      "states": {
+        "loading": "Spinner over a blurred silhouette of Edinburgh.",
+        "empty": "Illustration of a map with 'Guide content unavailable'.",
+        "error": "Message 'City guide unavailable offline.' with Retry button."
+      },
+      "layout": "Hero image of Edinburgh skyline with a dark gradient scrim and \"Welcome to Edinburgh\" header in Playfair Display. Below, a 2-column grid of category cards (Trams/Transport, USD to GBP, Plugs/Adapters, Tips). Venues section features horizontal scrolling cards with images (e.g., Royal Yacht Britannia, Royal College of Surgeons) and map links."
+    },
+    {
+      "name": "Personal Agenda & Profile",
+      "purpose": "User's saved sessions overview and access point for admin login.",
+      "states": {
+        "loading": "Spinner.",
+        "empty": "Illustration of an empty pilot logbook with 'No saved sessions yet'.",
+        "error": "Message 'Unable to load profile.' with Retry."
+      },
+      "layout": "Top section shows user delegate status. Middle section lists saved sessions (same card style as Schedule). Bottom features a subtle, clearly marked 'Admin Login' area (or a settings gear leading to it) for the 3 seeded admins."
+    }
+  ],
+  "images": {
+    "edinburgh_skyline_hero": {
+      "url": "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85",
+      "alt": "Edinburgh skyline with high rise buildings under white sky"
+    },
+    "royal_yacht_britannia": {
+      "url": "https://images.unsplash.com/photo-1704632992039-a69ea56b5aee?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxSb3lhbCUyMFlhY2h0JTIwQnJpdGFubmlhfGVufDB8fHx8MTc4MTAyNTMyNXww&ixlib=rb-4.1.0&q=85",
+      "alt": "Interior of the Royal Yacht Britannia with wooden walls"
+    },
+    "edinburgh_tram_guide": {
+      "url": "https://images.unsplash.com/photo-1729639316718-c148801e55bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjB0cmFtfGVufDB8fHx8MTc4MTAyNTMyNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Edinburgh city street with historic architecture and transport"
+    },
+    "aviation_symposium_hero": {
+      "url": "https://images.unsplash.com/photo-1689182314475-ff55f109b430?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwxfHxhdmlhdGlvbiUyMHRlc3QlMjBwaWxvdCUyMGZpZ2h0ZXIlMjBqZXR8ZW58MHx8fHwxNzgxMDI1MzI1fDA&ixlib=rb-4.1.0&q=85",
+      "alt": "Fighter jet flying through a cloudy blue sky"
+    }
+  },
+  "instructions_to_main_agent": [
+    "Follow the '1 iOS-Native Clean' structure for highly legible, functional schedules and feeds, but apply the '3 Editorial Mobile' typography and color tokens for the heritage feel.",
+    "Implement offline support gracefully. Schedule and City Guide must cache and display offline. Admins posting messages requires online connectivity, display clear error states if offline.",
+    "For the City Guide, prioritize information crucial to American delegates (transport apps/trams, tipping culture, USD to GBP, plug adapters). Structure this as easily scannable category cards.",
+    "Ensure all hero images (like the Edinburgh skyline on the City Guide) have a mandatory vertical gradient scrim (transparent to surfaceInverse at the bottom) so overlaid text is fully readable.",
+    "Session cards should have an unmistakable 'Save/Favorite' button using the brandTertiary (tartan ochre) color for active states.",
+    "The Live Messages tab is a read-only feed for delegates. Hide the 'Post Message' FAB or input area unless logged in as one of the 3 seeded admins.",
+    "Include a mock data set for July 25-29, including sessions at the Royal Yacht Britannia, Royal College of Surgeons, and St Paul's & St George's church.",
+    "Make touch targets large (>=44pt), especially for the Schedule date selector and session 'Favorite' toggles."
+  ],
+  "haptics": {
+    "tab_press": "light",
+    "favorite_session_toggle": "medium",
+    "date_selector_change": "light",
+    "admin_post_message_success": "success"
+  }
+}
