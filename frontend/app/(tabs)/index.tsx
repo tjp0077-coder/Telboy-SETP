@@ -77,58 +77,61 @@ export default function ScheduleScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
-        <LinearGradient
-          colors={["rgba(18,24,34,0.15)", "rgba(18,24,34,0.85)"]}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.heroContent}>
-          <Text style={styles.heroEyebrow}>SETP SYMPOSIUM · EDINBURGH</Text>
-          <Text style={styles.heroTitle}>26–30 July 2026</Text>
-          <Text style={styles.heroSub}>Welcome, delegate. Plan your symposium.</Text>
-        </View>
-      </View>
-
-      {/* Day selector chip row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
-        style={styles.chipRowWrap}
-      >
-        {days.map((d) => {
-          const active = d.date === activeDate;
-          const [, mm, dd] = d.date.split("-");
-          return (
-            <Pressable
-              key={d.date}
-              onPress={() => setActiveDate(d.date)}
-              style={[styles.chip, active && styles.chipActive]}
-              testID={`day-chip-${d.date}`}
-            >
-              <Text style={[styles.chipDay, active && styles.chipDayActive]}>
-                {d.label.split(" ")[0].toUpperCase()}
-              </Text>
-              <Text style={[styles.chipDate, active && styles.chipDateActive]}>
-                {Number(dd)}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
-        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: 120 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => { setRefreshing(true); load(); }}
             tintColor={colors.brand}
           />
+        }
+        ListHeaderComponent={
+          <View>
+            {/* Hero */}
+            <View style={styles.hero}>
+              <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
+              <LinearGradient
+                colors={["rgba(18,24,34,0.15)", "rgba(18,24,34,0.85)"]}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.heroContent}>
+                <Text style={styles.heroEyebrow}>SETP SYMPOSIUM · EDINBURGH</Text>
+                <Text style={styles.heroTitle}>26–30 July 2026</Text>
+                <Text style={styles.heroSub}>Welcome, delegate. Plan your symposium.</Text>
+              </View>
+            </View>
+
+            {/* Day selector chip row */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.chipRow}
+              style={styles.chipRowWrap}
+            >
+              {days.map((d) => {
+                const active = d.date === activeDate;
+                const [, , dd] = d.date.split("-");
+                return (
+                  <Pressable
+                    key={d.date}
+                    onPress={() => setActiveDate(d.date)}
+                    style={[styles.chip, active && styles.chipActive]}
+                    testID={`day-chip-${d.date}`}
+                  >
+                    <Text style={[styles.chipDay, active && styles.chipDayActive]}>
+                      {d.label.split(" ")[0].toUpperCase()}
+                    </Text>
+                    <Text style={[styles.chipDate, active && styles.chipDateActive]}>
+                      {Number(dd)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -183,14 +186,14 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.surface },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { height: 180, marginHorizontal: spacing.lg, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
+  hero: { height: 180, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
   heroContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: spacing.lg },
   heroEyebrow: { color: "#D4A373", fontSize: 11, fontWeight: "700", letterSpacing: 1.4, marginBottom: 4 },
   heroTitle: { color: "#fff", fontSize: 28, fontWeight: "700", fontFamily: "Georgia" },
   heroSub: { color: "#E2DFD8", fontSize: 13, marginTop: 4 },
 
-  chipRowWrap: { maxHeight: 72 },
-  chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.sm },
+  chipRowWrap: { marginHorizontal: -spacing.lg, marginBottom: spacing.md },
+  chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, gap: spacing.sm },
   chip: {
     width: 62, height: 56, borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
