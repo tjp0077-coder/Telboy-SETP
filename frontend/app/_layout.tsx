@@ -32,6 +32,8 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="login" options={{ presentation: "modal" }} />
               <Stack.Screen name="event/[id]" />
+              <Stack.Screen name="contact" />
+              <Stack.Screen name="inbox" />
             </Stack>
           </FavoritesProvider>
         </AuthProvider>

@@ -1,0 +1,35 @@
+{
+  "summary": "All 16 acceptance criteria pass. Backend: 33/33 pytest cases pass (9 new for /api/feed + /api/contact, plus all 24 prior regression tests). /api/feed merges announcements + event_notes, sorted desc, with event_title resolved from schedule. /api/contact POST is public and validates name/subject/message (400 on empty/whitespace). GET/PATCH/DELETE require admin Bearer (401 without; 404 on unknown). Frontend (390x844 mobile viewport, dave.mackay/Chairman2026!): Messages tab renders the 3 filter chips (All / Announcements / Session notes) and items load from /api/feed; switching filters correctly isolates kinds; event_note rows show a link icon + the resolved event title and tapping navigates to /event/{event_id}; announcement rows are non-pressable Views with their priority badge (INFO/IMPORTANT/URGENT); admin sees the compose FAB on Messages and trash icons on every feed row (deleting an event_note via trash removes it from the feed immediately). Profile shows the 'Contact organisers' card to ALL users and additionally shows 'Open inbox' to admins only. /contact blocks empty submits with inline error and shows the green 'Message sent' success screen with a Done button on success. /inbox redirects unauthenticated users to /login. /inbox lists newest-first, each row has an unread dot + a header count badge; tapping a row expands the message and marks it read on the server (verified via subsequent API GET — read flipped to true; count badge dropped from 3 to 2). Expanded rows expose a Delete button (testID inbox-delete-{id}) that removes the row and persists deletion. Only carry-over RN-Web warnings remain (shadow* style props, props.pointerEvents) — cosmetic, same as iteration 1 & 2.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "global (carry-over)", "issue": "RN-Web deprecation warnings: 'shadow*' style props -> use boxShadow; props.pointerEvents -> use style.pointerEvents. Cosmetic. Identical to iter1/iter2 — not introduced by this iteration."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_feed_and_contact.py",
+    "/app/backend/tests/test_event_detail_notes.py",
+    "/app/backend/tests/test_setp_api.py",
+    "/app/test_reports/pytest/iter3_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py /api/feed (lines 453-492) correctly batches title lookup with a single $in query rather than N round-trips — efficient.",
+    "POST /api/contact strips whitespace and treats whitespace-only fields as missing (returns 400) — matches the inline-error UX on /contact.",
+    "GET/PATCH/DELETE /api/contact share get_current_admin dependency — uniform 401 surface.",
+    "messages.tsx event_note row uses Pressable with router.push(`/event/${event_id}`) and stopPropagation on the inner trash button — correct pattern to allow both row tap and admin delete without double-firing.",
+    "inbox.tsx exposes inbox-item-{id}, inbox-delete-{id}, inbox-reply-{id} testIDs and marks-as-read on first expand — solid testability.",
+    "Profile 'Contact organisers' card is rendered to ALL users (auth-agnostic), while 'Open inbox' is gated behind auth.username — matches spec."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_feed_and_contact.py (new — 9 tests covering /api/feed and full /api/contact lifecycle including 401/404/400 edges)"
+  ],
+  "success_rate": {"backend": "100% (33/33: 9 new + 24 regression)", "frontend": "100% on all 9 frontend acceptance flows"},
+  "seed_data_creation": "Transient only — every TEST_ contact and event_note created during testing was deleted on cleanup (verified via final GET /api/contact). No leftover data in DB.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression: pytest /app/backend/tests/ -v (33 tests, ~8s). UI: open Messages tab anon -> see only the seeded Welcome announcement under All; switch chips; create a note via admin (or hit POST /api/schedule/{id}/notes) to see event_note row -> tap navigates to /event/{id}; admin trash removes it. Log in via Profile -> Admin sign-in -> Open inbox visible; tap row -> expands & marks read; Delete button (inbox-delete-{id}) appears under expanded body."
+}

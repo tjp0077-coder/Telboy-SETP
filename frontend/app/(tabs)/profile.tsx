@@ -99,8 +99,17 @@ export default function ProfileScreen() {
             <Text style={styles.adminBadgeText}>Signed in as admin</Text>
           </View>
           <Text style={styles.adminText}>
-            You can post live messages and edit the schedule.
+            You can post live messages, edit the schedule, and read delegate inquiries.
           </Text>
+          <Pressable
+            onPress={() => router.push("/inbox")}
+            style={styles.inboxBtn}
+            testID="open-inbox-btn"
+          >
+            <Ionicons name="mail-open" size={18} color={colors.brand} />
+            <Text style={styles.inboxBtnText}>Open inbox</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
+          </Pressable>
           <Pressable onPress={logout} style={styles.logoutBtn} testID="logout-btn">
             <Ionicons name="log-out-outline" size={18} color={colors.error} />
             <Text style={styles.logoutText}>Sign out</Text>
@@ -122,6 +131,23 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
         </Pressable>
       )}
+
+      {/* Help */}
+      <Text style={styles.sectionTitle}>Help</Text>
+      <Pressable
+        onPress={() => router.push("/contact")}
+        style={[styles.loginCard, shadow.card]}
+        testID="contact-admin-btn"
+      >
+        <View style={[styles.loginIcon, { backgroundColor: "#FBF1E5" }]}>
+          <Ionicons name="mail" size={20} color={colors.brandTertiary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.loginTitle}>Contact organisers</Text>
+          <Text style={styles.loginSub}>Send a question or report an issue</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+      </Pressable>
 
       <Text style={styles.footnote}>
         SETP Edinburgh 2026 · v1.0{"\n"}
@@ -189,6 +215,12 @@ const styles = StyleSheet.create({
   },
   adminBadgeText: { color: colors.success, fontSize: 12, fontWeight: "700" },
   adminText: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: spacing.sm, lineHeight: 18 },
+  inboxBtn: {
+    flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.md,
+    paddingVertical: 12, paddingHorizontal: 12, borderRadius: radius.md,
+    backgroundColor: "#E8ECF2",
+  },
+  inboxBtnText: { color: colors.brand, fontWeight: "700", fontSize: 14 },
   logoutBtn: {
     flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.md,
     paddingVertical: 10,

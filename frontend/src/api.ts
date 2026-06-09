@@ -118,10 +118,22 @@ export const api = {
 
   // messages
   listMessages: () => cachedGet<MessageItem[]>("/messages", "cache:messages"),
+  listFeed: () => cachedGet<FeedItem[]>("/feed", "cache:feed"),
   createMessage: (data: { text: string; title?: string; priority?: string }) =>
     request<MessageItem>("/messages", { method: "POST", body: JSON.stringify(data) }, true),
   deleteMessage: (id: string) =>
     request<{ deleted: boolean }>(`/messages/${id}`, { method: "DELETE" }, true),
+
+  // contact
+  submitContact: (data: { name: string; email?: string; subject: string; message: string }) =>
+    request<{ id: string; ok: boolean }>("/contact", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  listContact: () => request<ContactItem[]>("/contact", {}, true),
+  markContactRead: (id: string) =>
+    request<{ ok: boolean }>(`/contact/${id}/read`, { method: "PATCH" }, true),
+  deleteContact: (id: string) =>
+    request<{ deleted: boolean }>(`/contact/${id}`, { method: "DELETE" }, true),
 
   // auth
   login: (username: string, password: string) =>

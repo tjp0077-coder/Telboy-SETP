@@ -25,6 +25,7 @@ admins_col = db["admins"]
 schedule_col = db["schedule"]
 messages_col = db["live_messages"]
 event_notes_col = db["event_notes"]
+contact_col = db["contact_messages"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ["JWT_SECRET_KEY"]
@@ -155,6 +156,35 @@ class EventNote(BaseModel):
 
 class EventNoteCreate(BaseModel):
     text: str
+
+
+class FeedItem(BaseModel):
+    kind: str   # "announcement" | "event_note"
+    id: str
+    text: str
+    title: Optional[str] = ""
+    priority: Optional[str] = None
+    author: str
+    created_at: str
+    event_id: Optional[str] = None
+    event_title: Optional[str] = None
+
+
+class ContactCreate(BaseModel):
+    name: str
+    email: Optional[str] = ""
+    subject: str
+    message: str
+
+
+class ContactItem(BaseModel):
+    id: str
+    name: str
+    email: str
+    subject: str
+    message: str
+    created_at: str
+    read: bool = False
 
 
 # ---------- Seed data ----------
@@ -414,6 +444,93 @@ async def create_event_note(
 @api.delete("/schedule/{session_id}/notes/{note_id}")
 async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
     res = await event_notes_col.delete_one({"id": note_id, "event_id": session_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+# ---------- Merged Feed (announcements + event notes) ----------
+@api.get("/feed", response_model=List[FeedItem])
+async def merged_feed():
+    msgs = await messages_col.find({}, {"_id": 0}).to_list(500)
+    notes = await event_notes_col.find({}, {"_id": 0}).to_list(500)
+
+    event_ids = list({n["event_id"] for n in notes})
+    titles: dict = {}
+    if event_ids:
+        async for doc in schedule_col.find(
+            {"id": {"$in": event_ids}}, {"_id": 0, "id": 1, "title": 1}
+        ):
+            titles[doc["id"]] = doc["title"]
+
+    items: List[dict] = []
+    for m in msgs:
+        items.append({
+            "kind": "announcement",
+            "id": m["id"],
+            "text": m["text"],
+            "title": m.get("title", ""),
+            "priority": m.get("priority", "info"),
+            "author": m["author"],
+            "created_at": m["created_at"],
+            "event_id": None,
+            "event_title": None,
+        })
+    for n in notes:
+        items.append({
+            "kind": "event_note",
+            "id": n["id"],
+            "text": n["text"],
+            "title": "",
+            "priority": None,
+            "author": n["author"],
+            "created_at": n["created_at"],
+            "event_id": n.get("event_id"),
+            "event_title": titles.get(n.get("event_id")),
+        })
+    items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return items
+
+
+# ---------- Contact Admin ----------
+@api.post("/contact")
+async def create_contact(data: ContactCreate):
+    name = data.name.strip()
+    subject = data.subject.strip()
+    message = data.message.strip()
+    if not name or not subject or not message:
+        raise HTTPException(status_code=400, detail="name, subject and message are required")
+    item = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "email": (data.email or "").strip(),
+        "subject": subject,
+        "message": message,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "read": False,
+    }
+    await contact_col.insert_one(item)
+    return {"id": item["id"], "ok": True}
+
+
+@api.get("/contact", response_model=List[ContactItem])
+async def list_contact(admin=Depends(get_current_admin)):
+    docs = await contact_col.find({}, {"_id": 0}).to_list(500)
+    docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+    return docs
+
+
+@api.patch("/contact/{cid}/read")
+async def mark_contact_read(cid: str, admin=Depends(get_current_admin)):
+    res = await contact_col.update_one({"id": cid}, {"$set": {"read": True}})
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/contact/{cid}")
+async def delete_contact(cid: str, admin=Depends(get_current_admin)):
+    res = await contact_col.delete_one({"id": cid})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}
