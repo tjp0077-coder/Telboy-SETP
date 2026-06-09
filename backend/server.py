@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,54 +7,463 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timedelta, timezone
+from passlib.context import CryptContext
+from jose import jwt, JWTError
 
 ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
+load_dotenv(ROOT_DIR / ".env")
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
+# ---------- Mongo ----------
+mongo_url = os.environ["MONGO_URL"]
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+db = client[os.environ["DB_NAME"]]
 
-# Create the main app without a prefix
-app = FastAPI()
+admins_col = db["admins"]
+schedule_col = db["schedule"]
+messages_col = db["live_messages"]
 
-# Create a router with the /api prefix
-api_router = APIRouter(prefix="/api")
+# ---------- Auth helpers ----------
+JWT_SECRET = os.environ["JWT_SECRET_KEY"]
+JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
+ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+
+pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
-# Define Models
-class StatusCheck(BaseModel):
+def hash_pw(p: str) -> str:
+    return pwd_ctx.hash(p)
+
+
+def verify_pw(p: str, h: str) -> bool:
+    try:
+        return pwd_ctx.verify(p, h)
+    except Exception:
+        return False
+
+
+def create_token(data: dict) -> str:
+    to_encode = data.copy()
+    to_encode["exp"] = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_MIN)
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def decode_token(token: str) -> dict:
+    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+
+
+async def get_current_admin(token: Optional[str] = Depends(oauth2_scheme)):
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    username = payload.get("username")
+    if not username or payload.get("role") != "admin":
+        raise HTTPException(status_code=401, detail="Invalid token")
+    admin = await admins_col.find_one({"username": username}, {"_id": 0, "password_hash": 0})
+    if not admin:
+        raise HTTPException(status_code=401, detail="Admin not found")
+    return admin
+
+
+# ---------- App ----------
+app = FastAPI(title="SETP Edinburgh 2026 API")
+api = APIRouter(prefix="/api")
+
+
+# ---------- Models ----------
+class LoginIn(BaseModel):
+    username: str
+    password: str
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    name: str
+
+
+class AdminOut(BaseModel):
+    username: str
+    name: str
+    role: str = "admin"
+
+
+class SessionItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    date: str            # e.g. "2026-07-27"
+    day_label: str       # e.g. "Mon 27 July"
+    time: str            # e.g. "08:30"
+    end_time: Optional[str] = None
+    title: str
+    location: str
+    description: Optional[str] = ""
+    category: str = "session"   # session | break | social | tour | meal
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class SessionCreate(BaseModel):
+    date: str
+    day_label: str
+    time: str
+    end_time: Optional[str] = None
+    title: str
+    location: str
+    description: Optional[str] = ""
+    category: str = "session"
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+class SessionUpdate(BaseModel):
+    date: Optional[str] = None
+    day_label: Optional[str] = None
+    time: Optional[str] = None
+    end_time: Optional[str] = None
+    title: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
 
-# Include the router in the main app
-app.include_router(api_router)
+
+class MessageItem(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    text: str
+    title: Optional[str] = ""
+    priority: str = "info"   # info | important | urgent
+    author: str
+    created_at: str          # ISO
+
+
+class MessageCreate(BaseModel):
+    text: str
+    title: Optional[str] = ""
+    priority: str = "info"
+
+
+# ---------- Seed data ----------
+SEED_SCHEDULE = [
+    # Fri 25 July - Registration
+    {"date": "2026-07-25", "day_label": "Fri 25 July", "time": "16:00", "end_time": "20:00",
+     "title": "Registration & Welcome Reception", "location": "Edinburgh Marriott Hotel",
+     "description": "Collect delegate badges, welcome packs, and meet fellow attendees over drinks and canapés.",
+     "category": "social"},
+
+    # Sat 26 July - Social
+    {"date": "2026-07-26", "day_label": "Sat 26 July", "time": "10:00", "end_time": "16:00",
+     "title": "Optional: Edinburgh Castle & Royal Mile Tour", "location": "Departs Marriott",
+     "description": "Self-guided or group tour of Edinburgh's iconic castle and historic Royal Mile.",
+     "category": "tour"},
+
+    # Mon 27 July
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:00", "title": "Check In",
+     "location": "St Paul's & St George's (Ps&Gs)", "description": "Light snacks, coffee, and tea.",
+     "category": "meal"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:30", "title": "Opening Address",
+     "location": "Ps&Gs", "description": "Welcome address by Symposium Chairman, Dave Mackay.",
+     "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:50", "title": "Technical Session 1",
+     "location": "Ps&Gs", "description": "Presentation of Papers 1 and 2.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "09:55", "title": "Coffee Break",
+     "location": "Ps&Gs", "description": "Morning networking and refreshments.", "category": "break"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:00", "title": "Partner's Tour",
+     "location": "Departs Marriott",
+     "description": "Tour to Rosslyn Castle, The Kelpies, and Linlithgow Palace. Returns by 16:00.",
+     "category": "tour"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:15", "title": "Technical Session 1 (Cont.)",
+     "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "11:55", "title": "Lunch",
+     "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "13:30", "title": "State of the Society Address",
+     "location": "Ps&Gs", "description": "Address by SETP President, Kelly Latimer.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "14:05", "title": "Technical Session 2",
+     "location": "Ps&Gs", "description": "Presentation of Papers 6 and 7.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:10", "title": "Coffee Break",
+     "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:30", "title": "Technical Session 2 (Cont.)",
+     "location": "Ps&Gs", "description": "Presentation of Papers 8 and 9.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "16:40", "title": "Closing Remarks",
+     "location": "Ps&Gs", "description": "End of day 1 technical sessions.", "category": "session"},
+    {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "18:30", "end_time": "21:30",
+     "title": "Taste of Scotland Social", "location": "Ps&Gs",
+     "description": "Casual evening featuring a buffet, Witches and Whisky cultural show, Knights Vault sword demonstration, and music by Reely Jiggered.",
+     "category": "social"},
+
+    # Tue 28 July
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:00", "title": "Check In",
+     "location": "Ps&Gs", "description": "Light snacks, coffee, and tea.", "category": "meal"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:30", "title": "Opening Address",
+     "location": "Ps&Gs", "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:50", "title": "Technical Session 3",
+     "location": "Ps&Gs", "description": "Presentation of Papers 10 and 11.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "09:55", "title": "Coffee Break",
+     "location": "Ps&Gs", "description": "Morning refreshments.", "category": "break"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
+     "location": "Departs Marriott",
+     "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
+     "category": "tour"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
+     "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "11:55", "title": "Lunch",
+     "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "13:30", "title": "State of the Union Address",
+     "location": "Ps&Gs", "description": "Address by SETP President.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "14:05", "title": "Technical Session 4",
+     "location": "Ps&Gs", "description": "Presentation of Papers 15 and 16.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:10", "title": "Coffee Break",
+     "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:30", "title": "Technical Session 4 (Cont.)",
+     "location": "Ps&Gs", "description": "Presentation of Papers 17 and 18.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "16:40", "title": "Closing Remarks",
+     "location": "Ps&Gs", "description": "End of day 2 technical sessions.", "category": "session"},
+    {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "19:00", "end_time": "22:00",
+     "title": "Royal Yacht Britannia Reception", "location": "Royal Yacht Britannia",
+     "description": "Reception sponsored by QinetiQ. Transport provided from Marriott.",
+     "category": "social"},
+
+    # Wed 29 July
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:00", "title": "Check In",
+     "location": "Royal College of Surgeons", "description": "Light snacks, coffee, and tea.", "category": "meal"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:30", "title": "Opening Address",
+     "location": "Royal College of Surgeons",
+     "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:50", "title": "Technical Session 5",
+     "location": "Royal College of Surgeons", "description": "Presentation of Papers 19 and 20.",
+     "category": "session"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "09:55", "title": "Coffee Break",
+     "location": "Royal College of Surgeons", "description": "Morning refreshments.", "category": "break"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "10:15", "title": "Technical Session 5 (Cont.)",
+     "location": "Royal College of Surgeons", "description": "Presentation of Papers 21, 22, and 23.",
+     "category": "session"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:55", "title": "Lunch",
+     "location": "Royal College of Surgeons", "description": "Midday lunch break.", "category": "meal"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "13:15", "title": "Guest Speaker",
+     "location": "Royal College of Surgeons",
+     "description": "Speaker presentation (Paul Beaver TBC).", "category": "session"},
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "19:00", "end_time": "23:00",
+     "title": "Symposium Banquet", "location": "Royal College of Surgeons",
+     "description": "Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from Marriott.",
+     "category": "social"},
+
+    # Thu 30 July
+    {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
+     "title": "Technical Boat Tour", "location": "Forth Boat Tours",
+     "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
+     "category": "tour"},
+]
+
+
+async def seed_admins():
+    configs = [
+        ("ADMIN1_USERNAME", "ADMIN1_PASSWORD", "ADMIN1_NAME"),
+        ("ADMIN2_USERNAME", "ADMIN2_PASSWORD", "ADMIN2_NAME"),
+        ("ADMIN3_USERNAME", "ADMIN3_PASSWORD", "ADMIN3_NAME"),
+    ]
+    for u_env, p_env, n_env in configs:
+        username = os.getenv(u_env)
+        password = os.getenv(p_env)
+        name = os.getenv(n_env, username or "")
+        if not username or not password:
+            continue
+        existing = await admins_col.find_one({"username": username})
+        if existing is None:
+            await admins_col.insert_one({
+                "username": username,
+                "name": name,
+                "password_hash": hash_pw(password),
+                "role": "admin",
+                "created_at": datetime.now(timezone.utc).isoformat(),
+            })
+
+
+async def seed_schedule():
+    count = await schedule_col.count_documents({})
+    if count > 0:
+        return
+    docs = []
+    for item in SEED_SCHEDULE:
+        d = dict(item)
+        d["id"] = str(uuid.uuid4())
+        docs.append(d)
+    if docs:
+        await schedule_col.insert_many(docs)
+
+
+async def seed_messages():
+    count = await messages_col.count_documents({})
+    if count > 0:
+        return
+    welcome = {
+        "id": str(uuid.uuid4()),
+        "title": "Welcome to Edinburgh!",
+        "text": "Welcome to the SETP Test Pilot Symposium 2026. Registration opens Friday 25 July at the Marriott from 16:00. Safe travels!",
+        "priority": "important",
+        "author": "Dave Mackay",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await messages_col.insert_one(welcome)
+
+
+@app.on_event("startup")
+async def on_startup():
+    await seed_admins()
+    await seed_schedule()
+    await seed_messages()
+
+
+# ---------- Auth routes ----------
+@api.post("/auth/login", response_model=TokenOut)
+async def login(data: LoginIn):
+    admin = await admins_col.find_one({"username": data.username})
+    if not admin or not verify_pw(data.password, admin["password_hash"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_token({
+        "sub": admin["username"], "username": admin["username"], "role": "admin"
+    })
+    return TokenOut(
+        access_token=token, username=admin["username"], name=admin.get("name", admin["username"])
+    )
+
+
+@api.get("/auth/me", response_model=AdminOut)
+async def me(admin=Depends(get_current_admin)):
+    return AdminOut(username=admin["username"], name=admin.get("name", admin["username"]))
+
+
+# ---------- Schedule ----------
+@api.get("/schedule", response_model=List[SessionItem])
+async def list_schedule():
+    docs = await schedule_col.find({}, {"_id": 0}).to_list(1000)
+    # sort by date then time
+    docs.sort(key=lambda d: (d.get("date", ""), d.get("time", "")))
+    return docs
+
+
+@api.post("/schedule", response_model=SessionItem)
+async def create_session(data: SessionCreate, admin=Depends(get_current_admin)):
+    item = SessionItem(**data.dict())
+    await schedule_col.insert_one(item.dict())
+    return item
+
+
+@api.put("/schedule/{session_id}", response_model=SessionItem)
+async def update_session(session_id: str, data: SessionUpdate, admin=Depends(get_current_admin)):
+    existing = await schedule_col.find_one({"id": session_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if update_data:
+        await schedule_col.update_one({"id": session_id}, {"$set": update_data})
+    updated = await schedule_col.find_one({"id": session_id}, {"_id": 0})
+    return updated
+
+
+@api.delete("/schedule/{session_id}")
+async def delete_session(session_id: str, admin=Depends(get_current_admin)):
+    res = await schedule_col.delete_one({"id": session_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+# ---------- Live Messages ----------
+@api.get("/messages", response_model=List[MessageItem])
+async def list_messages():
+    docs = await messages_col.find({}, {"_id": 0}).to_list(1000)
+    docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+    return docs
+
+
+@api.post("/messages", response_model=MessageItem)
+async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
+    item = MessageItem(
+        text=data.text,
+        title=data.title or "",
+        priority=data.priority,
+        author=admin.get("name", admin["username"]),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    await messages_col.insert_one(item.dict())
+    return item
+
+
+@api.delete("/messages/{message_id}")
+async def delete_message(message_id: str, admin=Depends(get_current_admin)):
+    res = await messages_col.delete_one({"id": message_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+# ---------- City Guide (static, embedded) ----------
+@api.get("/city-guide")
+async def city_guide():
+    return {
+        "hero": {
+            "title": "Welcome to Edinburgh",
+            "subtitle": "A pilot's guide for American delegates",
+        },
+        "essentials": [
+            {"icon": "currency-pound", "title": "Currency",
+             "summary": "British Pound (GBP / £). $1 USD ≈ £0.79. Cards widely accepted; carry £20 for taxis & tips."},
+            {"icon": "plug", "title": "Plugs & Power",
+             "summary": "UK Type G 3-pin plugs, 230V/50Hz. Bring a US→UK adapter; most laptops are dual-voltage."},
+            {"icon": "tip", "title": "Tipping",
+             "summary": "Restaurants: 10–12.5% if not on bill. Taxis: round up. Bartenders: not expected, but appreciated."},
+            {"icon": "phone", "title": "Emergencies",
+             "summary": "Dial 999 or 112 for police, fire, ambulance. Non-emergency police: 101."},
+        ],
+        "transport": [
+            {"name": "Edinburgh Trams", "icon": "tram",
+             "description": "Single line from Airport → York Place (city centre). Single ticket £1.80. Buy at platform machines or contactless tap (cap £4.80/day).",
+             "tip": "Tram from Edinburgh Airport to Marriott (Edinburgh Park) is fastest — ~10 min."},
+            {"name": "Lothian Buses", "icon": "bus",
+             "description": "Extensive network. Single £1.80 (contactless capped at £4.80/day). Exact change cash. Download the 'Lothian Buses' app for live times.",
+             "tip": "Bus 22 connects city centre to Ocean Terminal (Royal Yacht Britannia)."},
+            {"name": "Taxis & Black Cabs", "icon": "car",
+             "description": "Black cabs are metered & hailable. Airport → city centre ≈ £25–30.",
+             "tip": "Pre-book via City Cabs (+44 131 228 1211) or Central Taxis (+44 131 229 2468)."},
+            {"name": "Uber & Bolt", "icon": "rideshare",
+             "description": "Both operate in Edinburgh. Often cheaper than black cabs for short trips.",
+             "tip": "Wait times at the airport can be 5–10 min — confirm pickup point."},
+            {"name": "Walking", "icon": "walk",
+             "description": "Central Edinburgh is compact. Marriott → Royal Mile ≈ 25 min walk or 10 min taxi.",
+             "tip": "Cobblestones! Wear comfortable shoes — the Royal Mile is steep in places."},
+            {"name": "ScotRail", "icon": "train",
+             "description": "Trains from Waverley & Haymarket stations to Glasgow, St Andrews, Highlands.",
+             "tip": "Book in advance at scotrail.co.uk for best fares."},
+        ],
+        "phrases": [
+            {"phrase": "Cheers", "meaning": "Thanks / goodbye / toast — used constantly"},
+            {"phrase": "Wee", "meaning": "Small (a wee dram = a small whisky)"},
+            {"phrase": "Ta", "meaning": "Thanks (informal)"},
+            {"phrase": "Loo", "meaning": "Restroom / bathroom"},
+            {"phrase": "Brilliant", "meaning": "Great / awesome"},
+            {"phrase": "Aye", "meaning": "Yes"},
+            {"phrase": "Pavement", "meaning": "Sidewalk"},
+            {"phrase": "Lift", "meaning": "Elevator"},
+        ],
+        "venues": [
+            {"name": "Edinburgh Marriott Hotel", "address": "111 Glasgow Rd, Edinburgh EH12 8NF",
+             "notes": "Symposium HQ. Tram stop 'Edinburgh Park Central' is 5 min walk.",
+             "maps_url": "https://maps.apple.com/?q=Edinburgh+Marriott+Hotel"},
+            {"name": "St Paul's & St George's Church (Ps&Gs)", "address": "10 York Pl, Edinburgh EH1 3EP",
+             "notes": "Mon & Tue technical sessions. City centre — tram to 'York Place'.",
+             "maps_url": "https://maps.apple.com/?q=St+Pauls+and+St+Georges+Edinburgh"},
+            {"name": "Royal College of Surgeons", "address": "Nicolson St, Edinburgh EH8 9DW",
+             "notes": "Wed sessions & closing banquet. 10-min walk from Royal Mile.",
+             "maps_url": "https://maps.apple.com/?q=Royal+College+of+Surgeons+Edinburgh"},
+            {"name": "Royal Yacht Britannia", "address": "Ocean Terminal, Leith, Edinburgh EH6 6JJ",
+             "notes": "Tue evening reception. Transport provided from Marriott.",
+             "maps_url": "https://maps.apple.com/?q=Royal+Yacht+Britannia"},
+        ],
+    }
+
+
+app.include_router(api)
 
 app.add_middleware(
     CORSMiddleware,
@@ -63,12 +473,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

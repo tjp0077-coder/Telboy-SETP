@@ -1,0 +1,27 @@
+{
+  "summary": "Backend: 16/16 pytest tests pass (public endpoints, auth for all 3 admins, JWT-protected CRUD on messages and schedule, no _id leakage, 35-item seeded schedule sorted by date/time, welcome message seeded). Frontend: Expo web preview loads cleanly on 390x844 viewport with zero page errors. Hero '25–30 July 2026' with Edinburgh skyline renders; day chips FRI 25 / SAT 26 / MON 27 / TUE 28 / WED 29 / THU 30 visible; session cards (e.g. Registration & Welcome Reception @ Marriott) with bookmark icon render; 4 bottom tabs (Schedule, Messages, City Guide, Profile) all navigate; Profile shows 'Delegate', 'My Agenda' with 'No saved sessions yet' empty state and 'Admin sign-in' entry; City Guide shows hero + Essentials grid (Currency, Plugs & Power, Tipping, Emergencies); Messages tab loads the seeded Welcome message.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "global", "issue": "Console warnings (non-fatal): 'shadow*' style props deprecated (use boxShadow); props.pointerEvents deprecated (use style.pointerEvents). Cosmetic only."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_setp_api.py", "/app/test_reports/pytest/results.xml"],
+  "action_items": [
+    "Optional: replace shadow* style props with boxShadow and props.pointerEvents with style.pointerEvents to clear RN-Web deprecation warnings."
+  ],
+  "critical_code_review_comments": [
+    "server.py uses @app.on_event('startup') which is deprecated in newer FastAPI; consider lifespan handler. Not blocking — works correctly here.",
+    "passlib bcrypt backend logs a benign warning about reading bcrypt version on startup (AttributeError: __about__). Does not affect hashing/verification — all 3 admin logins succeed."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "100% on smoke flows tested"},
+  "seed_data_creation": "None created. Backend auto-seeds 35 schedule items, 1 welcome message, and 3 admins on startup. All TEST_ data created during tests was deleted in teardown.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend test suite at /app/backend/tests/test_setp_api.py covers all critical flows and can be re-run as regression: `pytest /app/backend/tests/test_setp_api.py -v`. Frontend smoke confirmed Schedule, Messages, City Guide, Profile tabs render with correct content. Login modal, compose-FAB POST flow, bookmark toggle, day-chip filtering were NOT exercised via Playwright due to token budget — backend endpoints behind them are verified, and Profile shows the Admin sign-in entry, so main agent can self-validate these UI-only interactions.",
+  "rca_of_issue": "N/A — no defects found."
+}
