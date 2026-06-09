@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "EDI SETP 2026",
+    "slug": "edi-setp-2026",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "edisetp2026",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {

@@ -44,7 +44,7 @@ export default function ProfileScreen() {
             {auth.name ? auth.name : "Delegate"}
           </Text>
           <Text style={styles.role}>
-            {auth.username ? "Symposium Admin · SETP 2026" : "SETP Symposium 2026"}
+            {auth.username ? "EDI SETP 2026 · Admin" : "EDI SETP 2026"}
           </Text>
         </View>
       </View>
@@ -150,7 +150,7 @@ export default function ProfileScreen() {
       </Pressable>
 
       <Text style={styles.footnote}>
-        SETP Edinburgh 2026 · v1.0{"\n"}
+        EDI SETP 2026 · v1.0{"\n"}
         Built for American delegates with ❤
       </Text>
     </ScrollView>

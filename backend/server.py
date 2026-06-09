@@ -74,7 +74,7 @@ async def get_current_admin(token: Optional[str] = Depends(oauth2_scheme)):
 
 
 # ---------- App ----------
-app = FastAPI(title="SETP Edinburgh 2026 API")
+app = FastAPI(title="EDI SETP 2026 API")
 api = APIRouter(prefix="/api")
 
 
