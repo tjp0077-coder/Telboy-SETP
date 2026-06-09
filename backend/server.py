@@ -175,6 +175,7 @@ class ContactCreate(BaseModel):
     email: Optional[str] = ""
     subject: str
     message: str
+    event_id: Optional[str] = None
 
 
 class ContactItem(BaseModel):
@@ -185,6 +186,8 @@ class ContactItem(BaseModel):
     message: str
     created_at: str
     read: bool = False
+    event_id: Optional[str] = None
+    event_title: Optional[str] = None
 
 
 # ---------- Seed data ----------
@@ -500,6 +503,14 @@ async def create_contact(data: ContactCreate):
     message = data.message.strip()
     if not name or not subject or not message:
         raise HTTPException(status_code=400, detail="name, subject and message are required")
+
+    event_id = (data.event_id or "").strip() or None
+    if event_id:
+        # validate that event exists; if not, drop the attachment rather than 400
+        ev = await schedule_col.find_one({"id": event_id}, {"_id": 0, "id": 1})
+        if not ev:
+            event_id = None
+
     item = {
         "id": str(uuid.uuid4()),
         "name": name,
@@ -508,6 +519,7 @@ async def create_contact(data: ContactCreate):
         "message": message,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "read": False,
+        "event_id": event_id,
     }
     await contact_col.insert_one(item)
     return {"id": item["id"], "ok": True}
@@ -517,6 +529,16 @@ async def create_contact(data: ContactCreate):
 async def list_contact(admin=Depends(get_current_admin)):
     docs = await contact_col.find({}, {"_id": 0}).to_list(500)
     docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+
+    event_ids = [d["event_id"] for d in docs if d.get("event_id")]
+    titles: dict = {}
+    if event_ids:
+        async for ev in schedule_col.find(
+            {"id": {"$in": list(set(event_ids))}}, {"_id": 0, "id": 1, "title": 1}
+        ):
+            titles[ev["id"]] = ev["title"]
+    for d in docs:
+        d["event_title"] = titles.get(d.get("event_id")) if d.get("event_id") else None
     return docs
 
 

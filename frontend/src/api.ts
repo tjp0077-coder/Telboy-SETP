@@ -125,7 +125,7 @@ export const api = {
     request<{ deleted: boolean }>(`/messages/${id}`, { method: "DELETE" }, true),
 
   // contact
-  submitContact: (data: { name: string; email?: string; subject: string; message: string }) =>
+  submitContact: (data: { name: string; email?: string; subject: string; message: string; event_id?: string | null }) =>
     request<{ id: string; ok: boolean }>("/contact", {
       method: "POST", body: JSON.stringify(data),
     }),

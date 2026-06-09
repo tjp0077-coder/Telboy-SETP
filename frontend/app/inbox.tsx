@@ -139,6 +139,20 @@ export default function InboxScreen() {
                   ) : null}
                 </View>
 
+                {item.event_title && item.event_id ? (
+                  <Pressable
+                    onPress={(e) => { e.stopPropagation?.(); router.push(`/event/${item.event_id}`); }}
+                    style={styles.sessionChip}
+                    testID={`inbox-jump-${item.id}`}
+                  >
+                    <Ionicons name="calendar" size={12} color={colors.brand} />
+                    <Text style={styles.sessionChipText} numberOfLines={1}>
+                      Re: {item.event_title}
+                    </Text>
+                    <Ionicons name="arrow-forward-circle" size={14} color={colors.brand} />
+                  </Pressable>
+                ) : null}
+
                 {!expanded ? (
                   <Text style={styles.cardPreview} numberOfLines={2}>{item.message}</Text>
                 ) : (
@@ -225,4 +239,12 @@ const styles = StyleSheet.create({
   actionPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   actionGhost: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   actionGhostText: { color: colors.error, fontWeight: "700", fontSize: 13 },
+
+  sessionChip: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6,
+    backgroundColor: "#E8ECF2", borderRadius: radius.pill, marginTop: spacing.sm,
+    maxWidth: "100%",
+  },
+  sessionChipText: { fontSize: 12, fontWeight: "700", color: colors.brand, flexShrink: 1 },
 });

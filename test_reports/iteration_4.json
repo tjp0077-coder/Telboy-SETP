@@ -1,0 +1,37 @@
+{
+  "summary": "Iteration 4 (optional related-session attachment on /contact) — all 11 acceptance criteria pass. Backend: 38/38 pytest pass (5 new event-attachment tests + 33 prior). /api/contact accepts optional event_id; with a valid id, GET /api/contact (admin) returns event_id + resolved event_title; with null/empty/whitespace event_id, both fields are null; with an INVALID id, the attachment is silently dropped (HTTP 200, event_id=null, no 4xx) — graceful degradation per spec. Backward-compat (omitted field) also works. Frontend (390x844 mobile viewport): /contact renders 'Related session (optional)' row with a dashed 'Attach a session' button (open-session-picker testID); tapping opens a bottom-sheet modal with a search input and the schedule grouped by day_label (Sun 26, Mon 27, Tue 28, Wed 29, Thu 30 — all five day headers rendered); typing 'Britannia' narrows the list to exactly 1 row (Royal Yacht Britannia Reception); tapping the row closes the picker and renders the selected-session chip with title + 'Tue 28 July · 19:00'; the X (clear-session) clears it and the Attach button reappears. Submitting WITH an attached session: /api/contact gets event_id, the admin inbox row shows a 'Re: Royal Yacht Britannia Reception' chip (inbox-jump-{id} testID) and tapping the chip navigates to /event/{event_id} (verified URL contains the event id). Submitting WITHOUT a session: no chip is rendered on the inbox card. Inbox regression confirmed: unread count badge (5 → after expand+delete decremented), expand-to-mark-read, delete (inbox-delete-{id}) all still work; login still works (dave.mackay/Chairman2026!). Only pre-existing carry-over RN-Web cosmetic warnings (shadow*, props.pointerEvents). No new issues introduced.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "global (carry-over)", "issue": "RN-Web deprecation warnings: 'shadow*' style props -> use boxShadow; props.pointerEvents -> use style.pointerEvents. Cosmetic, identical to iterations 1-3 — not introduced by this iteration."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_contact_event_attachment.py",
+    "/app/backend/tests/test_feed_and_contact.py",
+    "/app/backend/tests/test_event_detail_notes.py",
+    "/app/backend/tests/test_setp_api.py",
+    "/app/test_reports/pytest/iter4_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "server.py POST /api/contact (lines 499-525): correctly strips/validates event_id, performs a single existence lookup against schedule_col with id-only projection, and silently degrades to null on miss — matches the 'graceful degradation' requirement without leaking 4xx for bad attachments.",
+    "server.py GET /api/contact (lines 528-542): batches title resolution via a single $in query for all distinct event_ids in the result set — O(1) DB call regardless of inbox size.",
+    "contact.tsx (lines 30-51): grouping by date with a Map preserves schedule order (since /api/schedule is server-sorted); search filter spans title/location/day_label — matches spec.",
+    "contact.tsx (line 66): sends event_id: selectedEvent?.id || null, which serializes to JSON null when none — backend treats null and empty as equivalent, so both paths land on event_id=null.",
+    "inbox.tsx (lines 142-154): chip is rendered only when BOTH item.event_title AND item.event_id are truthy — protects against stale rows where the event was deleted after the contact was sent (event_title would be null in that case).",
+    "inbox.tsx (line 144): stopPropagation on chip onPress prevents the parent toggleExpand from firing when navigating — correct interaction pattern.",
+    "api.ts submitContact signature now includes optional event_id?: string | null — type-safe surface."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_event_attachment.py (new — 5 tests covering valid/null/empty/invalid/missing event_id paths with cleanup)"
+  ],
+  "success_rate": {"backend": "100% (38/38: 5 new + 33 regression)", "frontend": "100% on all 7 frontend acceptance flows (picker open, day grouping, search filter, chip render, chip clear, inbox chip render+nav, no-chip when omitted)"},
+  "seed_data_creation": "Transient only. All TEST_ contacts created during testing were deleted via DELETE /api/contact/{id} (verified via final GET — no TEST_ leftover items in the inbox). Pre-existing seed data ('Linked Test', 'Test Delegate') was not touched.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression: pytest /app/backend/tests/ -v  (38 tests, ~8s). UI smoke: /contact -> tap 'Attach a session' -> search 'Britannia' -> tap row -> chip renders -> submit; login dave.mackay/Chairman2026! -> /inbox -> latest item has 'Re: <event>' chip (testID inbox-jump-{id}) -> tap chip navigates to /event/{id}. event_id null/invalid both yield no chip and no 4xx."
+}
