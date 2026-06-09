@@ -85,17 +85,36 @@ export type MessageItem = {
   created_at: string;
 };
 
+export type EventNote = {
+  id: string;
+  event_id: string;
+  text: string;
+  author: string;
+  created_at: string;
+};
+
 export type AdminInfo = { username: string; name: string; role: string };
 
 export const api = {
   // schedule
   listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
+  getSession: (id: string) => request<SessionItem>(`/schedule/${id}`),
   createSession: (data: Partial<SessionItem>) =>
     request<SessionItem>("/schedule", { method: "POST", body: JSON.stringify(data) }, true),
   updateSession: (id: string, data: Partial<SessionItem>) =>
     request<SessionItem>(`/schedule/${id}`, { method: "PUT", body: JSON.stringify(data) }, true),
   deleteSession: (id: string) =>
     request<{ deleted: boolean }>(`/schedule/${id}`, { method: "DELETE" }, true),
+
+  // per-event notes
+  listEventNotes: (id: string) =>
+    request<EventNote[]>(`/schedule/${id}/notes`),
+  createEventNote: (id: string, text: string) =>
+    request<EventNote>(`/schedule/${id}/notes`, {
+      method: "POST", body: JSON.stringify({ text }),
+    }, true),
+  deleteEventNote: (id: string, noteId: string) =>
+    request<{ deleted: boolean }>(`/schedule/${id}/notes/${noteId}`, { method: "DELETE" }, true),
 
   // messages
   listMessages: () => cachedGet<MessageItem[]>("/messages", "cache:messages"),

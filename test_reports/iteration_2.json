@@ -1,0 +1,34 @@
+{
+  "summary": "All 14 acceptance criteria for the new Event Detail + per-event Notes feature pass. Backend: 8/8 new pytest cases pass (GET /api/schedule/{id} returns single event with no _id leak; GET notes public + sorted desc; POST notes returns 401 without token; POST with admin Bearer creates note with author=admin name, event_id, text, created_at; DELETE note returns {deleted:true} and 404 for unknown; PUT /api/schedule/{id} updates title/location/time/end_time/description and persists via GET; DELETE /api/schedule/{id} cascades and removes attached notes). Frontend (390x844 mobile viewport): tapping a session card navigates to /event/{id}; tapping bookmark INSIDE card toggles favorite WITHOUT navigating; detail page renders category pill (Social/Technical/etc.), title, day_label, time–end_time, location, About body, and Notes empty state 'Be the first to add a note.' / 'No updates yet for this session.'; logged-out users see NO edit pencil and NO composer; after logging in as dave.mackay/Chairman2026!, edit pencil + composer are rendered; posting a note shows it at top with author 'Dave Mackay' and a relative timestamp; admin trash icon deletes the note and empty state returns; edit pencil reveals editable fields (title, start time, end time, location, description, category chips) with Save/Cancel — Save calls PUT, updates the event in place, and exits edit mode; tapping a saved card on Profile/My Agenda navigates to /event/{id}. Only minor finding: clicking the modal-style /login route via direct URL emits a dev-only 'GO_BACK was not handled' warning when the auth context auto-dismisses with no history — does not affect users entering login from the Profile tab.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {"component": "global (carry-over)", "issue": "RN-Web deprecation warnings: 'shadow*' style props -> use boxShadow; props.pointerEvents -> use style.pointerEvents. Cosmetic. Same as iteration_1."}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_setp_api.py",
+    "/app/backend/tests/test_event_detail_notes.py",
+    "/app/test_reports/pytest/iter2_event_notes.xml"
+  ],
+  "action_items": [
+    "Optional: in app/login.tsx, replace router.back() fallback with router.replace('/(tabs)/profile') when there is no navigation history, to silence the dev-only GO_BACK warning."
+  ],
+  "critical_code_review_comments": [
+    "server.py delete_session cascades to event_notes_col correctly (line 385) — verified by test_delete_event_cascades_notes.",
+    "list_event_notes excludes _id via projection and sorts created_at desc — clean.",
+    "Frontend event/[id].tsx uses isAdmin = !!auth.username, which is correct for gating UI; admin-only API calls still re-verify via Bearer on the server.",
+    "Edit form lets user type free-form HH:MM into time/end fields — no input validation; user can save '99:99'. Low risk for admin-only authoring; consider client-side format check."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_event_detail_notes.py (new — covers all new endpoints + cascade + 401/404 edges)"
+  ],
+  "success_rate": {"backend": "100% (8/8 new + 16/16 prior = 24/24)", "frontend": "100% on all 6 frontend acceptance flows"},
+  "seed_data_creation": "None permanent. All TEST_ schedule items and notes created during tests were deleted in teardown. One leftover UI-created note from Playwright was removed via admin trash icon at end of testing.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Regression: `pytest /app/backend/tests/ -v` runs both suites in ~3s. UI flows can be re-verified by: open /, tap first session card -> /event/{id}, log in via Profile -> Admin sign-in, return to detail, post + delete a note, tap edit pencil, change title, Save -> should persist and exit edit. Bookmark + saved-card->detail navigation also confirmed end-to-end."
+}

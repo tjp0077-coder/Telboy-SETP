@@ -1,0 +1,458 @@
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
+  TextInput, KeyboardAvoidingView, Platform, Alert,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { api, SessionItem, EventNote } from "@/src/api";
+import { useAuth } from "@/src/AuthContext";
+import { useFavorites } from "@/src/useFavorites";
+import { colors, spacing, radius, shadow } from "@/src/theme";
+
+const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
+  session: "document-text",
+  break: "cafe",
+  meal: "restaurant",
+  social: "wine",
+  tour: "bus",
+};
+const CATEGORY_COLOR: Record<string, string> = {
+  session: colors.brand,
+  break: colors.warning,
+  meal: colors.warning,
+  social: colors.brandTertiary,
+  tour: colors.success,
+};
+const CATEGORY_LABEL: Record<string, string> = {
+  session: "Technical",
+  break: "Break",
+  meal: "Meal",
+  social: "Social",
+  tour: "Tour",
+};
+
+const CATEGORIES = ["session", "break", "meal", "social", "tour"];
+
+export default function EventDetail() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { auth } = useAuth();
+  const { favorites, toggle } = useFavorites();
+  const isAdmin = !!auth.username;
+  const fav = id ? favorites.has(id) : false;
+
+  const [event, setEvent] = useState<SessionItem | null>(null);
+  const [notes, setNotes] = useState<EventNote[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<Partial<SessionItem>>({});
+  const [saving, setSaving] = useState(false);
+
+  const [newNote, setNewNote] = useState("");
+  const [posting, setPosting] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!id) return;
+    try {
+      const [e, n] = await Promise.all([
+        api.getSession(id),
+        api.listEventNotes(id).catch(() => []),
+      ]);
+      setEvent(e);
+      setNotes(n);
+    } catch (err) {
+      setEvent(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const startEdit = () => {
+    if (!event) return;
+    setDraft({
+      title: event.title,
+      location: event.location,
+      time: event.time,
+      end_time: event.end_time || "",
+      description: event.description || "",
+      category: event.category,
+    });
+    setEditing(true);
+  };
+
+  const cancelEdit = () => { setEditing(false); setDraft({}); };
+
+  const saveEdit = async () => {
+    if (!id || !event) return;
+    setSaving(true);
+    try {
+      const updated = await api.updateSession(id, draft);
+      setEvent(updated);
+      setEditing(false);
+    } catch (e) {
+      // surface but don't crash
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const postNote = async () => {
+    if (!id || !newNote.trim()) return;
+    setPosting(true);
+    try {
+      const created = await api.createEventNote(id, newNote.trim());
+      setNotes((prev) => [created, ...prev]);
+      setNewNote("");
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const removeNote = async (noteId: string) => {
+    if (!id) return;
+    try {
+      await api.deleteEventNote(id, noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch {}
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={colors.brand} />
+      </View>
+    );
+  }
+
+  if (!event) {
+    return (
+      <View style={[styles.screen, styles.center, { padding: spacing.xl }]}>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.onSurfaceMuted} />
+        <Text style={styles.emptyText}>Event not found</Text>
+        <Pressable onPress={() => router.back()} style={styles.backBtnFallback}>
+          <Text style={styles.backBtnText}>Go back</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
+  const cIcon = CATEGORY_ICON[event.category] || "ellipse";
+  const cColor = CATEGORY_COLOR[event.category] || colors.brand;
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.screen}
+    >
+      {/* Header bar */}
+      <View style={[styles.topBar, { paddingTop: insets.top + spacing.sm }]}>
+        <Pressable onPress={() => router.back()} hitSlop={10} testID="event-back">
+          <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
+        </Pressable>
+        <View style={styles.topActions}>
+          {isAdmin && !editing ? (
+            <Pressable onPress={startEdit} hitSlop={10} style={styles.iconBtn} testID="event-edit">
+              <Ionicons name="create-outline" size={22} color={colors.brand} />
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => id && toggle(id)} hitSlop={10} style={styles.iconBtn} testID="event-fav">
+            <Ionicons
+              name={fav ? "bookmark" : "bookmark-outline"}
+              size={22}
+              color={fav ? colors.brandTertiary : colors.onSurface}
+            />
+          </Pressable>
+        </View>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: 80 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Category pill */}
+        <View style={[styles.catPill, { backgroundColor: cColor }]}>
+          <Ionicons name={cIcon} size={14} color="#fff" />
+          <Text style={styles.catPillText}>{CATEGORY_LABEL[event.category] || event.category}</Text>
+        </View>
+
+        {/* Title + meta (or editor) */}
+        {!editing ? (
+          <>
+            <Text style={styles.title}>{event.title}</Text>
+            <View style={styles.metaRow}>
+              <Ionicons name="calendar" size={16} color={colors.onSurfaceMuted} />
+              <Text style={styles.metaText}>{event.day_label}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Ionicons name="time" size={16} color={colors.onSurfaceMuted} />
+              <Text style={styles.metaText}>
+                {event.time}{event.end_time ? ` – ${event.end_time}` : ""}
+              </Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
+              <Text style={styles.metaText}>{event.location}</Text>
+            </View>
+
+            {event.description ? (
+              <>
+                <Text style={styles.sectionTitle}>About</Text>
+                <Text style={styles.body}>{event.description}</Text>
+              </>
+            ) : null}
+          </>
+        ) : (
+          <View>
+            <Text style={styles.label}>Title</Text>
+            <TextInput
+              style={styles.input}
+              value={draft.title || ""}
+              onChangeText={(v) => setDraft((d) => ({ ...d, title: v }))}
+              testID="edit-title"
+            />
+            <View style={styles.rowSplit}>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>Start</Text>
+                <TextInput
+                  style={styles.input}
+                  value={draft.time || ""}
+                  onChangeText={(v) => setDraft((d) => ({ ...d, time: v }))}
+                  placeholder="HH:MM"
+                  testID="edit-time"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.label}>End</Text>
+                <TextInput
+                  style={styles.input}
+                  value={(draft.end_time as string) || ""}
+                  onChangeText={(v) => setDraft((d) => ({ ...d, end_time: v }))}
+                  placeholder="(optional)"
+                  testID="edit-end"
+                />
+              </View>
+            </View>
+            <Text style={styles.label}>Location</Text>
+            <TextInput
+              style={styles.input}
+              value={draft.location || ""}
+              onChangeText={(v) => setDraft((d) => ({ ...d, location: v }))}
+              testID="edit-location"
+            />
+            <Text style={styles.label}>Description</Text>
+            <TextInput
+              style={[styles.input, styles.inputMulti]}
+              value={draft.description || ""}
+              onChangeText={(v) => setDraft((d) => ({ ...d, description: v }))}
+              multiline
+              testID="edit-description"
+            />
+
+            <Text style={styles.label}>Category</Text>
+            <View style={styles.catRow}>
+              {CATEGORIES.map((c) => {
+                const sel = draft.category === c;
+                return (
+                  <Pressable
+                    key={c}
+                    onPress={() => setDraft((d) => ({ ...d, category: c }))}
+                    style={[styles.catChip, sel && { backgroundColor: CATEGORY_COLOR[c], borderColor: CATEGORY_COLOR[c] }]}
+                  >
+                    <Text style={[styles.catChipText, sel && { color: "#fff" }]}>
+                      {CATEGORY_LABEL[c]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={styles.editActions}>
+              <Pressable onPress={cancelEdit} style={[styles.btn, styles.btnGhost]} testID="edit-cancel">
+                <Text style={styles.btnGhostText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={saveEdit}
+                disabled={saving}
+                style={[styles.btn, styles.btnPrimary, saving && { opacity: 0.5 }]}
+                testID="edit-save"
+              >
+                <Text style={styles.btnPrimaryText}>{saving ? "Saving…" : "Save"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Notes & Updates */}
+        <View style={styles.notesHeader}>
+          <Text style={styles.sectionTitle}>Notes & Updates</Text>
+          {notes.length > 0 ? (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{notes.length}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {isAdmin ? (
+          <View style={[styles.composer, shadow.card]}>
+            <TextInput
+              style={styles.composerInput}
+              value={newNote}
+              onChangeText={setNewNote}
+              placeholder="Add an update or note for delegates…"
+              placeholderTextColor={colors.onSurfaceMuted}
+              multiline
+              testID="note-input"
+            />
+            <Pressable
+              onPress={postNote}
+              disabled={posting || !newNote.trim()}
+              style={[styles.postBtn, (!newNote.trim() || posting) && { opacity: 0.5 }]}
+              testID="note-post"
+            >
+              <Ionicons name="send" size={16} color="#fff" />
+              <Text style={styles.postBtnText}>{posting ? "Posting…" : "Post"}</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {notes.length === 0 ? (
+          <View style={styles.notesEmpty}>
+            <Ionicons name="chatbubbles-outline" size={28} color={colors.onSurfaceMuted} />
+            <Text style={styles.emptyText}>
+              {isAdmin ? "Be the first to add a note." : "No updates yet for this session."}
+            </Text>
+          </View>
+        ) : (
+          notes.map((n) => (
+            <View key={n.id} style={[styles.noteCard, shadow.card]} testID={`note-${n.id}`}>
+              <View style={styles.noteHead}>
+                <View style={styles.noteAvatar}>
+                  <Ionicons name="person" size={14} color={colors.brand} />
+                </View>
+                <Text style={styles.noteAuthor}>{n.author}</Text>
+                <Text style={styles.noteWhen}>{formatWhen(n.created_at)}</Text>
+                {isAdmin ? (
+                  <Pressable
+                    onPress={() => removeNote(n.id)}
+                    hitSlop={8}
+                    style={{ marginLeft: 6 }}
+                    testID={`note-delete-${n.id}`}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={colors.error} />
+                  </Pressable>
+                ) : null}
+              </View>
+              <Text style={styles.noteText}>{n.text}</Text>
+            </View>
+          ))
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+function formatWhen(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString("en-GB", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" });
+  } catch { return iso; }
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: colors.surface },
+  center: { alignItems: "center", justifyContent: "center", flex: 1 },
+
+  topBar: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: spacing.lg, paddingBottom: spacing.sm,
+    backgroundColor: colors.surface,
+  },
+  topActions: { flexDirection: "row", gap: spacing.sm, alignItems: "center" },
+  iconBtn: { padding: 4 },
+
+  catPill: {
+    flexDirection: "row", alignItems: "center", gap: 6,
+    alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: radius.pill, marginBottom: spacing.md,
+  },
+  catPillText: { color: "#fff", fontSize: 11, fontWeight: "800", letterSpacing: 0.8 },
+
+  title: { fontSize: 28, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 34 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.sm },
+  metaText: { fontSize: 14, color: colors.onSurfaceMuted },
+
+  sectionTitle: {
+    fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,
+    marginTop: spacing.xl, marginBottom: spacing.sm,
+  },
+  body: { fontSize: 15, color: colors.onSurface, lineHeight: 22 },
+
+  label: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted, letterSpacing: 0.8, marginTop: spacing.md, marginBottom: 6 },
+  input: {
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
+    borderWidth: 1, borderColor: colors.border, color: colors.onSurface, fontSize: 15,
+  },
+  inputMulti: { minHeight: 100, textAlignVertical: "top" },
+  rowSplit: { flexDirection: "row", gap: spacing.md },
+  catRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.sm, marginTop: 4 },
+  catChip: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill,
+    borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surfaceSecondary,
+  },
+  catChipText: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted },
+
+  editActions: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
+  btn: { flex: 1, height: 48, borderRadius: radius.md, alignItems: "center", justifyContent: "center" },
+  btnGhost: { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+  btnGhostText: { color: colors.onSurface, fontWeight: "600" },
+  btnPrimary: { backgroundColor: colors.brand },
+  btnPrimaryText: { color: "#fff", fontWeight: "700" },
+
+  notesHeader: { flexDirection: "row", alignItems: "center", gap: 8 },
+  countBadge: {
+    backgroundColor: colors.brand, minWidth: 22, height: 18, paddingHorizontal: 6,
+    borderRadius: 9, alignItems: "center", justifyContent: "center", marginTop: spacing.xl,
+  },
+  countBadgeText: { color: "#fff", fontSize: 11, fontWeight: "700" },
+
+  composer: {
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
+    marginTop: spacing.sm, marginBottom: spacing.md,
+  },
+  composerInput: {
+    minHeight: 60, color: colors.onSurface, fontSize: 14, textAlignVertical: "top",
+  },
+  postBtn: {
+    alignSelf: "flex-end", flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: colors.brand, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.pill,
+    marginTop: spacing.sm,
+  },
+  postBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+
+  notesEmpty: { alignItems: "center", padding: spacing.xl, gap: spacing.sm },
+  emptyText: { color: colors.onSurfaceMuted, marginTop: spacing.sm, textAlign: "center" },
+
+  noteCard: {
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm,
+  },
+  noteHead: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  noteAvatar: {
+    width: 24, height: 24, borderRadius: 12, backgroundColor: "#E8ECF2",
+    alignItems: "center", justifyContent: "center",
+  },
+  noteAuthor: { fontSize: 13, fontWeight: "700", color: colors.onSurface },
+  noteWhen: { fontSize: 11, color: colors.onSurfaceMuted, marginLeft: "auto" },
+  noteText: { fontSize: 14, color: colors.onSurface, lineHeight: 20 },
+
+  backBtnFallback: {
+    marginTop: spacing.lg, paddingHorizontal: 16, paddingVertical: 10,
+    borderRadius: radius.md, backgroundColor: colors.brand,
+  },
+  backBtnText: { color: "#fff", fontWeight: "700" },
+});

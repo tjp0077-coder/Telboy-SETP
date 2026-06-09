@@ -63,7 +63,12 @@ export default function ProfileScreen() {
         </View>
       ) : (
         saved.map((s) => (
-          <View key={s.id} style={[styles.savedCard, shadow.card]} testID={`saved-${s.id}`}>
+          <Pressable
+            key={s.id}
+            onPress={() => router.push(`/event/${s.id}`)}
+            style={[styles.savedCard, shadow.card]}
+            testID={`saved-${s.id}`}
+          >
             <View style={styles.savedTimeCol}>
               <Text style={styles.savedDay}>
                 {s.day_label.split(" ")[0]}
@@ -75,13 +80,13 @@ export default function ProfileScreen() {
               <Text style={styles.savedLoc}>{s.location}</Text>
             </View>
             <Pressable
-              onPress={() => toggle(s.id)}
+              onPress={(e) => { e.stopPropagation?.(); toggle(s.id); }}
               hitSlop={10}
               testID={`saved-remove-${s.id}`}
             >
               <Ionicons name="bookmark" size={22} color={colors.brandTertiary} />
             </Pressable>
-          </View>
+          </Pressable>
         ))
       )}
 

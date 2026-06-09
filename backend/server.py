@@ -24,6 +24,7 @@ db = client[os.environ["DB_NAME"]]
 admins_col = db["admins"]
 schedule_col = db["schedule"]
 messages_col = db["live_messages"]
+event_notes_col = db["event_notes"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ["JWT_SECRET_KEY"]
@@ -142,6 +143,18 @@ class MessageCreate(BaseModel):
     text: str
     title: Optional[str] = ""
     priority: str = "info"
+
+
+class EventNote(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    event_id: str
+    text: str
+    author: str
+    created_at: str
+
+
+class EventNoteCreate(BaseModel):
+    text: str
 
 
 # ---------- Seed data ----------
@@ -336,6 +349,14 @@ async def list_schedule():
     return docs
 
 
+@api.get("/schedule/{session_id}", response_model=SessionItem)
+async def get_session(session_id: str):
+    doc = await schedule_col.find_one({"id": session_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Not found")
+    return doc
+
+
 @api.post("/schedule", response_model=SessionItem)
 async def create_session(data: SessionCreate, admin=Depends(get_current_admin)):
     item = SessionItem(**data.dict())
@@ -358,6 +379,41 @@ async def update_session(session_id: str, data: SessionUpdate, admin=Depends(get
 @api.delete("/schedule/{session_id}")
 async def delete_session(session_id: str, admin=Depends(get_current_admin)):
     res = await schedule_col.delete_one({"id": session_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    # cascade — drop the notes attached to this event
+    await event_notes_col.delete_many({"event_id": session_id})
+    return {"deleted": True}
+
+
+# ---------- Per-Event Notes ----------
+@api.get("/schedule/{session_id}/notes", response_model=List[EventNote])
+async def list_event_notes(session_id: str):
+    docs = await event_notes_col.find({"event_id": session_id}, {"_id": 0}).to_list(200)
+    docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+    return docs
+
+
+@api.post("/schedule/{session_id}/notes", response_model=EventNote)
+async def create_event_note(
+    session_id: str, data: EventNoteCreate, admin=Depends(get_current_admin)
+):
+    session = await schedule_col.find_one({"id": session_id}, {"_id": 0})
+    if not session:
+        raise HTTPException(status_code=404, detail="Event not found")
+    note = EventNote(
+        event_id=session_id,
+        text=data.text,
+        author=admin.get("name", admin["username"]),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    await event_notes_col.insert_one(note.dict())
+    return note
+
+
+@api.delete("/schedule/{session_id}/notes/{note_id}")
+async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    res = await event_notes_col.delete_one({"id": note_id, "event_id": session_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}

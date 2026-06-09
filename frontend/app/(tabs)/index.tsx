@@ -144,7 +144,11 @@ export default function ScheduleScreen() {
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
           return (
-            <View style={[styles.card, shadow.card]} testID={`session-card-${item.id}`}>
+            <Pressable
+              onPress={() => router.push(`/event/${item.id}`)}
+              style={[styles.card, shadow.card]}
+              testID={`session-card-${item.id}`}
+            >
               <View style={styles.cardLeft}>
                 <Text style={styles.cardTime}>{item.time}</Text>
                 {item.end_time ? <Text style={styles.cardEndTime}>{item.end_time}</Text> : null}
@@ -163,7 +167,7 @@ export default function ScheduleScreen() {
                 ) : null}
               </View>
               <Pressable
-                onPress={() => toggle(item.id)}
+                onPress={(e) => { e.stopPropagation?.(); toggle(item.id); }}
                 style={styles.favBtn}
                 hitSlop={10}
                 testID={`fav-btn-${item.id}`}
@@ -174,7 +178,7 @@ export default function ScheduleScreen() {
                   color={fav ? colors.brandTertiary : colors.onSurfaceMuted}
                 />
               </Pressable>
-            </View>
+            </Pressable>
           );
         }}
       />
