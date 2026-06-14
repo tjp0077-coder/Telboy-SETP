@@ -15,7 +15,7 @@ import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 import AddSessionSheet from "@/src/components/AddSessionSheet";
 
-const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
+const HERO = require("@/assets/images/brand/hero.jpg");
 
 const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   session: "document-text",
@@ -97,20 +97,6 @@ export default function ScheduleScreen() {
             {/* Hero */}
             <View style={styles.hero}>
               <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
-              <LinearGradient
-                colors={["rgba(18,24,34,0.25)", "rgba(18,24,34,0.9)"]}
-                style={StyleSheet.absoluteFill}
-              />
-              <Image
-                source={require("@/assets/images/brand/badge.png")}
-                style={styles.heroBadge}
-                contentFit="contain"
-              />
-              <View style={styles.heroContent}>
-                <Text style={styles.heroEyebrow}>EDI SETP 2026</Text>
-                <Text style={styles.heroTitle}>26–30 July 2026</Text>
-                <Text style={styles.heroSub}>Welcome, delegate. Plan your symposium.</Text>
-              </View>
             </View>
 
             {/* Day selector chip row */}
@@ -199,7 +185,7 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { height: 220, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
+  hero: { aspectRatio: 1, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
   heroBadge: {
     position: "absolute", top: spacing.md, right: spacing.md,
     width: 78, height: 78,
