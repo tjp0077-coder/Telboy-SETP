@@ -185,7 +185,7 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { aspectRatio: 1, marginBottom: spacing.md, borderRadius: radius.lg, overflow: "hidden" },
+  hero: { aspectRatio: 2, marginBottom: spacing.md, borderRadius: 8, overflow: "hidden", backgroundColor: "#0F1A2E" },
   heroBadge: {
     position: "absolute", top: spacing.md, right: spacing.md,
     width: 78, height: 78,
@@ -196,16 +196,16 @@ const styles = StyleSheet.create({
   heroSub: { color: "#E2DFD8", fontSize: 13, marginTop: 4 },
 
   chipRowWrap: { marginHorizontal: -spacing.lg, marginBottom: spacing.md },
-  chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, gap: spacing.sm },
+  chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, gap: 6 },
   chip: {
-    width: 62, height: 56, borderRadius: radius.md,
+    width: 54, height: 52, borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
     alignItems: "center", justifyContent: "center", flexShrink: 0,
   },
   chipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  chipDay: { fontSize: 10, fontWeight: "700", color: colors.onSurfaceMuted, letterSpacing: 1 },
+  chipDay: { fontSize: 10, fontWeight: "700", color: colors.onSurfaceMuted, letterSpacing: 0.8 },
   chipDayActive: { color: "#D4A373" },
-  chipDate: { fontSize: 20, fontWeight: "700", color: colors.onSurface, marginTop: 2 },
+  chipDate: { fontSize: 18, fontWeight: "700", color: colors.onSurface, marginTop: 2 },
   chipDateActive: { color: "#fff" },
 
   card: {
