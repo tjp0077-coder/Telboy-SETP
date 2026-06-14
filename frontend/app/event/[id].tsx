@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  TextInput, KeyboardAvoidingView, Platform, Alert,
+  TextInput, KeyboardAvoidingView, Platform, Alert, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -54,6 +54,8 @@ export default function EventDetail() {
 
   const [newNote, setNewNote] = useState("");
   const [posting, setPosting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -120,6 +122,23 @@ export default function EventDetail() {
       await api.deleteEventNote(id, noteId);
       setNotes((prev) => prev.filter((n) => n.id !== noteId));
     } catch {}
+  };
+
+  const doDeleteSession = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      await api.deleteSession(id);
+      setConfirmDelete(false);
+      // Clear the cached schedule so the list refreshes on return
+      try {
+        const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+        await AsyncStorage.removeItem("cache:schedule");
+      } catch {}
+      router.back();
+    } catch {
+      setDeleting(false);
+    }
   };
 
   if (loading) {
@@ -285,6 +304,15 @@ export default function EventDetail() {
                 <Text style={styles.btnPrimaryText}>{saving ? "Saving…" : "Save"}</Text>
               </Pressable>
             </View>
+
+            <Pressable
+              onPress={() => setConfirmDelete(true)}
+              style={styles.deleteBtn}
+              testID="edit-delete"
+            >
+              <Ionicons name="trash-outline" size={16} color={colors.error} />
+              <Text style={styles.deleteBtnText}>Delete this session</Text>
+            </Pressable>
           </View>
         )}
 
@@ -353,6 +381,40 @@ export default function EventDetail() {
           ))
         )}
       </ScrollView>
+
+      {/* Confirm delete modal */}
+      <Modal
+        visible={confirmDelete}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setConfirmDelete(false)}
+      >
+        <View style={styles.confirmBackdrop}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>Delete this session?</Text>
+            <Text style={styles.confirmText}>
+              "{event.title}" will be removed from the schedule for everyone. Any notes attached to it will also be deleted. This can't be undone.
+            </Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                onPress={() => setConfirmDelete(false)}
+                style={[styles.btn, styles.btnGhost]}
+                testID="delete-cancel"
+              >
+                <Text style={styles.btnGhostText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={doDeleteSession}
+                disabled={deleting}
+                style={[styles.btn, styles.confirmDanger, deleting && { opacity: 0.5 }]}
+                testID="delete-confirm"
+              >
+                <Text style={styles.btnPrimaryText}>{deleting ? "Deleting…" : "Delete"}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -455,4 +517,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.md, backgroundColor: colors.brand,
   },
   backBtnText: { color: "#fff", fontWeight: "700" },
+
+  deleteBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6,
+    marginTop: spacing.lg, paddingVertical: 12,
+    borderWidth: 1, borderColor: "#F5C0BD", borderRadius: radius.md,
+    backgroundColor: "#FBEDEC",
+  },
+  deleteBtnText: { color: colors.error, fontWeight: "700", fontSize: 13 },
+
+  confirmBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", padding: spacing.lg },
+  confirmCard: { backgroundColor: colors.surfaceSecondary, borderRadius: radius.lg, padding: spacing.xl },
+  confirmTitle: { fontSize: 18, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", textAlign: "center" },
+  confirmText: { fontSize: 13, color: colors.onSurfaceMuted, textAlign: "center", marginTop: spacing.sm, lineHeight: 19 },
+  confirmActions: { flexDirection: "row", gap: spacing.md, marginTop: spacing.lg },
+  confirmDanger: { backgroundColor: colors.error },
 });

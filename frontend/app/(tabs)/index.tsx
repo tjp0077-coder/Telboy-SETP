@@ -13,6 +13,7 @@ import { useFavorites } from "@/src/useFavorites";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
+import AddSessionSheet from "@/src/components/AddSessionSheet";
 
 const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
 
@@ -39,6 +40,7 @@ export default function ScheduleScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const { favorites, toggle } = useFavorites();
   const { auth } = useAuth();
 
@@ -239,8 +241,10 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.onSurfaceMuted },
 
   fab: {
-    position: "absolute", right: spacing.lg, width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.brandTertiary, alignItems: "center", justifyContent: "center",
+    position: "absolute", right: spacing.lg, height: 48, paddingHorizontal: 16,
+    borderRadius: 24, backgroundColor: "#F2C265",
+    flexDirection: "row", alignItems: "center", gap: 6,
     ...shadow.raised,
   },
+  fabText: { color: "#1A2841", fontWeight: "800", fontSize: 13 },
 });
