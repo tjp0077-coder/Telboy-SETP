@@ -135,6 +135,13 @@ export const api = {
   deleteContact: (id: string) =>
     request<{ deleted: boolean }>(`/contact/${id}`, { method: "DELETE" }, true),
 
+  // admins (committee management)
+  listAdmins: () => request<AdminInfo[]>("/admins", {}, true),
+  createAdmin: (data: { username: string; name: string; password: string }) =>
+    request<AdminInfo>("/admins", { method: "POST", body: JSON.stringify(data) }, true),
+  deleteAdmin: (username: string) =>
+    request<{ deleted: boolean }>(`/admins/${username}`, { method: "DELETE" }, true),
+
   // auth
   login: (username: string, password: string) =>
     request<{ access_token: string; username: string; name: string }>("/auth/login", {

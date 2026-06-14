@@ -115,6 +115,15 @@ export default function ProfileScreen() {
             <Text style={styles.inboxBtnText}>Open inbox</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
+          <Pressable
+            onPress={() => router.push("/admins")}
+            style={styles.inboxBtn}
+            testID="open-admins-btn"
+          >
+            <Ionicons name="people" size={18} color={colors.brand} />
+            <Text style={styles.inboxBtnText}>Manage committee</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
+          </Pressable>
           <Pressable onPress={logout} style={styles.logoutBtn} testID="logout-btn">
             <Ionicons name="log-out-outline" size={18} color={colors.error} />
             <Text style={styles.logoutText}>Sign out</Text>

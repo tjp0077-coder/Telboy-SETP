@@ -34,6 +34,7 @@ export default function RootLayout() {
               <Stack.Screen name="event/[id]" />
               <Stack.Screen name="contact" />
               <Stack.Screen name="inbox" />
+              <Stack.Screen name="admins" />
             </Stack>
           </FavoritesProvider>
         </AuthProvider>

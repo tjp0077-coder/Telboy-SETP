@@ -97,6 +97,12 @@ class AdminOut(BaseModel):
     role: str = "admin"
 
 
+class AdminCreate(BaseModel):
+    username: str
+    name: str
+    password: str
+
+
 class SessionItem(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     date: str            # e.g. "2026-07-27"
@@ -371,6 +377,52 @@ async def login(data: LoginIn):
 @api.get("/auth/me", response_model=AdminOut)
 async def me(admin=Depends(get_current_admin)):
     return AdminOut(username=admin["username"], name=admin.get("name", admin["username"]))
+
+
+# ---------- Admin Management ----------
+@api.get("/admins", response_model=List[AdminOut])
+async def list_admins(admin=Depends(get_current_admin)):
+    docs = await admins_col.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    docs.sort(key=lambda d: d.get("created_at", ""))
+    return [AdminOut(username=d["username"], name=d.get("name", d["username"])) for d in docs]
+
+
+@api.post("/admins", response_model=AdminOut, status_code=201)
+async def create_admin(data: AdminCreate, admin=Depends(get_current_admin)):
+    username = data.username.strip().lower()
+    name = data.name.strip()
+    password = data.password
+    if not username or not name or not password:
+        raise HTTPException(status_code=400, detail="username, name and password are required")
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if " " in username:
+        raise HTTPException(status_code=400, detail="Username cannot contain spaces")
+    existing = await admins_col.find_one({"username": username})
+    if existing:
+        raise HTTPException(status_code=409, detail="Username already exists")
+    await admins_col.insert_one({
+        "username": username,
+        "name": name,
+        "password_hash": hash_pw(password),
+        "role": "admin",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    })
+    return AdminOut(username=username, name=name)
+
+
+@api.delete("/admins/{username}")
+async def delete_admin(username: str, admin=Depends(get_current_admin)):
+    target = username.strip().lower()
+    if target == admin["username"]:
+        raise HTTPException(status_code=400, detail="You can't remove your own account")
+    total = await admins_col.count_documents({})
+    if total <= 1:
+        raise HTTPException(status_code=400, detail="At least one admin must remain")
+    res = await admins_col.delete_one({"username": target})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Admin not found")
+    return {"deleted": True}
 
 
 # ---------- Schedule ----------
