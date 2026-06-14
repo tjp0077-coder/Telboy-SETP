@@ -78,7 +78,7 @@ export default function CityGuideScreen() {
         {data.essentials.map((e: any) => (
           <View key={e.title} style={[styles.gridCard, shadow.card]} testID={`essential-${e.title}`}>
             <View style={styles.gridIcon}>
-              <Ionicons name={ESSENTIAL_ICONS[e.icon] || "information-circle"} size={20} color={colors.brand} />
+              <Ionicons name={ESSENTIAL_ICONS[e.icon] || "information-circle"} size={26} color={colors.brand} />
             </View>
             <Text style={styles.gridTitle}>{e.title}</Text>
             <Text style={styles.gridDesc}>{e.summary}</Text>
@@ -95,7 +95,7 @@ export default function CityGuideScreen() {
         <View key={t.name} style={[styles.transportCard, shadow.card]} testID={`transport-${t.name}`}>
           <View style={styles.transportHead}>
             <View style={styles.transportIconWrap}>
-              <Ionicons name={TRANSPORT_ICONS[t.icon] || "navigate"} size={22} color={colors.brand} />
+              <Ionicons name={TRANSPORT_ICONS[t.icon] || "navigate"} size={28} color={colors.brand} />
             </View>
             <Text style={styles.transportName}>{t.name}</Text>
           </View>
@@ -104,6 +104,16 @@ export default function CityGuideScreen() {
             <Ionicons name="bulb" size={14} color={colors.brandTertiary} />
             <Text style={styles.tipText}>{t.tip}</Text>
           </View>
+          {t.url ? (
+            <Pressable
+              onPress={() => Linking.openURL(t.url).catch(() => {})}
+              style={styles.linkBtn}
+              testID={`transport-link-${t.name}`}
+            >
+              <Ionicons name="open-outline" size={14} color="#fff" />
+              <Text style={styles.linkBtnText}>Visit website</Text>
+            </Pressable>
+          ) : null}
         </View>
       ))}
 
@@ -169,7 +179,7 @@ const styles = StyleSheet.create({
     padding: spacing.md, borderRadius: radius.md, minHeight: 130,
   },
   gridIcon: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8ECF2",
+    width: 44, height: 44, borderRadius: 22, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center", marginBottom: spacing.sm,
   },
   gridTitle: { fontSize: 14, fontWeight: "700", color: colors.onSurface, marginBottom: 2 },
@@ -184,7 +194,7 @@ const styles = StyleSheet.create({
   },
   transportHead: { flexDirection: "row", alignItems: "center", gap: spacing.sm, marginBottom: spacing.sm },
   transportIconWrap: {
-    width: 36, height: 36, borderRadius: 18, backgroundColor: "#E8ECF2",
+    width: 44, height: 44, borderRadius: 22, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center",
   },
   transportName: { fontSize: 16, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
@@ -194,6 +204,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#FBF1E5", padding: spacing.sm, borderRadius: radius.sm, marginTop: spacing.sm,
   },
   tipText: { flex: 1, fontSize: 12, color: "#7A4416", lineHeight: 17 },
+
+  linkBtn: {
+    alignSelf: "flex-start", flexDirection: "row", alignItems: "center", gap: 6,
+    backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: radius.pill, marginTop: spacing.sm,
+  },
+  linkBtnText: { color: "#fff", fontSize: 12, fontWeight: "700" },
 
   phrasesCard: {
     marginHorizontal: spacing.lg, backgroundColor: colors.surfaceSecondary,

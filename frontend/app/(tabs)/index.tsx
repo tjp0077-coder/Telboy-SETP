@@ -148,13 +148,13 @@ export default function ScheduleScreen() {
                 <Text style={styles.cardTime}>{item.time}</Text>
                 {item.end_time ? <Text style={styles.cardEndTime}>{item.end_time}</Text> : null}
                 <View style={[styles.catDot, { backgroundColor: cColor }]}>
-                  <Ionicons name={cIcon} size={12} color="#fff" />
+                  <Ionicons name={cIcon} size={14} color="#fff" />
                 </View>
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
                 <View style={styles.cardMeta}>
-                  <Ionicons name="location" size={13} color={colors.onSurfaceMuted} />
+                  <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
                 </View>
                 {item.description ? (
@@ -169,7 +169,7 @@ export default function ScheduleScreen() {
               >
                 <Ionicons
                   name={fav ? "bookmark" : "bookmark-outline"}
-                  size={22}
+                  size={26}
                   color={fav ? colors.brandTertiary : colors.onSurfaceMuted}
                 />
               </Pressable>
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   cardLeft: { width: 64, alignItems: "flex-start" },
   cardTime: { fontSize: 16, fontWeight: "700", color: colors.brand, fontFamily: "Georgia" },
   cardEndTime: { fontSize: 11, color: colors.onSurfaceMuted, marginTop: 2 },
-  catDot: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center", marginTop: 8 },
+  catDot: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", marginTop: 8 },
   cardBody: { flex: 1, paddingHorizontal: spacing.sm },
   cardTitle: { fontSize: 15, fontWeight: "600", color: colors.onSurface, lineHeight: 20 },
   cardMeta: { flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 },

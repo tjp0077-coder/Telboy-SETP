@@ -111,18 +111,18 @@ export default function ProfileScreen() {
             style={styles.inboxBtn}
             testID="open-inbox-btn"
           >
-            <Ionicons name="mail-open" size={18} color={colors.brand} />
+            <Ionicons name="mail-open" size={22} color={colors.brand} />
             <Text style={styles.inboxBtnText}>Open inbox</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
+            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
           <Pressable
             onPress={() => router.push("/admins")}
             style={styles.inboxBtn}
             testID="open-admins-btn"
           >
-            <Ionicons name="people" size={18} color={colors.brand} />
+            <Ionicons name="people" size={22} color={colors.brand} />
             <Text style={styles.inboxBtnText}>Manage committee</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
+            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
           <Pressable onPress={logout} style={styles.logoutBtn} testID="logout-btn">
             <Ionicons name="log-out-outline" size={18} color={colors.error} />
@@ -136,13 +136,13 @@ export default function ProfileScreen() {
           testID="admin-login-btn"
         >
           <View style={styles.loginIcon}>
-            <Ionicons name="key" size={20} color={colors.brand} />
+            <Ionicons name="key" size={24} color={colors.brand} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.loginTitle}>Admin sign-in</Text>
             <Text style={styles.loginSub}>For symposium staff only</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+          <Ionicons name="chevron-forward" size={22} color={colors.onSurfaceMuted} />
         </Pressable>
       )}
 
@@ -154,13 +154,13 @@ export default function ProfileScreen() {
         testID="contact-admin-btn"
       >
         <View style={[styles.loginIcon, { backgroundColor: "#FBF1E5" }]}>
-          <Ionicons name="mail" size={20} color={colors.brandTertiary} />
+          <Ionicons name="mail" size={24} color={colors.brandTertiary} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.loginTitle}>Contact organisers</Text>
           <Text style={styles.loginSub}>Send a question or report an issue</Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+        <Ionicons name="chevron-forward" size={22} color={colors.onSurfaceMuted} />
       </Pressable>
 
       <View style={styles.footerWrap}>
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary,
   },
   loginIcon: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: "#E8ECF2",
+    width: 48, height: 48, borderRadius: 24, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center",
   },
   loginTitle: { fontSize: 15, fontWeight: "700", color: colors.onSurface },
