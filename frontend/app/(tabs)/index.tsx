@@ -100,12 +100,7 @@ export default function ScheduleScreen() {
             </View>
 
             {/* Day selector chip row */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRow}
-              style={styles.chipRowWrap}
-            >
+            <View style={styles.chipRow}>
               {days.map((d) => {
                 const active = d.date === activeDate;
                 const [, , dd] = d.date.split("-");
@@ -125,7 +120,7 @@ export default function ScheduleScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
+            </View>
           </View>
         }
         ListEmptyComponent={
@@ -195,12 +190,16 @@ const styles = StyleSheet.create({
   heroTitle: { color: "#fff", fontSize: 28, fontWeight: "700", fontFamily: "Georgia" },
   heroSub: { color: "#E2DFD8", fontSize: 13, marginTop: 4 },
 
-  chipRowWrap: { marginHorizontal: -spacing.lg, marginBottom: spacing.md },
-  chipRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.xs, gap: 6 },
+  chipRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.md,
+  },
   chip: {
-    width: 54, height: 52, borderRadius: radius.md,
+    flex: 1, marginHorizontal: 3, height: 50, borderRadius: radius.md,
     backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
-    alignItems: "center", justifyContent: "center", flexShrink: 0,
+    alignItems: "center", justifyContent: "center",
   },
   chipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
   chipDay: { fontSize: 10, fontWeight: "700", color: colors.onSurfaceMuted, letterSpacing: 0.8 },
