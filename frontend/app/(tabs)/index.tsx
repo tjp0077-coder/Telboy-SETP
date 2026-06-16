@@ -131,7 +131,7 @@ export default function ScheduleScreen() {
           </View>
         }
         ListFooterComponent={
-          <VideoCard embedUrl="https://www.youtube.com/embed/c7PxM-KpZc8" />
+          <VideoCard source="https://customer-assets.emergentagent.com/job_delegate-hub-ed/artifacts/o6n8v58q_SETP%20EDI%202026.mov" />
         }
         renderItem={({ item }) => {
           const fav = favorites.has(item.id);
