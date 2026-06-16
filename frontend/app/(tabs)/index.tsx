@@ -14,7 +14,6 @@ import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 import AddSessionSheet from "@/src/components/AddSessionSheet";
-import VideoCard from "@/src/components/VideoCard";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
 
@@ -129,9 +128,6 @@ export default function ScheduleScreen() {
             <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
             <Text style={styles.emptyText}>No sessions for this day</Text>
           </View>
-        }
-        ListFooterComponent={
-          <VideoCard source="https://customer-assets.emergentagent.com/job_delegate-hub-ed/artifacts/o6n8v58q_SETP%20EDI%202026.mov" />
         }
         renderItem={({ item }) => {
           const fav = favorites.has(item.id);
