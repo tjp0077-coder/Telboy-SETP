@@ -66,13 +66,25 @@ export default function CityGuideScreen() {
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.heroContent}>
-          <Text style={styles.heroEyebrow}>FOR AMERICAN DELEGATES</Text>
+          <Text style={styles.heroEyebrow}>FOR DELEGATES</Text>
           <Text style={styles.heroTitle}>{data.hero.title}</Text>
           <Text style={styles.heroSub}>{data.hero.subtitle}</Text>
         </View>
       </View>
 
       {/* Essentials grid */}
+      <Pressable
+        onPress={() => Linking.openURL("https://www.a1kilthire.co.uk/index").catch(() => {})}
+        style={styles.kiltBanner}
+        testID="kilt-hire-banner"
+      >
+        <Image
+          source={require("@/assets/images/brand/kilthire.jpg")}
+          style={styles.kiltImage}
+          contentFit="cover"
+        />
+      </Pressable>
+
       <Text style={styles.sectionTitle}>The Essentials</Text>
       <View style={styles.grid}>
         {data.essentials.map((e: any) => (
@@ -172,6 +184,13 @@ const styles = StyleSheet.create({
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: onSunset.primary,
     paddingHorizontal: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.md,
   },
+
+  kiltBanner: {
+    marginHorizontal: spacing.lg, marginTop: spacing.xl, borderRadius: radius.md,
+    overflow: "hidden", backgroundColor: "#000",
+    ...shadow.card,
+  },
+  kiltImage: { width: "100%", aspectRatio: 1080 / 500 },
 
   grid: { flexDirection: "row", flexWrap: "wrap", paddingHorizontal: spacing.lg - 4, gap: 0 },
   gridCard: {

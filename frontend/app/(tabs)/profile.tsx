@@ -171,7 +171,7 @@ export default function ProfileScreen() {
         />
         <Text style={styles.footnote}>
           EDI SETP 2026 · v1.0{"\n"}
-          Built for American delegates with ❤
+          Built for delegates with ❤
         </Text>
       </View>
     </ScrollView>
