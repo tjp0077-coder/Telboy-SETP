@@ -8,6 +8,7 @@ const KEY = "setp_messages_last_read_at";
 type Ctx = {
   unreadCount: number;
   markAllRead: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const UnreadCtx = createContext<Ctx | null>(null);
@@ -65,7 +66,7 @@ export const UnreadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   return (
-    <UnreadCtx.Provider value={{ unreadCount, markAllRead }}>
+    <UnreadCtx.Provider value={{ unreadCount, markAllRead, refresh }}>
       {children}
     </UnreadCtx.Provider>
   );

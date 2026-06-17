@@ -5,7 +5,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { api, FeedItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
@@ -24,7 +24,7 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { auth } = useAuth();
-  const { markAllRead } = useUnread();
+  const { markAllRead, refresh: refreshUnread } = useUnread();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -46,7 +46,14 @@ export default function MessagesScreen() {
     }
   }, []);
 
-  useEffect(() => { load(); markAllRead(); }, [load, markAllRead]);
+  useEffect(() => { load(); }, [load]);
+
+  // Mark all read every time the user focuses this tab (not just first mount).
+  useFocusEffect(
+    useCallback(() => {
+      markAllRead();
+    }, [markAllRead])
+  );
 
   const post = async () => {
     if (!text.trim()) return;
@@ -55,8 +62,10 @@ export default function MessagesScreen() {
       await api.createMessage({ text: text.trim(), title: title.trim(), priority });
       setText(""); setTitle(""); setPriority("info");
       setComposeOpen(false);
-      load();
-      markAllRead();
+      await load();
+      // Light up the unread dot for the author too (so they know it posted).
+      // The dot will auto-clear next time they re-focus this tab.
+      await refreshUnread();
     } catch {} finally { setPosting(false); }
   };
 
