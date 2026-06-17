@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { AuthProvider } from "@/src/AuthContext";
 import { FavoritesProvider } from "@/src/useFavorites";
+import { UnreadProvider } from "@/src/UnreadContext";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,15 +28,17 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <AuthProvider>
           <FavoritesProvider>
-            <StatusBar style="dark" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="login" options={{ presentation: "modal" }} />
-              <Stack.Screen name="event/[id]" />
-              <Stack.Screen name="contact" />
-              <Stack.Screen name="inbox" />
-              <Stack.Screen name="admins" />
-            </Stack>
+            <UnreadProvider>
+              <StatusBar style="dark" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="login" options={{ presentation: "modal" }} />
+                <Stack.Screen name="event/[id]" />
+                <Stack.Screen name="contact" />
+                <Stack.Screen name="inbox" />
+                <Stack.Screen name="admins" />
+              </Stack>
+            </UnreadProvider>
           </FavoritesProvider>
         </AuthProvider>
       </SafeAreaProvider>

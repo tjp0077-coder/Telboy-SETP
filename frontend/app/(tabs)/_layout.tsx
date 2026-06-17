@@ -2,9 +2,11 @@ import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useUnread } from "@/src/UnreadContext";
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { unreadCount } = useUnread();
   const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
   const tabHeight = 72 + bottomPad;
 
@@ -52,6 +54,16 @@ export default function TabLayout() {
           title: "Messages",
           tabBarTestID: "tab-messages",
           tabBarIcon: ({ color }) => <Ionicons name="megaphone" size={28} color={color} />,
+          tabBarBadge: unreadCount > 0 ? " " : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: "#E63946",
+            minWidth: 10,
+            maxWidth: 10,
+            height: 10,
+            borderRadius: 5,
+            marginLeft: -4,
+            marginTop: 4,
+          },
         }}
       />
       <Tabs.Screen

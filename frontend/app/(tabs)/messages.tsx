@@ -10,6 +10,7 @@ import { api, FeedItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
+import { useUnread } from "@/src/UnreadContext";
 
 const PRIORITY_STYLE: Record<string, { bg: string; tint: string; label: string }> = {
   info: { bg: "#E8ECF2", tint: colors.info, label: "INFO" },
@@ -23,6 +24,7 @@ export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { auth } = useAuth();
+  const { markAllRead } = useUnread();
   const [items, setItems] = useState<FeedItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +46,7 @@ export default function MessagesScreen() {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); markAllRead(); }, [load, markAllRead]);
 
   const post = async () => {
     if (!text.trim()) return;
@@ -54,6 +56,7 @@ export default function MessagesScreen() {
       setText(""); setTitle(""); setPriority("info");
       setComposeOpen(false);
       load();
+      markAllRead();
     } catch {} finally { setPosting(false); }
   };
 
