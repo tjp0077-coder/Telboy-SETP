@@ -645,7 +645,7 @@ async def city_guide():
     return {
         "hero": {
             "title": "Welcome to Edinburgh",
-            "subtitle": "A pilot's guide for delegates",
+            "subtitle": "Symposium quick guide",
         },
         "essentials": [
             {"icon": "currency-pound", "title": "Currency",
