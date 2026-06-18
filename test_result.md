@@ -101,3 +101,18 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+## Project: EDI SETP 2026 — Symposium Hub (imported from GitHub: Telboy-SETP)
+user_problem_statement: |
+  Mobile companion app for SETP Test Pilot Symposium Edinburgh (Jul 2026).
+  Goal: deliver to delegates via a SINGLE QR CODE and push design updates
+  seamlessly while deployed → deploy as installable PWA (web).
+
+## Work done (main agent):
+##  - Imported Telboy-SETP repo, installed deps, services running (backend+expo+mongo).
+##  - Fixed Expo Metro crash: forced ws@8 via package.json "resolutions" (repo had ws@7).
+##  - PWA already configured (manifest, sw.js, icons, +html.tsx). Verified all assets serve 200.
+##  - Improved service worker (v2): HTML navigation now NETWORK-FIRST so design updates
+##    appear immediately after redeploy; immutable hashed assets stay cache-first; API network-first.
+##  - Verified Home + Schedule render correctly. Backend APIs returning 200.
+## Note: bcrypt version-read warning in backend logs is non-fatal (login returns 200).
+## Next: user deploys via Emergent Deploy button → public URL → generate QR for delegates.

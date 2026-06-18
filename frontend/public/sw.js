@@ -7,7 +7,7 @@
  *   Other requests pass through.
  */
 
-const VERSION = "v1";
+const VERSION = "v2";
 const APP_SHELL_CACHE = `setp2026-shell-${VERSION}`;
 const RUNTIME_CACHE   = `setp2026-runtime-${VERSION}`;
 const API_CACHE       = `setp2026-api-${VERSION}`;
@@ -90,6 +90,27 @@ self.addEventListener("fetch", (event) => {
 
   // Never touch non-GET — let auth/posts pass through.
   if (req.method !== "GET") return;
+
+  // ── HTML navigation: network-first so design/code updates appear
+  //    immediately after a redeploy. Falls back to cached shell offline.
+  if (req.mode === "navigate") {
+    event.respondWith(
+      (async () => {
+        try {
+          const fresh = await fetch(req, { cache: "no-store" });
+          const cache = await caches.open(APP_SHELL_CACHE);
+          cache.put("/", fresh.clone());
+          return fresh;
+        } catch (e) {
+          const cached =
+            (await caches.match(req)) || (await caches.match("/"));
+          if (cached) return cached;
+          return new Response("Offline", { status: 503 });
+        }
+      })()
+    );
+    return;
+  }
 
   // ── API GET: network-first, cache fallback ───────────────
   if (isApiGet(req, url)) {
