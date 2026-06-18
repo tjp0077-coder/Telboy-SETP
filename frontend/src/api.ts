@@ -95,6 +95,32 @@ export type EventNote = {
 
 export type AdminInfo = { username: string; name: string; role: string };
 
+// Aggregated comms feed item (global messages + event notes)
+export type FeedItem = {
+  kind: "message" | "event_note";
+  id: string;
+  text: string;
+  title?: string;
+  priority?: "info" | "alert" | "schedule_change" | null;
+  author?: string;
+  created_at: string;
+  event_id?: string | null;
+  event_title?: string | null;
+};
+
+// Contact form submission (admin inbox)
+export type ContactItem = {
+  id: string;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  created_at: string;
+  read: boolean;
+  event_id?: string | null;
+  event_title?: string | null;
+};
+
 export const api = {
   // schedule
   listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
