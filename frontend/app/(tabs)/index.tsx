@@ -1,77 +1,197 @@
-import React from "react";
-import { View, StyleSheet, Platform } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Modal,
+  Platform,
+  Dimensions,
+  ActivityIndicator,
+  StatusBar,
+  Text,
+} from "react-native";
 import { Image } from "expo-image";
-import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import VimeoTeaser from "@/src/components/VimeoTeaser";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
 
-const HERO = require("@/assets/images/brand/hero.jpg");
-const SETP_LOGO = require("@/assets/images/brand/setpx.png");
+// Conditionally require WebView so the web bundle doesn't crash.
+let WebView: any = null;
+if (Platform.OS !== "web") {
+  try {
+    WebView = require("react-native-webview").WebView;
+  } catch {
+    WebView = null;
+  }
+}
+
+const HOME_BG = require("@/assets/images/brand/home_bg.png");
+
+const VIMEO_ID = "1202537119";
+const VIMEO_PLAYER_URL = `https://player.vimeo.com/video/${VIMEO_ID}?autoplay=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1`;
+const ASPECT = 240 / 360; // portrait 2:3
 
 /**
  * Welcome / Home screen.
- *  - Full-bleed scenic hero filling roughly the top two-thirds of the screen
- *  - Gold SETP "X" logo centred between hero and video
- *  - Landscape-cropped Vimeo thumbnail above the tab bar (fixed, no scroll)
- *  - Tapping the thumbnail opens the portrait full-screen modal player
+ *  - Full-bleed background image (the new SETP Edinburgh poster)
+ *  - Single floating play button centred on the screen
+ *  - Tapping the play button opens the portrait full-screen modal player
+ *  - Fixed layout, no scroll
  */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
+  const [open, setOpen] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
+  const progress = useSharedValue(0);
+
+  const { width: winW, height: winH } = Dimensions.get("window");
+
+  // Fullscreen video target size (portrait, fits within safe-area window)
+  const fsAvailW = winW - 24;
+  const fsAvailH = winH - insets.top - insets.bottom - 24;
+  let fsHeight = fsAvailH;
+  let fsWidth = fsHeight * ASPECT;
+  if (fsWidth > fsAvailW) {
+    fsWidth = fsAvailW;
+    fsHeight = fsWidth / ASPECT;
+  }
+
+  // Starting size for the expanding-from-button effect (small circle)
+  const startSize = 84;
+
+  const openVideo = () => {
+    setOpen(true);
+    setPlayerReady(false);
+    progress.value = withTiming(1, {
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+    });
+  };
+
+  const closeVideo = () => {
+    progress.value = withTiming(
+      0,
+      { duration: 250, easing: Easing.inOut(Easing.ease) },
+      (finished) => {
+        if (finished) runOnJS(setOpen)(false);
+      }
+    );
+  };
+
+  const playerAnimStyle = useAnimatedStyle(() => {
+    const w = startSize + (fsWidth - startSize) * progress.value;
+    const h = startSize + (fsHeight - startSize) * progress.value;
+    const radius = 42 - 42 * progress.value + 14 * progress.value;
+    return {
+      width: w,
+      height: h,
+      borderRadius: radius,
+    };
+  });
+
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
 
   return (
     <View style={styles.screen} testID="home-welcome-screen">
-      {/* Hero — full-bleed, fills the top section of the screen */}
-      <View style={[styles.hero]}>
-        <Image
-          source={HERO}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          contentPosition="center"
-        />
-        {/* Soft dark gradient at the bottom edge of the hero for a smooth blend */}
-        <LinearGradient
-          colors={["transparent", "rgba(15,26,46,0.0)", "rgba(15,26,46,0.85)"]}
-          locations={[0, 0.55, 1]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+      {/* Full-bleed background image */}
+      <Image
+        source={HOME_BG}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        contentPosition="center"
+        transition={150}
+      />
+
+      {/* Single floating play button — centred on the screen */}
+      <View style={styles.center} pointerEvents="box-none">
+        <Pressable
+          onPress={openVideo}
+          accessibilityRole="button"
+          accessibilityLabel="Play SETP 2026 teaser video"
+          style={styles.playRing}
+          testID="home-play-btn"
+          hitSlop={12}
+        >
+          <Ionicons name="play" size={42} color="#FFFFFF" style={{ marginLeft: 5 }} />
+        </Pressable>
       </View>
 
-      {/* SETP X logo — sits across the hero/video boundary */}
-      <View pointerEvents="none" style={[styles.logoWrap, { top: insets.top + 0 }]}>
-        <View style={styles.logoSlot}>
-          <Image
-            source={SETP_LOGO}
-            style={styles.logoImg}
-            contentFit="contain"
-            transition={200}
-          />
+      {/* ─── Fullscreen modal player ─────────────────────────────────── */}
+      <Modal
+        visible={open}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeVideo}
+      >
+        <View style={styles.modalRoot}>
+          <Animated.View
+            style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropAnimStyle]}
+          >
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={closeVideo} />
+          </Animated.View>
+
+          <View style={styles.modalCenter} pointerEvents="box-none">
+            <Animated.View style={[styles.videoBox, playerAnimStyle]}>
+              {Platform.OS === "web" ? (
+                // @ts-ignore - native DOM element via react-native-web
+                <iframe
+                  src={VIMEO_PLAYER_URL}
+                  style={{ width: "100%", height: "100%", border: 0, borderRadius: 14 }}
+                  allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+                  title="SETP 2026 Teaser"
+                />
+              ) : WebView ? (
+                <>
+                  <WebView
+                    source={{ uri: VIMEO_PLAYER_URL }}
+                    style={{ flex: 1, backgroundColor: "#000", borderRadius: 14 }}
+                    javaScriptEnabled
+                    domStorageEnabled
+                    allowsFullscreenVideo
+                    allowsInlineMediaPlayback
+                    mediaPlaybackRequiresUserAction={true}
+                    onLoadEnd={() => setPlayerReady(true)}
+                  />
+                  {!playerReady && (
+                    <View style={styles.videoLoading} pointerEvents="none">
+                      <ActivityIndicator color="#F2C265" size="large" />
+                    </View>
+                  )}
+                </>
+              ) : (
+                <View style={styles.videoLoading}>
+                  <Text style={{ color: "#fff" }}>Player unavailable</Text>
+                </View>
+              )}
+            </Animated.View>
+          </View>
+
+          <Pressable
+            onPress={closeVideo}
+            hitSlop={12}
+            style={[styles.shrinkBtn, { top: insets.top + 12 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Close video"
+            testID="home-shrink-btn"
+          >
+            <Ionicons name="contract" size={18} color="#1A2841" />
+            <Text style={styles.shrinkBtnText}>Shrink Back</Text>
+          </Pressable>
+
+          {Platform.OS === "android" && open ? (
+            <StatusBar hidden={false} translucent backgroundColor="rgba(0,0,0,0.85)" />
+          ) : null}
         </View>
-      </View>
-
-      {/* Bottom area — landscape video thumbnail just above the tab bar */}
-      <View
-        style={[
-          styles.bottomArea,
-          { paddingBottom: tabBarHeight + 14, paddingTop: 12 },
-        ]}
-      >
-        <VimeoTeaser inline landscapeThumb />
-      </View>
-
-      {/* Tartan decorative strip just above the tab bar */}
-      <View
-        pointerEvents="none"
-        style={[styles.tartanBand, { bottom: tabBarHeight - 6 }]}
-      >
-        <LinearGradient
-          colors={["#1A2841", "#2E1A33", "#5C2A2A", "#2E1A33", "#1A2841"]}
-          start={{ x: 0, y: 0.5 }}
-          end={{ x: 1, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-        />
-      </View>
+      </Modal>
     </View>
   );
 }
@@ -81,56 +201,70 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0F1A2E",
   },
-  hero: {
-    // Hero fills roughly the top half of the screen, edge-to-edge.
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: "58%",
-    backgroundColor: "#0F1A2E",
-  },
-  logoWrap: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    alignItems: "center",
-    // We let the logo sit roughly at the hero/video boundary.
-    // Use a flex container the height of the upper section.
-    height: "62%",
-    justifyContent: "flex-end",
-  },
-  logoSlot: {
-    width: 132,
-    height: 132,
+  center: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: -28, // overlap into the video area
-    shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 8,
   },
-  logoImg: {
-    width: "100%",
-    height: "100%",
-  },
-  bottomArea: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    top: "58%",
-    paddingHorizontal: 16,
+  playRing: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "#3C284C",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.95)",
+    shadowColor: "#000",
+    shadowOpacity: 0.55,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 14,
+    elevation: 10,
   },
-  tartanBand: {
+
+  // Modal
+  modalRoot: { flex: 1 },
+  backdrop: { backgroundColor: "rgba(0, 0, 0, 0.85)" },
+  modalCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  videoBox: {
+    overflow: "hidden",
+    backgroundColor: "#000",
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  videoLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0F1A2E",
+  },
+  shrinkBtn: {
     position: "absolute",
-    left: 0,
-    right: 0,
-    height: 6,
-    opacity: 0.85,
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F2C265",
+    borderRadius: 22,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  shrinkBtnText: {
+    color: "#1A2841",
+    fontWeight: "800",
+    fontSize: 12,
+    letterSpacing: 0.4,
   },
 });
