@@ -8,12 +8,13 @@ export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { unreadCount } = useUnread();
   const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
-  const tabHeight = 72 + bottomPad;
+  const tabHeight = 64 + bottomPad;
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarShowLabel: false,
         tabBarActiveTintColor: "#F2C265",
         tabBarInactiveTintColor: "rgba(245,240,230,0.78)",
         tabBarStyle: {
@@ -28,15 +29,7 @@ export default function TabLayout() {
           paddingVertical: 0,
         },
         tabBarIconStyle: {
-          marginBottom: 2,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: "700",
-          letterSpacing: 0.3,
-          marginTop: 0,
-          marginBottom: 4,
-          includeFontPadding: false,
+          marginBottom: 0,
         },
       }}
     >

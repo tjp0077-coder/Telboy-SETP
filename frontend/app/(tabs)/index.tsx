@@ -63,7 +63,7 @@ export default function HomeScreen() {
   }
 
   // Starting size for the expanding-from-button effect (small circle)
-  const startSize = 84;
+  const startSize = 72;
 
   const openVideo = () => {
     setOpen(true);
@@ -120,7 +120,7 @@ export default function HomeScreen() {
           testID="home-play-btn"
           hitSlop={12}
         >
-          <Ionicons name="play" size={42} color="#FFFFFF" style={{ marginLeft: 5 }} />
+          <Ionicons name="play" size={32} color="#FFFFFF" style={{ marginLeft: 4 }} />
         </Pressable>
       </View>
 
@@ -207,9 +207,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playRing: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     backgroundColor: "#3C284C",
     alignItems: "center",
     justifyContent: "center",
