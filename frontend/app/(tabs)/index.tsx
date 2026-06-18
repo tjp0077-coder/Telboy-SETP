@@ -42,6 +42,7 @@ export default function ScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [mode, setMode] = useState<"highlights" | "schedule">("highlights");
   const { favorites, toggle } = useFavorites();
   const { auth } = useAuth();
 
@@ -66,10 +67,20 @@ export default function ScheduleScreen() {
     return Array.from(map.entries()).map(([date, label]) => ({ date, label }));
   }, [items]);
 
-  const filtered = useMemo(
-    () => items.filter((i) => i.date === activeDate),
-    [items, activeDate]
+  // The "Welcome Reception" frame on 26 July — hidden on the Highlights page
+  // so the video can occupy the bottom area.
+  const isReceptionCard = useCallback(
+    (it: SessionItem) =>
+      it.date === "2026-07-26" &&
+      (it.title || "").toLowerCase().includes("welcome reception"),
+    []
   );
+
+  const filtered = useMemo(() => {
+    const sameDay = items.filter((i) => i.date === activeDate);
+    if (mode === "highlights") return sameDay.filter((i) => !isReceptionCard(i));
+    return sameDay;
+  }, [items, activeDate, mode, isReceptionCard]);
 
   if (loading) {
     return (
@@ -81,12 +92,21 @@ export default function ScheduleScreen() {
 
   // Bottom area reservation:
   //  - tab bar takes ~72 + safe area inset
-  //  - thumbnail (2:3 portrait, capped at 32% of screen height)
-  //  - 12px gap above tab bar + 12px above schedule list
+  //  - On "Highlights" the video grows to fill the gap above the tab bar
+  //  - On "Schedule" no video is shown
   const winH = Dimensions.get("window").height;
+  const winW = Dimensions.get("window").width;
   const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
-  const thumbHeight = Math.min(winH * 0.32, (Dimensions.get("window").width * 3) / 2);
-  const listBottomPad = tabBarHeight + thumbHeight + 24;
+  // approx top reservation: top safe inset + hero + segmented + chips + paddings.
+  // Clamp the hero contribution so very wide preview viewports (where hero
+  // aspectRatio 2 would otherwise dominate) still leave room for the video.
+  const heroH = Math.min(winW / 2, winH * 0.28);
+  const segmentedH = 44;
+  const chipsH = 50 + 8;
+  const topReserved = insets.top + heroH + segmentedH + chipsH + 16 + spacing.md * 2;
+  const listBottomPad = mode === "highlights"
+    ? tabBarHeight + 24 + 280 // approx — large video covers rest of screen
+    : tabBarHeight + 24;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
@@ -107,6 +127,33 @@ export default function ScheduleScreen() {
             {/* Hero */}
             <View style={styles.hero}>
               <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
+            </View>
+
+            {/* Page mode toggle: Highlights (teaser) | Schedule (full agenda) */}
+            <View style={styles.segmented}>
+              {([
+                { key: "highlights", label: "Highlights", icon: "film" as const },
+                { key: "schedule", label: "Schedule", icon: "list" as const },
+              ]).map((opt) => {
+                const sel = mode === (opt.key as typeof mode);
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setMode(opt.key as typeof mode)}
+                    style={[styles.segBtn, sel && styles.segBtnActive]}
+                    testID={`mode-${opt.key}`}
+                  >
+                    <Ionicons
+                      name={opt.icon}
+                      size={14}
+                      color={sel ? "#1A2841" : "rgba(245,240,230,0.78)"}
+                    />
+                    <Text style={[styles.segBtnText, sel && styles.segBtnTextActive]}>
+                      {opt.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
             {/* Day selector chip row */}
@@ -183,8 +230,14 @@ export default function ScheduleScreen() {
         }}
       />
 
-      {/* Vimeo teaser — floats above the tab bar in the bottom third */}
-      <VimeoTeaser bottomOffset={tabBarHeight} />
+      {/* Vimeo teaser — only on the Highlights page, fills the bottom area */}
+      {mode === "highlights" ? (
+        <VimeoTeaser
+          bottomOffset={tabBarHeight}
+          topReservedPx={topReserved}
+          large
+        />
+      ) : null}
 
     </View>
   );
@@ -194,6 +247,35 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
   hero: { aspectRatio: 2, marginBottom: spacing.md, borderRadius: 8, overflow: "hidden", backgroundColor: "#0F1A2E" },
+
+  segmented: {
+    flexDirection: "row",
+    backgroundColor: "rgba(15,26,46,0.55)",
+    borderRadius: radius.pill,
+    padding: 4,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: "rgba(245,240,230,0.15)",
+  },
+  segBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 9,
+    borderRadius: radius.pill,
+  },
+  segBtnActive: {
+    backgroundColor: "#F2C265",
+  },
+  segBtnText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "rgba(245,240,230,0.78)",
+    letterSpacing: 0.4,
+  },
+  segBtnTextActive: { color: "#1A2841" },
   heroBadge: {
     position: "absolute", top: spacing.md, right: spacing.md,
     width: 78, height: 78,

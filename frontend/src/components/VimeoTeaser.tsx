@@ -31,7 +31,7 @@ if (Platform.OS !== "web") {
   }
 }
 
-const VIMEO_ID = "1202527194";
+const VIMEO_ID = "1202537119";
 const VIMEO_PLAYER_URL = `https://player.vimeo.com/video/${VIMEO_ID}?autoplay=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1`;
 const VIMEO_OEMBED_URL = `https://vimeo.com/api/oembed.json?url=https%3A%2F%2Fvimeo.com%2F${VIMEO_ID}`;
 
@@ -45,9 +45,20 @@ type Props = {
   bottomOffset: number;
   /** Caption shown over the thumbnail. */
   caption?: string;
+  /** Approx pixels reserved above the thumbnail (hero + chips + top inset).
+   *  When provided + `large` is true, the thumbnail expands to fill the gap
+   *  between this top edge and the tab bar (maintaining 2:3 aspect ratio). */
+  topReservedPx?: number;
+  /** Expand the thumbnail to fill the bottom area (above the tab bar). */
+  large?: boolean;
 };
 
-export default function VimeoTeaser({ bottomOffset, caption = "Watch the SETP 2026 teaser" }: Props) {
+export default function VimeoTeaser({
+  bottomOffset,
+  caption = "Watch the SETP 2026 teaser",
+  topReservedPx = 0,
+  large = false,
+}: Props) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [poster, setPoster] = useState<string | null>(null);
@@ -59,8 +70,21 @@ export default function VimeoTeaser({ bottomOffset, caption = "Watch the SETP 20
   // Dimensions
   const { width: winW, height: winH } = Dimensions.get("window");
 
-  // Thumbnail size: clamp to ~32% of screen height while preserving aspect ratio
-  const thumbHeight = useMemo(() => Math.min(winH * 0.32, winW / ASPECT), [winW, winH]);
+  // Thumbnail size: maintain 2:3 aspect ratio.
+  //   - Small mode: capped at ~32% of screen height (above the tab bar).
+  //   - Large mode: fill the gap from below the hero/chips down to the tab bar.
+  const availableH = large
+    ? Math.max(0, winH - bottomOffset - topReservedPx - 24)
+    : winH * 0.32;
+  const maxByWidth = winW - 24; // small horizontal margin
+  // Height-limited size first, then clamp width if needed
+  const thumbHeight = useMemo(() => {
+    let h = availableH;
+    if (h * ASPECT > maxByWidth) {
+      h = maxByWidth / ASPECT;
+    }
+    return Math.max(120, h); // never collapse below 120px
+  }, [availableH, maxByWidth]);
   const thumbWidth = useMemo(() => thumbHeight * ASPECT, [thumbHeight]);
 
   // Fetch Vimeo poster frame from oEmbed
