@@ -1,0 +1,373 @@
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Modal,
+  Dimensions,
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  runOnJS,
+} from "react-native-reanimated";
+
+// Conditionally require WebView so the web bundle doesn't crash.
+let WebView: any = null;
+if (Platform.OS !== "web") {
+  try {
+    WebView = require("react-native-webview").WebView;
+  } catch {
+    WebView = null;
+  }
+}
+
+const VIMEO_ID = "1202527194";
+const VIMEO_PLAYER_URL = `https://player.vimeo.com/video/${VIMEO_ID}?autoplay=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1`;
+const VIMEO_OEMBED_URL = `https://vimeo.com/api/oembed.json?url=https%3A%2F%2Fvimeo.com%2F${VIMEO_ID}`;
+
+// Video's natural aspect ratio (portrait 2:3 from oEmbed)
+const ASPECT_W = 240;
+const ASPECT_H = 360;
+const ASPECT = ASPECT_W / ASPECT_H; // 0.666...
+
+type Props = {
+  /** Height reserved for the bottom tab bar so the thumbnail floats above it. */
+  bottomOffset: number;
+  /** Caption shown over the thumbnail. */
+  caption?: string;
+};
+
+export default function VimeoTeaser({ bottomOffset, caption = "Watch the SETP 2026 teaser" }: Props) {
+  const insets = useSafeAreaInsets();
+  const [open, setOpen] = useState(false);
+  const [poster, setPoster] = useState<string | null>(null);
+  const [playerReady, setPlayerReady] = useState(false);
+
+  // Animation shared values for the expand/shrink transition
+  const progress = useSharedValue(0); // 0 = thumbnail, 1 = fullscreen
+
+  // Dimensions
+  const { width: winW, height: winH } = Dimensions.get("window");
+
+  // Thumbnail size: clamp to ~32% of screen height while preserving aspect ratio
+  const thumbHeight = useMemo(() => Math.min(winH * 0.32, winW / ASPECT), [winW, winH]);
+  const thumbWidth = useMemo(() => thumbHeight * ASPECT, [thumbHeight]);
+
+  // Fetch Vimeo poster frame from oEmbed
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(VIMEO_OEMBED_URL);
+        const data = await res.json();
+        // Strip the size suffix to get a bigger thumbnail
+        let url: string = data?.thumbnail_url || "";
+        if (url) {
+          url = url.replace(/_\d+x\d+(?=\?|$)/, "_640");
+          if (!cancelled) setPoster(url);
+        }
+      } catch {
+        // silent fail — keep dark placeholder
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Fullscreen video size: fit inside safe-area window, maintain aspect ratio.
+  const fsAvailW = winW - 24; // small margin on the sides
+  const fsAvailH = winH - insets.top - insets.bottom - 24;
+  // Pick the largest size that fits both
+  let fsHeight = fsAvailH;
+  let fsWidth = fsHeight * ASPECT;
+  if (fsWidth > fsAvailW) {
+    fsWidth = fsAvailW;
+    fsHeight = fsWidth / ASPECT;
+  }
+
+  const openVideo = () => {
+    setOpen(true);
+    setPlayerReady(false);
+    progress.value = withTiming(1, {
+      duration: 250,
+      easing: Easing.inOut(Easing.ease),
+    });
+  };
+
+  const closeVideo = () => {
+    progress.value = withTiming(
+      0,
+      { duration: 250, easing: Easing.inOut(Easing.ease) },
+      (finished) => {
+        if (finished) runOnJS(setOpen)(false);
+      }
+    );
+  };
+
+  // Animated styles: scale + translate from thumbnail position to centered fullscreen
+  // The thumbnail sits anchored above the tab bar — compute its on-screen
+  // center so the video appears to originate from there.
+  const thumbBottom = bottomOffset + 12; // matches thumbWrap.bottom
+  const thumbCenterY = winH - thumbBottom - thumbHeight / 2;
+  const screenCenterY = winH / 2;
+  const startTranslateY = thumbCenterY - screenCenterY;
+
+  const playerAnimStyle = useAnimatedStyle(() => {
+    const w = thumbWidth + (fsWidth - thumbWidth) * progress.value;
+    const h = thumbHeight + (fsHeight - thumbHeight) * progress.value;
+    const ty = startTranslateY * (1 - progress.value);
+    return {
+      width: w,
+      height: h,
+      transform: [{ translateY: ty }],
+    };
+  });
+
+  const backdropAnimStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+
+  // ─── Inline (thumbnail) rendering ─────────────────────────────────────────
+  return (
+    <>
+      <View
+        pointerEvents="box-none"
+        style={[styles.thumbWrap, { bottom: bottomOffset + 12 }]}
+      >
+        <Pressable
+          onPress={openVideo}
+          accessibilityRole="button"
+          accessibilityLabel="Play teaser video"
+          style={[styles.thumb, { width: thumbWidth, height: thumbHeight }]}
+          testID="vimeo-teaser-thumb"
+        >
+          {poster ? (
+            <Image
+              source={{ uri: poster }}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.posterFallback]}>
+              <ActivityIndicator color="#F2C265" />
+            </View>
+          )}
+
+          {/* Play button overlay */}
+          <View style={styles.playOverlay} pointerEvents="none">
+            <View style={styles.playRing}>
+              <Ionicons name="play" size={28} color="#1A2841" style={{ marginLeft: 3 }} />
+            </View>
+          </View>
+
+          {/* Caption */}
+          <View style={styles.captionPill} pointerEvents="none">
+            <Ionicons name="film" size={11} color="#F2C265" />
+            <Text style={styles.captionText} numberOfLines={1}>
+              {caption}
+            </Text>
+          </View>
+        </Pressable>
+      </View>
+
+      {/* ─── Fullscreen modal player ─────────────────────────────────── */}
+      <Modal
+        visible={open}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeVideo}
+      >
+        <View style={styles.modalRoot}>
+          {/* Dimmed backdrop */}
+          <Animated.View style={[StyleSheet.absoluteFillObject, styles.backdrop, backdropAnimStyle]}>
+            <Pressable style={StyleSheet.absoluteFillObject} onPress={closeVideo} />
+          </Animated.View>
+
+          {/* Centered video container */}
+          <View style={styles.modalCenter} pointerEvents="box-none">
+            <Animated.View
+              style={[
+                styles.videoBox,
+                playerAnimStyle,
+              ]}
+            >
+              {Platform.OS === "web" ? (
+                // @ts-ignore - native DOM element via react-native-web
+                <iframe
+                  src={VIMEO_PLAYER_URL}
+                  style={{ width: "100%", height: "100%", border: 0, borderRadius: 14 }}
+                  allow="fullscreen; picture-in-picture; clipboard-write; encrypted-media"
+                  title="SETP 2026 Teaser"
+                />
+              ) : WebView ? (
+                <>
+                  <WebView
+                    source={{ uri: VIMEO_PLAYER_URL }}
+                    style={{ flex: 1, backgroundColor: "#000", borderRadius: 14 }}
+                    javaScriptEnabled
+                    domStorageEnabled
+                    allowsFullscreenVideo
+                    allowsInlineMediaPlayback
+                    mediaPlaybackRequiresUserAction={true}
+                    onLoadEnd={() => setPlayerReady(true)}
+                  />
+                  {!playerReady && (
+                    <View style={styles.videoLoading} pointerEvents="none">
+                      <ActivityIndicator color="#F2C265" size="large" />
+                    </View>
+                  )}
+                </>
+              ) : (
+                <View style={styles.videoLoading}>
+                  <Text style={{ color: "#fff" }}>Player unavailable</Text>
+                </View>
+              )}
+            </Animated.View>
+          </View>
+
+          {/* Shrink-back button (top-right) */}
+          <Pressable
+            onPress={closeVideo}
+            hitSlop={12}
+            style={[styles.shrinkBtn, { top: insets.top + 12 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Close video"
+            testID="vimeo-shrink-btn"
+          >
+            <Ionicons name="contract" size={18} color="#1A2841" />
+            <Text style={styles.shrinkBtnText}>Shrink Back</Text>
+          </Pressable>
+
+          {Platform.OS === "android" && open ? (
+            <StatusBar hidden={false} translucent backgroundColor="rgba(0,0,0,0.85)" />
+          ) : null}
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const styles = StyleSheet.create({
+  // Thumbnail container — anchored absolutely above the tab bar
+  thumbWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+  },
+  thumb: {
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "#0F1A2E",
+    borderWidth: 1,
+    borderColor: "rgba(242, 194, 101, 0.45)",
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  posterFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0F1A2E",
+  },
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  playRing: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(242, 194, 101, 0.95)",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  captionPill: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    right: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+    backgroundColor: "rgba(15, 26, 46, 0.78)",
+  },
+  captionText: {
+    color: "#F5F0E6",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    flexShrink: 1,
+  },
+
+  // Modal
+  modalRoot: { flex: 1 },
+  backdrop: { backgroundColor: "rgba(0, 0, 0, 0.85)" },
+  modalCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  videoBox: {
+    borderRadius: 14,
+    overflow: "hidden",
+    backgroundColor: "#000",
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  videoLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0F1A2E",
+  },
+  shrinkBtn: {
+    position: "absolute",
+    right: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: "#F2C265",
+    borderRadius: 22,
+    shadowColor: "#000",
+    shadowOpacity: 0.35,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  shrinkBtnText: {
+    color: "#1A2841",
+    fontWeight: "800",
+    fontSize: 12,
+    letterSpacing: 0.4,
+  },
+});

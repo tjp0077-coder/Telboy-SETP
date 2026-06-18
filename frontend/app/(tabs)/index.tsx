@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  RefreshControl, FlatList,
+  RefreshControl, FlatList, Dimensions, Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -14,6 +14,7 @@ import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 import AddSessionSheet from "@/src/components/AddSessionSheet";
+import VimeoTeaser from "@/src/components/VimeoTeaser";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
 
@@ -78,13 +79,22 @@ export default function ScheduleScreen() {
     );
   }
 
+  // Bottom area reservation:
+  //  - tab bar takes ~72 + safe area inset
+  //  - thumbnail (2:3 portrait, capped at 32% of screen height)
+  //  - 12px gap above tab bar + 12px above schedule list
+  const winH = Dimensions.get("window").height;
+  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
+  const thumbHeight = Math.min(winH * 0.32, (Dimensions.get("window").width * 3) / 2);
+  const listBottomPad = tabBarHeight + thumbHeight + 24;
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
       <ScreenBg />
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: 120 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: listBottomPad }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -172,6 +182,9 @@ export default function ScheduleScreen() {
           );
         }}
       />
+
+      {/* Vimeo teaser — floats above the tab bar in the bottom third */}
+      <VimeoTeaser bottomOffset={tabBarHeight} />
 
     </View>
   );
