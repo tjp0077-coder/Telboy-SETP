@@ -2,16 +2,48 @@
 import { ScrollViewStyleReset } from "expo-router/html";
 import type { PropsWithChildren } from "react";
 
+/**
+ * +html.tsx — wraps every page in a custom HTML document on the web.
+ * Adds:
+ *   - PWA metadata (manifest, theme colour, apple-touch-icon)
+ *   - Service-worker registration
+ *   - Existing scroll-lock + body fixed-positioning preserved.
+ * Has no effect on iOS / Android native builds.
+ */
 export default function Root({ children }: PropsWithChildren) {
   return (
-    <html lang="en" style={{ height: "100%" }}>
+    <html lang="en-GB" style={{ height: "100%" }}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
         />
+
+        {/* ── PWA metadata ─────────────────────────────────────────── */}
+        <title>EDI SETP 2026 — Symposium Hub</title>
+        <meta
+          name="description"
+          content="Official delegate companion app for the SETP European Symposium, Edinburgh — schedule, comms, city guide."
+        />
+        <meta name="theme-color" content="#1A2841" />
+        <link rel="manifest" href="/manifest.webmanifest" />
+
+        {/* iOS / Safari */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-title" content="SETP 2026" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+        {/* Standard favicons */}
+        <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
+        <link rel="icon" href="/icons/icon-512.png" type="image/png" sizes="512x512" />
+
         {/*
           Disable body scrolling on web to make ScrollView components work correctly.
           If you want to enable scrolling, remove `ScrollViewStyleReset` and
@@ -21,9 +53,35 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html: `
+              html, body, #root { background-color: #1A2841; }
               body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
+            `,
+          }}
+        />
+
+        {/* ── Service-worker registration ──────────────────────────── */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                if (!('serviceWorker' in navigator)) return;
+                // Only register on secure origins (https) or localhost.
+                var isSecure = location.protocol === 'https:' ||
+                               location.hostname === 'localhost' ||
+                               location.hostname === '127.0.0.1';
+                if (!isSecure) return;
+                window.addEventListener('load', function () {
+                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
+                    .then(function (reg) {
+                      if (window && window.console) console.log('[SETP-PWA] SW registered', reg.scope);
+                    })
+                    .catch(function (err) {
+                      if (window && window.console) console.warn('[SETP-PWA] SW registration failed', err);
+                    });
+                });
+              })();
             `,
           }}
         />

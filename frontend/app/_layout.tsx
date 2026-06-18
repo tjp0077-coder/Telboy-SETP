@@ -6,14 +6,17 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
+import { usePwaSetup } from "@/src/hooks/usePwaSetup";
 import { AuthProvider } from "@/src/AuthContext";
 import { FavoritesProvider } from "@/src/useFavorites";
 import { UnreadProvider } from "@/src/UnreadContext";
+import PwaInstallBanner from "@/src/components/PwaInstallBanner";
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [loaded, error] = useIconFonts();
+  usePwaSetup();
 
   useEffect(() => {
     if (loaded || error) {
@@ -38,6 +41,7 @@ export default function RootLayout() {
                 <Stack.Screen name="inbox" />
                 <Stack.Screen name="admins" />
               </Stack>
+              <PwaInstallBanner />
             </UnreadProvider>
           </FavoritesProvider>
         </AuthProvider>
