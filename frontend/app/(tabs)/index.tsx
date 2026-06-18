@@ -1,340 +1,136 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  RefreshControl, FlatList, Dimensions, Platform,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import React from "react";
+import { View, StyleSheet, Platform } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { api, SessionItem } from "@/src/api";
-import { useFavorites } from "@/src/useFavorites";
-import { useAuth } from "@/src/AuthContext";
-import { colors, spacing, radius, shadow } from "@/src/theme";
-import { ScreenBg } from "@/src/components/ScreenBg";
-import AddSessionSheet from "@/src/components/AddSessionSheet";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import VimeoTeaser from "@/src/components/VimeoTeaser";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
+const SETP_LOGO = require("@/assets/images/brand/setpx.png");
 
-const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
-  session: "document-text",
-  break: "cafe",
-  meal: "restaurant",
-  social: "wine",
-  tour: "bus",
-};
-
-const CATEGORY_COLOR: Record<string, string> = {
-  session: colors.brand,
-  break: colors.warning,
-  meal: colors.warning,
-  social: colors.brandTertiary,
-  tour: colors.success,
-};
-
-export default function ScheduleScreen() {
+/**
+ * Welcome / Home screen.
+ *  - Full-bleed scenic hero filling roughly the top two-thirds of the screen
+ *  - Gold SETP "X" logo centred between hero and video
+ *  - Landscape-cropped Vimeo thumbnail above the tab bar (fixed, no scroll)
+ *  - Tapping the thumbnail opens the portrait full-screen modal player
+ */
+export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
-  const [items, setItems] = useState<SessionItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [activeDate, setActiveDate] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [mode, setMode] = useState<"highlights" | "schedule">("highlights");
-  const { favorites, toggle } = useFavorites();
-  const { auth } = useAuth();
-
-  const load = useCallback(async () => {
-    try {
-      const data = await api.listSchedule();
-      setItems(data);
-      if (data.length && !activeDate) {
-        setActiveDate(data[0].date);
-      }
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeDate]);
-
-  useEffect(() => { load(); }, []);
-
-  const days = useMemo(() => {
-    const map = new Map<string, string>();
-    items.forEach((i) => { if (!map.has(i.date)) map.set(i.date, i.day_label); });
-    return Array.from(map.entries()).map(([date, label]) => ({ date, label }));
-  }, [items]);
-
-  // The "Welcome Reception" frame on 26 July — hidden on the Highlights page
-  // so the video can occupy the bottom area.
-  const isReceptionCard = useCallback(
-    (it: SessionItem) =>
-      it.date === "2026-07-26" &&
-      (it.title || "").toLowerCase().includes("welcome reception"),
-    []
-  );
-
-  const filtered = useMemo(() => {
-    const sameDay = items.filter((i) => i.date === activeDate);
-    if (mode === "highlights") return sameDay.filter((i) => !isReceptionCard(i));
-    return sameDay;
-  }, [items, activeDate, mode, isReceptionCard]);
-
-  if (loading) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.surface }]}>
-        <ActivityIndicator size="large" color={colors.brand} />
-      </View>
-    );
-  }
-
-  // Bottom area reservation for the scrollable Schedule list
   const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
-  // Hero height — clamp so wide viewports don't push the layout off-screen.
-  const winH = Dimensions.get("window").height;
-  const winW = Dimensions.get("window").width;
-  const heroHeight = Math.min((winW - spacing.lg * 2) / 2, winH * 0.28);
-
-  // Shared header (hero + segmented toggle) is rendered once for both modes,
-  // OUTSIDE any scrollable. The body changes per mode:
-  //  - Welcome: a fixed flex container with the video inline
-  //  - Schedule: the FlatList of cards (scrollable)
-  const Header = (
-    <View>
-      {/* Hero */}
-      <View style={[styles.hero, { height: heroHeight, marginHorizontal: spacing.lg, marginTop: spacing.sm }]}>
-        <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
-      </View>
-
-      {/* Page mode toggle: Welcome (teaser) | Schedule (full agenda) */}
-      <View style={[styles.segmented, { marginHorizontal: spacing.lg }]}>
-        {([
-          { key: "highlights", label: "Welcome", icon: "film" as const },
-          { key: "schedule", label: "Schedule", icon: "list" as const },
-        ]).map((opt) => {
-          const sel = mode === (opt.key as typeof mode);
-          return (
-            <Pressable
-              key={opt.key}
-              onPress={() => setMode(opt.key as typeof mode)}
-              style={[styles.segBtn, sel && styles.segBtnActive]}
-              testID={`mode-${opt.key}`}
-            >
-              <Ionicons
-                name={opt.icon}
-                size={14}
-                color={sel ? "#1A2841" : "rgba(245,240,230,0.78)"}
-              />
-              <Text style={[styles.segBtnText, sel && styles.segBtnTextActive]}>
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
-      <ScreenBg />
-
-      {Header}
-
-      {mode === "highlights" ? (
-        // ─── Welcome page — fixed (non-scrolling) layout ────────────────
-        <View
-          style={[
-            styles.welcomeBody,
-            { paddingBottom: tabBarHeight + 12 },
-          ]}
-          onLayout={() => { /* intentionally empty */ }}
-        >
-          <VimeoTeaser inline />
-        </View>
-      ) : (
-        // ─── Schedule page — scrollable list ─────────────────────────────
-        <FlatList
-          data={filtered}
-          keyExtractor={(it) => it.id}
-          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: tabBarHeight + 24 }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); load(); }}
-              tintColor={colors.brand}
-            />
-          }
-          ListHeaderComponent={
-            <View style={styles.chipRow}>
-              {days.map((d) => {
-                const active = d.date === activeDate;
-                const [, , dd] = d.date.split("-");
-                return (
-                  <Pressable
-                    key={d.date}
-                    onPress={() => setActiveDate(d.date)}
-                    style={[styles.chip, active && styles.chipActive]}
-                    testID={`day-chip-${d.date}`}
-                  >
-                    <Text style={[styles.chipDay, active && styles.chipDayActive]}>
-                      {d.label.split(" ")[0].toUpperCase()}
-                    </Text>
-                    <Text style={[styles.chipDate, active && styles.chipDateActive]}>
-                      {Number(dd)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
-              <Text style={styles.emptyText}>No sessions for this day</Text>
-            </View>
-          }
-          renderItem={({ item }) => {
-            const fav = favorites.has(item.id);
-            const cIcon = CATEGORY_ICON[item.category] || "ellipse";
-            const cColor = CATEGORY_COLOR[item.category] || colors.brand;
-            return (
-              <Pressable
-                onPress={() => router.push(`/event/${item.id}`)}
-                style={[styles.card, shadow.card]}
-                testID={`session-card-${item.id}`}
-              >
-                <View style={styles.cardLeft}>
-                  <Text style={styles.cardTime}>{item.time}</Text>
-                  {item.end_time ? <Text style={styles.cardEndTime}>{item.end_time}</Text> : null}
-                  <View style={[styles.catDot, { backgroundColor: cColor }]}>
-                    <Ionicons name={cIcon} size={14} color="#fff" />
-                  </View>
-                </View>
-                <View style={styles.cardBody}>
-                  <Text style={styles.cardTitle}>{item.title}</Text>
-                  <View style={styles.cardMeta}>
-                    <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
-                    <Text style={styles.cardMetaText}>{item.location}</Text>
-                  </View>
-                  {item.description ? (
-                    <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
-                  ) : null}
-                </View>
-                <Pressable
-                  onPress={(e) => { e.stopPropagation?.(); toggle(item.id); }}
-                  style={styles.favBtn}
-                  hitSlop={10}
-                  testID={`fav-btn-${item.id}`}
-                >
-                  <Ionicons
-                    name={fav ? "bookmark" : "bookmark-outline"}
-                    size={26}
-                    color={fav ? colors.brandTertiary : colors.onSurfaceMuted}
-                  />
-                </Pressable>
-              </Pressable>
-            );
-          }}
+    <View style={styles.screen} testID="home-welcome-screen">
+      {/* Hero — full-bleed, fills the top section of the screen */}
+      <View style={[styles.hero]}>
+        <Image
+          source={HERO}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition="center"
         />
-      )}
+        {/* Soft dark gradient at the bottom edge of the hero for a smooth blend */}
+        <LinearGradient
+          colors={["transparent", "rgba(15,26,46,0.0)", "rgba(15,26,46,0.85)"]}
+          locations={[0, 0.55, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      </View>
 
+      {/* SETP X logo — sits across the hero/video boundary */}
+      <View pointerEvents="none" style={[styles.logoWrap, { top: insets.top + 0 }]}>
+        <View style={styles.logoSlot}>
+          <Image
+            source={SETP_LOGO}
+            style={styles.logoImg}
+            contentFit="contain"
+            transition={200}
+          />
+        </View>
+      </View>
+
+      {/* Bottom area — landscape video thumbnail just above the tab bar */}
+      <View
+        style={[
+          styles.bottomArea,
+          { paddingBottom: tabBarHeight + 14, paddingTop: 12 },
+        ]}
+      >
+        <VimeoTeaser inline landscapeThumb />
+      </View>
+
+      {/* Tartan decorative strip just above the tab bar */}
+      <View
+        pointerEvents="none"
+        style={[styles.tartanBand, { bottom: tabBarHeight - 6 }]}
+      >
+        <LinearGradient
+          colors={["#1A2841", "#2E1A33", "#5C2A2A", "#2E1A33", "#1A2841"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { marginBottom: spacing.md, borderRadius: 8, overflow: "hidden", backgroundColor: "#0F1A2E" },
-
-  welcomeBody: {
+  screen: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
+    backgroundColor: "#0F1A2E",
+  },
+  hero: {
+    // Hero fills roughly the top half of the screen, edge-to-edge.
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: "58%",
+    backgroundColor: "#0F1A2E",
+  },
+  logoWrap: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    // We let the logo sit roughly at the hero/video boundary.
+    // Use a flex container the height of the upper section.
+    height: "62%",
+    justifyContent: "flex-end",
+  },
+  logoSlot: {
+    width: 132,
+    height: 132,
     alignItems: "center",
     justifyContent: "center",
+    marginBottom: -28, // overlap into the video area
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 8,
   },
-
-  segmented: {
-    flexDirection: "row",
-    backgroundColor: "rgba(15,26,46,0.55)",
-    borderRadius: radius.pill,
-    padding: 4,
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: "rgba(245,240,230,0.15)",
+  logoImg: {
+    width: "100%",
+    height: "100%",
   },
-  segBtn: {
-    flex: 1,
-    flexDirection: "row",
+  bottomArea: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: "58%",
+    paddingHorizontal: 16,
     alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 9,
-    borderRadius: radius.pill,
+    justifyContent: "flex-end",
   },
-  segBtnActive: {
-    backgroundColor: "#F2C265",
+  tartanBand: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: 6,
+    opacity: 0.85,
   },
-  segBtnText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "rgba(245,240,230,0.78)",
-    letterSpacing: 0.4,
-  },
-  segBtnTextActive: { color: "#1A2841" },
-  heroBadge: {
-    position: "absolute", top: spacing.md, right: spacing.md,
-    width: 78, height: 78,
-  },
-  heroContent: { position: "absolute", bottom: 0, left: 0, right: 0, padding: spacing.lg },
-  heroEyebrow: { color: "#D4A373", fontSize: 11, fontWeight: "700", letterSpacing: 1.4, marginBottom: 4 },
-  heroTitle: { color: "#fff", fontSize: 28, fontWeight: "700", fontFamily: "Georgia" },
-  heroSub: { color: "#E2DFD8", fontSize: 13, marginTop: 4 },
-
-  chipRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  chip: {
-    flex: 1, marginHorizontal: 3, height: 50, borderRadius: radius.md,
-    backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
-    alignItems: "center", justifyContent: "center",
-  },
-  chipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  chipDay: { fontSize: 10, fontWeight: "700", color: colors.onSurfaceMuted, letterSpacing: 0.8 },
-  chipDayActive: { color: "#D4A373" },
-  chipDate: { fontSize: 18, fontWeight: "700", color: colors.onSurface, marginTop: 2 },
-  chipDateActive: { color: "#fff" },
-
-  card: {
-    flexDirection: "row", backgroundColor: colors.surfaceSecondary, padding: spacing.md,
-    borderRadius: radius.md, marginBottom: spacing.sm, alignItems: "flex-start",
-  },
-  cardLeft: { width: 64, alignItems: "flex-start" },
-  cardTime: { fontSize: 16, fontWeight: "700", color: colors.brand, fontFamily: "Georgia" },
-  cardEndTime: { fontSize: 11, color: colors.onSurfaceMuted, marginTop: 2 },
-  catDot: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center", marginTop: 8 },
-  cardBody: { flex: 1, paddingHorizontal: spacing.sm },
-  cardTitle: { fontSize: 15, fontWeight: "600", color: colors.onSurface, lineHeight: 20 },
-  cardMeta: { flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 },
-  cardMetaText: { fontSize: 12, color: colors.onSurfaceMuted },
-  cardDesc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 17 },
-  favBtn: { padding: 4 },
-
-  empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
-  emptyText: { color: colors.onSurfaceMuted },
-
-  fab: {
-    position: "absolute", right: spacing.lg, height: 48, paddingHorizontal: 16,
-    borderRadius: 24, backgroundColor: "#F2C265",
-    flexDirection: "row", alignItems: "center", gap: 6,
-    ...shadow.raised,
-  },
-  fabText: { color: "#1A2841", fontWeight: "800", fontSize: 13 },
 });

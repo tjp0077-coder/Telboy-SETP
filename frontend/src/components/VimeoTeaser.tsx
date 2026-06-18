@@ -55,6 +55,9 @@ type Props = {
    *  The thumbnail sizes itself to fit the parent container while
    *  maintaining its 2:3 aspect ratio. */
   inline?: boolean;
+  /** Use a 16:9 landscape thumbnail (poster is cropped) instead of the
+   *  native 2:3 portrait aspect. The fullscreen modal still uses portrait. */
+  landscapeThumb?: boolean;
 };
 
 export default function VimeoTeaser({
@@ -63,6 +66,7 @@ export default function VimeoTeaser({
   topReservedPx = 0,
   large = false,
   inline = false,
+  landscapeThumb = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -78,31 +82,45 @@ export default function VimeoTeaser({
   // Track inline container size so the thumb can fill the flex parent.
   const [inlineBox, setInlineBox] = useState<{ w: number; h: number } | null>(null);
 
-  // Thumbnail size: maintain 2:3 aspect ratio.
-  //   - Inline mode: fit inside the parent's measured box (height-constrained).
+  // Thumbnail aspect ratio (width / height).
+  //  - Native portrait video: 2:3 (≈0.666)
+  //  - Landscape thumb mode:  16:9 (poster is cropped via contentFit="cover")
+  const THUMB_ASPECT = landscapeThumb ? 16 / 9 : ASPECT;
+
+  // Thumbnail size: maintain THUMB_ASPECT.
+  //   - Inline mode: fit inside the parent's measured box.
   //   - Small mode: capped at ~32% of screen height (above the tab bar).
   //   - Large mode: fill the gap from below the hero/chips down to the tab bar.
   const { thumbWidth, thumbHeight } = useMemo(() => {
     if (inline) {
       if (!inlineBox) return { thumbWidth: 0, thumbHeight: 0 };
       const { w, h } = inlineBox;
-      let height = h;
-      let width = height * ASPECT;
-      if (width > w) {
+      // For landscape, prefer maxing width; for portrait, prefer maxing height.
+      let width: number;
+      let height: number;
+      if (landscapeThumb) {
         width = w;
-        height = width / ASPECT;
+        height = width / THUMB_ASPECT;
+        if (height > h) { height = h; width = height * THUMB_ASPECT; }
+      } else {
+        height = h;
+        width = height * THUMB_ASPECT;
+        if (width > w) { width = w; height = width / THUMB_ASPECT; }
       }
-      return { thumbWidth: Math.max(120, width), thumbHeight: Math.max(180, height) };
+      return {
+        thumbWidth: Math.max(120, width),
+        thumbHeight: Math.max(80, height),
+      };
     }
     const availH = large
       ? Math.max(0, winH - bottomOffset - topReservedPx - 24)
       : winH * 0.32;
     const maxByWidth = winW - 24;
     let h = availH;
-    if (h * ASPECT > maxByWidth) h = maxByWidth / ASPECT;
+    if (h * THUMB_ASPECT > maxByWidth) h = maxByWidth / THUMB_ASPECT;
     h = Math.max(120, h);
-    return { thumbWidth: h * ASPECT, thumbHeight: h };
-  }, [inline, inlineBox, large, winH, winW, bottomOffset, topReservedPx]);
+    return { thumbWidth: h * THUMB_ASPECT, thumbHeight: h };
+  }, [inline, inlineBox, large, winH, winW, bottomOffset, topReservedPx, THUMB_ASPECT, landscapeThumb]);
 
   // Fetch Vimeo poster frame from oEmbed
   useEffect(() => {
