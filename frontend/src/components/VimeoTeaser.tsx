@@ -42,7 +42,7 @@ const ASPECT = ASPECT_W / ASPECT_H; // 0.666...
 
 type Props = {
   /** Height reserved for the bottom tab bar so the thumbnail floats above it. */
-  bottomOffset: number;
+  bottomOffset?: number;
   /** Caption shown over the thumbnail. */
   caption?: string;
   /** Approx pixels reserved above the thumbnail (hero + chips + top inset).
@@ -51,13 +51,18 @@ type Props = {
   topReservedPx?: number;
   /** Expand the thumbnail to fill the bottom area (above the tab bar). */
   large?: boolean;
+  /** Render inline in the normal flex flow (no absolute positioning).
+   *  The thumbnail sizes itself to fit the parent container while
+   *  maintaining its 2:3 aspect ratio. */
+  inline?: boolean;
 };
 
 export default function VimeoTeaser({
-  bottomOffset,
+  bottomOffset = 0,
   caption = "Watch the SETP 2026 teaser",
   topReservedPx = 0,
   large = false,
+  inline = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
@@ -70,22 +75,34 @@ export default function VimeoTeaser({
   // Dimensions
   const { width: winW, height: winH } = Dimensions.get("window");
 
+  // Track inline container size so the thumb can fill the flex parent.
+  const [inlineBox, setInlineBox] = useState<{ w: number; h: number } | null>(null);
+
   // Thumbnail size: maintain 2:3 aspect ratio.
+  //   - Inline mode: fit inside the parent's measured box (height-constrained).
   //   - Small mode: capped at ~32% of screen height (above the tab bar).
   //   - Large mode: fill the gap from below the hero/chips down to the tab bar.
-  const availableH = large
-    ? Math.max(0, winH - bottomOffset - topReservedPx - 24)
-    : winH * 0.32;
-  const maxByWidth = winW - 24; // small horizontal margin
-  // Height-limited size first, then clamp width if needed
-  const thumbHeight = useMemo(() => {
-    let h = availableH;
-    if (h * ASPECT > maxByWidth) {
-      h = maxByWidth / ASPECT;
+  const { thumbWidth, thumbHeight } = useMemo(() => {
+    if (inline) {
+      if (!inlineBox) return { thumbWidth: 0, thumbHeight: 0 };
+      const { w, h } = inlineBox;
+      let height = h;
+      let width = height * ASPECT;
+      if (width > w) {
+        width = w;
+        height = width / ASPECT;
+      }
+      return { thumbWidth: Math.max(120, width), thumbHeight: Math.max(180, height) };
     }
-    return Math.max(120, h); // never collapse below 120px
-  }, [availableH, maxByWidth]);
-  const thumbWidth = useMemo(() => thumbHeight * ASPECT, [thumbHeight]);
+    const availH = large
+      ? Math.max(0, winH - bottomOffset - topReservedPx - 24)
+      : winH * 0.32;
+    const maxByWidth = winW - 24;
+    let h = availH;
+    if (h * ASPECT > maxByWidth) h = maxByWidth / ASPECT;
+    h = Math.max(120, h);
+    return { thumbWidth: h * ASPECT, thumbHeight: h };
+  }, [inline, inlineBox, large, winH, winW, bottomOffset, topReservedPx]);
 
   // Fetch Vimeo poster frame from oEmbed
   useEffect(() => {
@@ -163,40 +180,56 @@ export default function VimeoTeaser({
   }));
 
   // ─── Inline (thumbnail) rendering ─────────────────────────────────────────
+  const ThumbInner = (
+    <Pressable
+      onPress={openVideo}
+      accessibilityRole="button"
+      accessibilityLabel="Play teaser video"
+      style={[styles.thumb, { width: thumbWidth, height: thumbHeight }]}
+      testID="vimeo-teaser-thumb"
+    >
+      {poster ? (
+        <Image
+          source={{ uri: poster }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          transition={200}
+        />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.posterFallback]}>
+          <ActivityIndicator color="#F2C265" />
+        </View>
+      )}
+
+      {/* Play button overlay */}
+      <View style={styles.playOverlay} pointerEvents="none">
+        <View style={styles.playRing}>
+          <Ionicons name="play" size={36} color="#FFFFFF" style={{ marginLeft: 4 }} />
+        </View>
+      </View>
+    </Pressable>
+  );
+
   return (
     <>
-      <View
-        pointerEvents="box-none"
-        style={[styles.thumbWrap, { bottom: bottomOffset + 12 }]}
-      >
-        <Pressable
-          onPress={openVideo}
-          accessibilityRole="button"
-          accessibilityLabel="Play teaser video"
-          style={[styles.thumb, { width: thumbWidth, height: thumbHeight }]}
-          testID="vimeo-teaser-thumb"
+      {inline ? (
+        <View
+          style={styles.inlineWrap}
+          onLayout={(e) => {
+            const { width, height } = e.nativeEvent.layout;
+            setInlineBox({ w: width, h: height });
+          }}
         >
-          {poster ? (
-            <Image
-              source={{ uri: poster }}
-              style={StyleSheet.absoluteFill}
-              contentFit="cover"
-              transition={200}
-            />
-          ) : (
-            <View style={[StyleSheet.absoluteFill, styles.posterFallback]}>
-              <ActivityIndicator color="#F2C265" />
-            </View>
-          )}
-
-          {/* Play button overlay */}
-          <View style={styles.playOverlay} pointerEvents="none">
-            <View style={styles.playRing}>
-              <Ionicons name="play" size={36} color="#FFFFFF" style={{ marginLeft: 4 }} />
-            </View>
-          </View>
-        </Pressable>
-      </View>
+          {thumbWidth > 0 ? ThumbInner : null}
+        </View>
+      ) : (
+        <View
+          pointerEvents="box-none"
+          style={[styles.thumbWrap, { bottom: bottomOffset + 12 }]}
+        >
+          {ThumbInner}
+        </View>
+      )}
 
       {/* ─── Fullscreen modal player ─────────────────────────────────── */}
       <Modal
@@ -283,6 +316,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: "center",
+  },
+  // Inline (flex) layout — fills the parent flex space
+  inlineWrap: {
+    flex: 1,
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   thumb: {
     borderRadius: 14,

@@ -90,156 +90,156 @@ export default function ScheduleScreen() {
     );
   }
 
-  // Bottom area reservation:
-  //  - tab bar takes ~72 + safe area inset
-  //  - On "Highlights" the video grows to fill the gap above the tab bar
-  //  - On "Schedule" no video is shown
+  // Bottom area reservation for the scrollable Schedule list
+  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
+  // Hero height — clamp so wide viewports don't push the layout off-screen.
   const winH = Dimensions.get("window").height;
   const winW = Dimensions.get("window").width;
-  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
-  // approx top reservation: top safe inset + hero + segmented + chips + paddings.
-  // Clamp the hero contribution so very wide preview viewports (where hero
-  // aspectRatio 2 would otherwise dominate) still leave room for the video.
-  const heroH = Math.min(winW / 2, winH * 0.28);
-  const segmentedH = 44;
-  const chipsH = mode === "schedule" ? 50 + 8 : 0;
-  const topReserved = insets.top + heroH + segmentedH + chipsH + 16 + spacing.md * 2;
-  const listBottomPad = mode === "highlights"
-    ? tabBarHeight + 24 + 280 // approx — large video covers rest of screen
-    : tabBarHeight + 24;
+  const heroHeight = Math.min((winW - spacing.lg * 2) / 2, winH * 0.28);
+
+  // Shared header (hero + segmented toggle) is rendered once for both modes,
+  // OUTSIDE any scrollable. The body changes per mode:
+  //  - Welcome: a fixed flex container with the video inline
+  //  - Schedule: the FlatList of cards (scrollable)
+  const Header = (
+    <View>
+      {/* Hero */}
+      <View style={[styles.hero, { height: heroHeight, marginHorizontal: spacing.lg, marginTop: spacing.sm }]}>
+        <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
+      </View>
+
+      {/* Page mode toggle: Welcome (teaser) | Schedule (full agenda) */}
+      <View style={[styles.segmented, { marginHorizontal: spacing.lg }]}>
+        {([
+          { key: "highlights", label: "Welcome", icon: "film" as const },
+          { key: "schedule", label: "Schedule", icon: "list" as const },
+        ]).map((opt) => {
+          const sel = mode === (opt.key as typeof mode);
+          return (
+            <Pressable
+              key={opt.key}
+              onPress={() => setMode(opt.key as typeof mode)}
+              style={[styles.segBtn, sel && styles.segBtnActive]}
+              testID={`mode-${opt.key}`}
+            >
+              <Ionicons
+                name={opt.icon}
+                size={14}
+                color={sel ? "#1A2841" : "rgba(245,240,230,0.78)"}
+              />
+              <Text style={[styles.segBtnText, sel && styles.segBtnTextActive]}>
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="schedule-screen">
       <ScreenBg />
-      <FlatList
-        data={filtered}
-        keyExtractor={(it) => it.id}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: listBottomPad }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => { setRefreshing(true); load(); }}
-            tintColor={colors.brand}
-          />
-        }
-        ListHeaderComponent={
-          <View>
-            {/* Hero */}
-            <View style={styles.hero}>
-              <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
-            </View>
 
-            {/* Page mode toggle: Welcome (teaser) | Schedule (full agenda) */}
-            <View style={styles.segmented}>
-              {([
-                { key: "highlights", label: "Welcome", icon: "film" as const },
-                { key: "schedule", label: "Schedule", icon: "list" as const },
-              ]).map((opt) => {
-                const sel = mode === (opt.key as typeof mode);
+      {Header}
+
+      {mode === "highlights" ? (
+        // ─── Welcome page — fixed (non-scrolling) layout ────────────────
+        <View
+          style={[
+            styles.welcomeBody,
+            { paddingBottom: tabBarHeight + 12 },
+          ]}
+          onLayout={() => { /* intentionally empty */ }}
+        >
+          <VimeoTeaser inline />
+        </View>
+      ) : (
+        // ─── Schedule page — scrollable list ─────────────────────────────
+        <FlatList
+          data={filtered}
+          keyExtractor={(it) => it.id}
+          contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: tabBarHeight + 24 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => { setRefreshing(true); load(); }}
+              tintColor={colors.brand}
+            />
+          }
+          ListHeaderComponent={
+            <View style={styles.chipRow}>
+              {days.map((d) => {
+                const active = d.date === activeDate;
+                const [, , dd] = d.date.split("-");
                 return (
                   <Pressable
-                    key={opt.key}
-                    onPress={() => setMode(opt.key as typeof mode)}
-                    style={[styles.segBtn, sel && styles.segBtnActive]}
-                    testID={`mode-${opt.key}`}
+                    key={d.date}
+                    onPress={() => setActiveDate(d.date)}
+                    style={[styles.chip, active && styles.chipActive]}
+                    testID={`day-chip-${d.date}`}
                   >
-                    <Ionicons
-                      name={opt.icon}
-                      size={14}
-                      color={sel ? "#1A2841" : "rgba(245,240,230,0.78)"}
-                    />
-                    <Text style={[styles.segBtnText, sel && styles.segBtnTextActive]}>
-                      {opt.label}
+                    <Text style={[styles.chipDay, active && styles.chipDayActive]}>
+                      {d.label.split(" ")[0].toUpperCase()}
+                    </Text>
+                    <Text style={[styles.chipDate, active && styles.chipDateActive]}>
+                      {Number(dd)}
                     </Text>
                   </Pressable>
                 );
               })}
             </View>
-
-            {/* Day selector chip row — only on the Schedule sub-page */}
-            {mode === "schedule" ? (
-              <View style={styles.chipRow}>
-                {days.map((d) => {
-                  const active = d.date === activeDate;
-                  const [, , dd] = d.date.split("-");
-                  return (
-                    <Pressable
-                      key={d.date}
-                      onPress={() => setActiveDate(d.date)}
-                      style={[styles.chip, active && styles.chipActive]}
-                      testID={`day-chip-${d.date}`}
-                    >
-                      <Text style={[styles.chipDay, active && styles.chipDayActive]}>
-                        {d.label.split(" ")[0].toUpperCase()}
-                      </Text>
-                      <Text style={[styles.chipDate, active && styles.chipDateActive]}>
-                        {Number(dd)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
-            <Text style={styles.emptyText}>No sessions for this day</Text>
-          </View>
-        }
-        renderItem={({ item }) => {
-          const fav = favorites.has(item.id);
-          const cIcon = CATEGORY_ICON[item.category] || "ellipse";
-          const cColor = CATEGORY_COLOR[item.category] || colors.brand;
-          return (
-            <Pressable
-              onPress={() => router.push(`/event/${item.id}`)}
-              style={[styles.card, shadow.card]}
-              testID={`session-card-${item.id}`}
-            >
-              <View style={styles.cardLeft}>
-                <Text style={styles.cardTime}>{item.time}</Text>
-                {item.end_time ? <Text style={styles.cardEndTime}>{item.end_time}</Text> : null}
-                <View style={[styles.catDot, { backgroundColor: cColor }]}>
-                  <Ionicons name={cIcon} size={14} color="#fff" />
-                </View>
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-                <View style={styles.cardMeta}>
-                  <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
-                  <Text style={styles.cardMetaText}>{item.location}</Text>
-                </View>
-                {item.description ? (
-                  <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
-                ) : null}
-              </View>
+          }
+          ListEmptyComponent={
+            <View style={styles.empty}>
+              <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
+              <Text style={styles.emptyText}>No sessions for this day</Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const fav = favorites.has(item.id);
+            const cIcon = CATEGORY_ICON[item.category] || "ellipse";
+            const cColor = CATEGORY_COLOR[item.category] || colors.brand;
+            return (
               <Pressable
-                onPress={(e) => { e.stopPropagation?.(); toggle(item.id); }}
-                style={styles.favBtn}
-                hitSlop={10}
-                testID={`fav-btn-${item.id}`}
+                onPress={() => router.push(`/event/${item.id}`)}
+                style={[styles.card, shadow.card]}
+                testID={`session-card-${item.id}`}
               >
-                <Ionicons
-                  name={fav ? "bookmark" : "bookmark-outline"}
-                  size={26}
-                  color={fav ? colors.brandTertiary : colors.onSurfaceMuted}
-                />
+                <View style={styles.cardLeft}>
+                  <Text style={styles.cardTime}>{item.time}</Text>
+                  {item.end_time ? <Text style={styles.cardEndTime}>{item.end_time}</Text> : null}
+                  <View style={[styles.catDot, { backgroundColor: cColor }]}>
+                    <Ionicons name={cIcon} size={14} color="#fff" />
+                  </View>
+                </View>
+                <View style={styles.cardBody}>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <View style={styles.cardMeta}>
+                    <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
+                    <Text style={styles.cardMetaText}>{item.location}</Text>
+                  </View>
+                  {item.description ? (
+                    <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
+                  ) : null}
+                </View>
+                <Pressable
+                  onPress={(e) => { e.stopPropagation?.(); toggle(item.id); }}
+                  style={styles.favBtn}
+                  hitSlop={10}
+                  testID={`fav-btn-${item.id}`}
+                >
+                  <Ionicons
+                    name={fav ? "bookmark" : "bookmark-outline"}
+                    size={26}
+                    color={fav ? colors.brandTertiary : colors.onSurfaceMuted}
+                  />
+                </Pressable>
               </Pressable>
-            </Pressable>
-          );
-        }}
-      />
-
-      {/* Vimeo teaser — only on the Highlights page, fills the bottom area */}
-      {mode === "highlights" ? (
-        <VimeoTeaser
-          bottomOffset={tabBarHeight}
-          topReservedPx={topReserved}
-          large
+            );
+          }}
         />
-      ) : null}
+      )}
 
     </View>
   );
@@ -248,7 +248,15 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  hero: { aspectRatio: 2, marginBottom: spacing.md, borderRadius: 8, overflow: "hidden", backgroundColor: "#0F1A2E" },
+  hero: { marginBottom: spacing.md, borderRadius: 8, overflow: "hidden", backgroundColor: "#0F1A2E" },
+
+  welcomeBody: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
   segmented: {
     flexDirection: "row",
