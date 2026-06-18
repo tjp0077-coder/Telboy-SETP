@@ -192,16 +192,8 @@ export default function VimeoTeaser({
           {/* Play button overlay */}
           <View style={styles.playOverlay} pointerEvents="none">
             <View style={styles.playRing}>
-              <Ionicons name="play" size={28} color="#1A2841" style={{ marginLeft: 3 }} />
+              <Ionicons name="play" size={36} color="#FFFFFF" style={{ marginLeft: 4 }} />
             </View>
-          </View>
-
-          {/* Caption */}
-          <View style={styles.captionPill} pointerEvents="none">
-            <Ionicons name="film" size={11} color="#F2C265" />
-            <Text style={styles.captionText} numberOfLines={1}>
-              {caption}
-            </Text>
           </View>
         </Pressable>
       </View>
@@ -315,17 +307,19 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   playRing: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "rgba(242, 194, 101, 0.95)",
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: "#3C284C",
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "rgba(255,255,255,0.92)",
     shadowColor: "#000",
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOpacity: 0.45,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 7,
   },
   captionPill: {
     position: "absolute",

@@ -102,7 +102,7 @@ export default function ScheduleScreen() {
   // aspectRatio 2 would otherwise dominate) still leave room for the video.
   const heroH = Math.min(winW / 2, winH * 0.28);
   const segmentedH = 44;
-  const chipsH = 50 + 8;
+  const chipsH = mode === "schedule" ? 50 + 8 : 0;
   const topReserved = insets.top + heroH + segmentedH + chipsH + 16 + spacing.md * 2;
   const listBottomPad = mode === "highlights"
     ? tabBarHeight + 24 + 280 // approx — large video covers rest of screen
@@ -129,10 +129,10 @@ export default function ScheduleScreen() {
               <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
             </View>
 
-            {/* Page mode toggle: Highlights (teaser) | Schedule (full agenda) */}
+            {/* Page mode toggle: Welcome (teaser) | Schedule (full agenda) */}
             <View style={styles.segmented}>
               {([
-                { key: "highlights", label: "Highlights", icon: "film" as const },
+                { key: "highlights", label: "Welcome", icon: "film" as const },
                 { key: "schedule", label: "Schedule", icon: "list" as const },
               ]).map((opt) => {
                 const sel = mode === (opt.key as typeof mode);
@@ -156,28 +156,30 @@ export default function ScheduleScreen() {
               })}
             </View>
 
-            {/* Day selector chip row */}
-            <View style={styles.chipRow}>
-              {days.map((d) => {
-                const active = d.date === activeDate;
-                const [, , dd] = d.date.split("-");
-                return (
-                  <Pressable
-                    key={d.date}
-                    onPress={() => setActiveDate(d.date)}
-                    style={[styles.chip, active && styles.chipActive]}
-                    testID={`day-chip-${d.date}`}
-                  >
-                    <Text style={[styles.chipDay, active && styles.chipDayActive]}>
-                      {d.label.split(" ")[0].toUpperCase()}
-                    </Text>
-                    <Text style={[styles.chipDate, active && styles.chipDateActive]}>
-                      {Number(dd)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+            {/* Day selector chip row — only on the Schedule sub-page */}
+            {mode === "schedule" ? (
+              <View style={styles.chipRow}>
+                {days.map((d) => {
+                  const active = d.date === activeDate;
+                  const [, , dd] = d.date.split("-");
+                  return (
+                    <Pressable
+                      key={d.date}
+                      onPress={() => setActiveDate(d.date)}
+                      style={[styles.chip, active && styles.chipActive]}
+                      testID={`day-chip-${d.date}`}
+                    >
+                      <Text style={[styles.chipDay, active && styles.chipDayActive]}>
+                        {d.label.split(" ")[0].toUpperCase()}
+                      </Text>
+                      <Text style={[styles.chipDate, active && styles.chipDateActive]}>
+                        {Number(dd)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
           </View>
         }
         ListEmptyComponent={
