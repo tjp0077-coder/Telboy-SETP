@@ -730,10 +730,28 @@ async def city_guide():
 
 app.include_router(api)
 
+# ---------- CORS ----------
+# Explicitly allow the production/branch Vercel domains, plus any extra origins
+# provided via the FRONTEND_URL env var (comma-separated), plus a regex that
+# matches all *.vercel.app preview deployments for this project.
+_default_origins = [
+    "https://telboy-setp-git-main-setp.vercel.app",
+    "https://telboy-setp.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8081",
+]
+_env_origins = [
+    o.strip()
+    for o in os.environ.get("FRONTEND_URL", "").split(",")
+    if o.strip()
+]
+allowed_origins = list(dict.fromkeys(_env_origins + _default_origins))
+
 app.add_middleware(
     CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
