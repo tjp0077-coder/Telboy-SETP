@@ -116,3 +116,16 @@ user_problem_statement: |
 ##  - Verified Home + Schedule render correctly. Backend APIs returning 200.
 ## Note: bcrypt version-read warning in backend logs is non-fatal (login returns 200).
 ## Next: user deploys via Emergent Deploy button → public URL → generate QR for delegates.
+
+## BUG FIX (Vercel admin login "Invalid username or password" / 500):
+## RCA: Frontend (Vercel, telboy-setp.vercel.app) -> backend (Render, telboy-setp.onrender.com).
+##   Render DB had misseeded admins: dave.mackay wrong/absent pw (401); terry.parker doc
+##   missing password_hash -> login endpoint did admin["password_hash"] -> 500 crash.
+##   seed_admins() was insert-only so bad records never self-repaired.
+## FIXES (backend/server.py):
+##   1. seed_admins() now UPSERTs and syncs password_hash+name from env on every startup (self-healing).
+##   2. login() uses admin.get("password_hash") -> returns 401 instead of 500 on corrupt docs.
+##   3. frontend src/AuthContext.tsx surfaces real errors (network vs credentials vs server).
+## Admin creds: stored in MongoDB admins collection, seeded from ADMIN1/2/3_* env vars.
+## Verified locally: normal login 200; corrupt admin 401 (no 500); corrupted hash repaired after restart.
+## test_priority: backend auth flow (login, seed, /auth/me, admin CRUD).

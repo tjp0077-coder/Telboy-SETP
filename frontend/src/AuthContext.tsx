@@ -42,7 +42,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAuth({ username: res.username, name: res.name, loading: false });
       return { ok: true };
     } catch (e: any) {
-      return { ok: false, error: "Invalid username or password" };
+      const msg = String(e?.message || "");
+      let error = "Invalid username or password";
+      if (/Invalid credentials|401|Unauthorized/i.test(msg)) {
+        error = "Invalid username or password";
+      } else if (msg === "" || /Failed to fetch|Network request failed|NetworkError|TypeError/i.test(msg)) {
+        error = "Cannot reach the server. Check your connection and try again.";
+      } else if (/500|Internal Server Error|502|503|504/i.test(msg)) {
+        error = "Server error. Please try again shortly.";
+      }
+      return { ok: false, error };
     }
   }, []);
 

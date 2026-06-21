@@ -314,15 +314,25 @@ async def seed_admins():
         name = os.getenv(n_env, username or "")
         if not username or not password:
             continue
-        existing = await admins_col.find_one({"username": username})
-        if existing is None:
-            await admins_col.insert_one({
-                "username": username,
-                "name": name,
-                "password_hash": hash_pw(password),
-                "role": "admin",
-                "created_at": datetime.now(timezone.utc).isoformat(),
-            })
+        # Self-healing upsert: keep the admin's password_hash and name in sync
+        # with the environment variables on every startup. This repairs records
+        # that are missing/incorrect (e.g. a corrupt doc with no password_hash)
+        # and lets credentials be managed entirely via env vars + a redeploy.
+        await admins_col.update_one(
+            {"username": username},
+            {
+                "$set": {
+                    "username": username,
+                    "name": name,
+                    "password_hash": hash_pw(password),
+                    "role": "admin",
+                },
+                "$setOnInsert": {
+                    "created_at": datetime.now(timezone.utc).isoformat(),
+                },
+            },
+            upsert=True,
+        )
 
 
 async def seed_schedule():
@@ -364,7 +374,8 @@ async def on_startup():
 @api.post("/auth/login", response_model=TokenOut)
 async def login(data: LoginIn):
     admin = await admins_col.find_one({"username": data.username})
-    if not admin or not verify_pw(data.password, admin["password_hash"]):
+    pw_hash = admin.get("password_hash") if admin else None
+    if not admin or not pw_hash or not verify_pw(data.password, pw_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_token({
         "sub": admin["username"], "username": admin["username"], "role": "admin"
