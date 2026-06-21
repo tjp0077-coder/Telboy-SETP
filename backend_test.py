@@ -252,11 +252,11 @@ def test_9_protected_route_no_token(result: TestResult):
         result.add_fail(test_name, f"Exception: {str(e)}")
 
 
-def test_10_public_endpoints(result: TestResult):
-    """Test 10: Public read endpoints - schedule, feed, city-guide"""
+def test_9_public_endpoints(result: TestResult):
+    """Test 9: Public read endpoints - schedule, feed, city-guide"""
     
     # Test schedule
-    test_name = "Test 10a: GET /schedule (public)"
+    test_name = "Test 9a: GET /schedule (public)"
     try:
         response = requests.get(f"{BASE_URL}/schedule", timeout=10)
         if response.status_code == 200:
@@ -271,7 +271,7 @@ def test_10_public_endpoints(result: TestResult):
         result.add_fail(test_name, f"Exception: {str(e)}")
     
     # Test feed
-    test_name = "Test 10b: GET /feed (public)"
+    test_name = "Test 9b: GET /feed (public)"
     try:
         response = requests.get(f"{BASE_URL}/feed", timeout=10)
         if response.status_code == 200:
@@ -286,7 +286,7 @@ def test_10_public_endpoints(result: TestResult):
         result.add_fail(test_name, f"Exception: {str(e)}")
     
     # Test city-guide
-    test_name = "Test 10c: GET /city-guide (public)"
+    test_name = "Test 9c: GET /city-guide (public)"
     try:
         response = requests.get(f"{BASE_URL}/city-guide", timeout=10)
         if response.status_code == 200:
@@ -301,9 +301,89 @@ def test_10_public_endpoints(result: TestResult):
         result.add_fail(test_name, f"Exception: {str(e)}")
 
 
-def test_11_self_healing_seed(result: TestResult):
-    """Test 11: Self-healing seed behavior"""
-    test_name = "Test 11: Self-healing seed (admin authentication works)"
+def test_10_cors_preflight_main_vercel(result: TestResult):
+    """Test 10: CORS preflight with main Vercel origin"""
+    test_name = "Test 10: CORS preflight - main Vercel origin"
+    origin = "https://telboy-setp-git-main-setp.vercel.app"
+    try:
+        headers = {
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type"
+        }
+        response = requests.options(f"{BASE_URL}/auth/login", headers=headers, timeout=10)
+        
+        # OPTIONS can return 200 or 204 (No Content)
+        if response.status_code in [200, 204]:
+            cors_header = response.headers.get("access-control-allow-origin", "")
+            # Check if we got the specific origin or wildcard
+            if cors_header == origin:
+                result.add_pass(test_name, f"CORS preflight OK ({response.status_code}), access-control-allow-origin: {cors_header}")
+            elif cors_header == "*":
+                result.add_fail(test_name, f"Got wildcard '*' instead of specific origin. Expected: {origin}, got: {cors_header}")
+            else:
+                result.add_fail(test_name, f"Expected access-control-allow-origin: {origin}, got: {cors_header}")
+        else:
+            result.add_fail(test_name, f"Expected 200/204, got {response.status_code}: {response.text}")
+    except Exception as e:
+        result.add_fail(test_name, f"Exception: {str(e)}")
+
+
+def test_11_cors_preflight_preview_vercel(result: TestResult):
+    """Test 11: CORS preflight with preview Vercel origin (regex test)"""
+    test_name = "Test 11: CORS preflight - preview Vercel origin (regex)"
+    origin = "https://telboy-setp-xyz789-setp.vercel.app"
+    try:
+        headers = {
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type"
+        }
+        response = requests.options(f"{BASE_URL}/auth/login", headers=headers, timeout=10)
+        
+        # OPTIONS can return 200 or 204 (No Content)
+        if response.status_code in [200, 204]:
+            cors_header = response.headers.get("access-control-allow-origin", "")
+            if cors_header == origin:
+                result.add_pass(test_name, f"CORS regex working ({response.status_code}), access-control-allow-origin: {cors_header}")
+            elif cors_header == "*":
+                result.add_fail(test_name, f"Got wildcard '*' instead of specific origin. Expected: {origin}, got: {cors_header}")
+            else:
+                result.add_fail(test_name, f"Expected access-control-allow-origin: {origin}, got: {cors_header}")
+        else:
+            result.add_fail(test_name, f"Expected 200/204, got {response.status_code}: {response.text}")
+    except Exception as e:
+        result.add_fail(test_name, f"Exception: {str(e)}")
+
+
+def test_12_cors_actual_request(result: TestResult):
+    """Test 12: CORS header in actual POST request"""
+    test_name = "Test 12: CORS header in actual POST login"
+    origin = "https://telboy-setp-git-main-setp.vercel.app"
+    try:
+        headers = {"Origin": origin}
+        response = requests.post(
+            f"{BASE_URL}/auth/login",
+            json={"username": ADMIN1_USERNAME, "password": ADMIN1_PASSWORD},
+            headers=headers,
+            timeout=10
+        )
+        
+        if response.status_code == 200:
+            cors_header = response.headers.get("access-control-allow-origin", "")
+            if cors_header == origin:
+                result.add_pass(test_name, f"CORS header present in POST response: {cors_header}")
+            else:
+                result.add_fail(test_name, f"Expected access-control-allow-origin: {origin}, got: {cors_header}")
+        else:
+            result.add_fail(test_name, f"Expected 200, got {response.status_code}: {response.text}")
+    except Exception as e:
+        result.add_fail(test_name, f"Exception: {str(e)}")
+
+
+def test_13_self_healing_seed(result: TestResult):
+    """Test 13: Self-healing seed behavior"""
+    test_name = "Test 13: Self-healing seed (admin authentication works)"
     # This is implicitly tested by tests 1 and 2
     # If both admins can authenticate, the seed worked correctly
     result.add_pass(test_name, "Verified by successful authentication of both seeded admins (Tests 1 & 2)")
@@ -349,13 +429,20 @@ def main():
     
     test_9_protected_route_no_token(result)
     
+    print(f"\n{BOLD}Running CORS Tests...{RESET}\n")
+    
+    # Test 10-12: CORS tests
+    test_10_cors_preflight_main_vercel(result)
+    test_11_cors_preflight_preview_vercel(result)
+    test_12_cors_actual_request(result)
+    
     print(f"\n{BOLD}Running Public Endpoint Tests...{RESET}\n")
     
-    # Test 10: Public endpoints
-    test_10_public_endpoints(result)
+    # Test 9: Public endpoints
+    test_9_public_endpoints(result)
     
-    # Test 11: Self-healing seed
-    test_11_self_healing_seed(result)
+    # Test 13: Self-healing seed
+    test_13_self_healing_seed(result)
     
     # Print summary
     success = result.summary()
