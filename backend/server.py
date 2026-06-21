@@ -17,9 +17,16 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 # ---------- Mongo ----------
-mongo_url = os.environ["MONGO_URL"]
+# Accept either MONGO_URL (Emergent/local) or MONGODB_URI (common on Render/Atlas).
+mongo_url = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
+if not mongo_url:
+    raise RuntimeError(
+        "No Mongo connection string found. Set MONGO_URL or MONGODB_URI."
+    )
 client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ["DB_NAME"]]
+# DB name: DB_NAME / MONGO_DB_NAME, defaulting to the production Atlas database.
+db_name = os.environ.get("DB_NAME") or os.environ.get("MONGO_DB_NAME") or "Telboy_SETP"
+db = client[db_name]
 
 admins_col = db["admins"]
 schedule_col = db["schedule"]
@@ -28,7 +35,7 @@ event_notes_col = db["event_notes"]
 contact_col = db["contact_messages"]
 
 # ---------- Auth helpers ----------
-JWT_SECRET = os.environ["JWT_SECRET_KEY"]
+JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
