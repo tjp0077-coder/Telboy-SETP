@@ -316,7 +316,7 @@ async def seed_admins():
         ("ADMIN3_USERNAME", "ADMIN3_PASSWORD", "ADMIN3_NAME"),
     ]
     for u_env, p_env, n_env in configs:
-        username = os.getenv(u_env)
+        username = (os.getenv(u_env) or "").strip().lower()
         password = os.getenv(p_env)
         name = os.getenv(n_env, username or "")
         if not username or not password:
@@ -380,7 +380,11 @@ async def on_startup():
 # ---------- Auth routes ----------
 @api.post("/auth/login", response_model=TokenOut)
 async def login(data: LoginIn):
-    admin = await admins_col.find_one({"username": data.username})
+    # Normalize the same way create_admin/delete_admin do (strip + lowercase),
+    # so usernames are matched case-insensitively. Without this, an admin created
+    # as "kelly.latimer" could not log in by typing "Kelly.Latimer".
+    username = data.username.strip().lower()
+    admin = await admins_col.find_one({"username": username})
     pw_hash = admin.get("password_hash") if admin else None
     if not admin or not pw_hash or not verify_pw(data.password, pw_hash):
         raise HTTPException(status_code=401, detail="Invalid credentials")
