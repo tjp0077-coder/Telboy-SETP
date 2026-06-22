@@ -130,6 +130,17 @@ user_problem_statement: |
 ## Verified locally: normal login 200; corrupt admin 401 (no 500); corrupted hash repaired after restart.
 ## test_priority: backend auth flow (login, seed, /auth/me, admin CRUD).
 
+## UPDATE 2 (Vercel/Render production wiring):
+##  - frontend/.env.production added (EXPO_PUBLIC_BACKEND_URL -> Render); build:web now uses --clear
+##    (Metro cache was baking the old preview URL).
+##  - backend/server.py: Mongo reads MONGO_URL OR MONGODB_URI; DB_NAME defaults to Telboy_SETP;
+##    JWT_SECRET_KEY has safe fallback.
+##  - CORS rewritten: explicit Vercel domains + allow_origin_regex https://.*\.vercel\.app +
+##    FRONTEND_URL env override; allow_credentials, all methods/headers.
+##  - Live Render probe: CORS preflight from Vercel origin returns 200 (CORS not the blocker);
+##    401 on login = wrong password (must match Render ADMIN*_PASSWORD env). Bug-fixed code IS live (terry no longer 500s).
+## RETEST FOCUS: confirm CORS preflight allows Vercel origins + regex; auth flow still 200/401 correctly; no 500s.
+
 #====================================================================================================
 # TESTING AGENT RESULTS - 2026-06-21
 #====================================================================================================
@@ -328,3 +339,117 @@ agent_communication:
       - Admin credentials synced from backend/.env on startup
       
       Backend API is production-ready for admin authentication flows.
+
+#====================================================================================================
+# TESTING AGENT RESULTS - 2026-06-21 (CORS + Production Wiring Retest)
+#====================================================================================================
+
+  - task: "CORS Configuration - Preflight Main Vercel Origin"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: OPTIONS preflight returns 204 but access-control-allow-origin is '*' (wildcard) instead of echoing the specific origin 'https://telboy-setp-git-main-setp.vercel.app'. This is a problem because the backend has allow_credentials=True, which requires specific origins, not wildcards. The FastAPI CORS config in server.py is correct, but infrastructure layer (likely Kubernetes ingress) is overriding with wildcard headers."
+
+  - task: "CORS Configuration - Preflight Preview Vercel Origin (Regex)"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: OPTIONS preflight returns 204 but access-control-allow-origin is '*' instead of echoing 'https://telboy-setp-xyz789-setp.vercel.app'. The allow_origin_regex in server.py should match *.vercel.app domains, but infrastructure layer is overriding with wildcard."
+
+  - task: "CORS Configuration - Actual Request Headers"
+    implemented: true
+    working: false
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL: POST /api/auth/login with Origin header returns 200 but access-control-allow-origin is '*' instead of echoing the origin. This violates CORS spec when credentials are involved."
+
+metadata:
+  created_by: "testing_agent"
+  version: "1.1"
+  test_sequence: 2
+  last_tested: "2026-06-21"
+  test_file: "/app/backend_test.py"
+
+test_plan:
+  current_focus:
+    - "CORS infrastructure configuration issue"
+  stuck_tasks:
+    - "CORS Configuration - Infrastructure Override"
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "testing"
+    message: |
+      ✅ BACKEND AUTH & API TESTS: 13/16 PASSED
+      ❌ CORS TESTS: 3/3 FAILED (CRITICAL INFRASTRUCTURE ISSUE)
+      
+      AUTH FLOW VERIFICATION (ALL PASSED):
+      ✅ Test 1: dave.mackay login → 200 with token
+      ✅ Test 2: terry.parker login → 200 with token
+      ✅ Test 3: Wrong password → 401 (NOT 500)
+      ✅ Test 4: Non-existent user → 401 (NOT 500)
+      ✅ Test 5: Malformed login → 401 (NOT 500)
+      ✅ Test 6: GET /auth/me without token → 401
+      ✅ Test 7: GET /auth/me with token → 200 with user data
+      ✅ Test 8: GET /admins with token → 200 with 2 admins
+      ✅ Test 9: GET /admins without token → 401
+      
+      PUBLIC ENDPOINTS (ALL PASSED):
+      ✅ Test 9a: GET /schedule → 200 with 36 items
+      ✅ Test 9b: GET /feed → 200 with 1 item
+      ✅ Test 9c: GET /city-guide → 200 with expected structure
+      ✅ Test 13: Self-healing seed verified
+      
+      CORS TESTS (ALL FAILED - INFRASTRUCTURE ISSUE):
+      ❌ Test 10: OPTIONS preflight main Vercel origin
+         - Expected: access-control-allow-origin: https://telboy-setp-git-main-setp.vercel.app
+         - Got: access-control-allow-origin: *
+      ❌ Test 11: OPTIONS preflight preview Vercel origin (regex test)
+         - Expected: access-control-allow-origin: https://telboy-setp-xyz789-setp.vercel.app
+         - Got: access-control-allow-origin: *
+      ❌ Test 12: POST login with Origin header
+         - Expected: access-control-allow-origin: https://telboy-setp-git-main-setp.vercel.app
+         - Got: access-control-allow-origin: *
+      
+      ROOT CAUSE ANALYSIS:
+      The FastAPI CORS middleware in backend/server.py is correctly configured with:
+      - Explicit allowed_origins list including Vercel domains
+      - allow_origin_regex: r"https://.*\.vercel\.app"
+      - allow_credentials: True
+      
+      However, the actual HTTP responses show wildcard "*" CORS headers, which suggests
+      the Kubernetes ingress or proxy layer is adding/overriding CORS headers.
+      
+      IMPACT:
+      - Current deployment (same-domain) may work with wildcard CORS
+      - Cross-origin requests from Vercel to this backend WILL FAIL when credentials are involved
+      - Browsers will block credentialed requests (cookies, Authorization headers) when
+        access-control-allow-origin is "*" and access-control-allow-credentials is "true"
+      
+      RECOMMENDATION:
+      This is an infrastructure/deployment configuration issue, not a code issue.
+      The backend code is correct. The ingress/proxy layer needs to be configured to
+      either:
+      1. NOT add CORS headers (let FastAPI handle it), OR
+      2. Properly echo the Origin header instead of using wildcard
+      
+      For production Vercel deployment, this MUST be fixed or credentialed API calls will fail.
+
