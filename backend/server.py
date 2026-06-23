@@ -34,6 +34,7 @@ schedule_col = db["schedule"]
 messages_col = db["live_messages"]
 event_notes_col = db["event_notes"]
 contact_col = db["contact_messages"]
+prototype_ideas_col = db["prototype_ideas"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
@@ -186,6 +187,26 @@ class FeedItem(BaseModel):
     created_at: str
     event_id: Optional[str] = None
     event_title: Optional[str] = None
+
+
+class PrototypeIdea(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    title: str
+    summary: str
+    proposed_screen: Optional[str] = ""
+    mock_link: Optional[str] = ""
+    status: str = "draft"   # draft | published
+    created_by: str
+    created_at: str
+    published_at: Optional[str] = None
+    published_by: Optional[str] = None
+
+
+class PrototypeIdeaCreate(BaseModel):
+    title: str
+    summary: str
+    proposed_screen: Optional[str] = ""
+    mock_link: Optional[str] = ""
 
 
 class ContactCreate(BaseModel):
@@ -699,6 +720,68 @@ async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
 @api.delete("/messages/{message_id}")
 async def delete_message(message_id: str, admin=Depends(get_current_admin)):
     res = await messages_col.delete_one({"id": message_id})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+# ---------- Prototype Lab (draft -> publish) ----------
+@api.get("/prototype-ideas", response_model=List[PrototypeIdea])
+async def list_published_prototype_ideas():
+    docs = await prototype_ideas_col.find({"status": "published"}, {"_id": 0}).to_list(500)
+    docs.sort(key=lambda d: d.get("published_at", ""), reverse=True)
+    return docs
+
+
+@api.get("/admin/prototype-ideas", response_model=List[PrototypeIdea])
+async def list_admin_prototype_ideas(admin=Depends(get_current_admin)):
+    docs = await prototype_ideas_col.find({}, {"_id": 0}).to_list(500)
+    docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+    return docs
+
+
+@api.post("/admin/prototype-ideas", response_model=PrototypeIdea)
+async def create_prototype_idea(data: PrototypeIdeaCreate, admin=Depends(get_current_admin)):
+    title = data.title.strip()
+    summary = data.summary.strip()
+    if not title or not summary:
+        raise HTTPException(status_code=400, detail="title and summary are required")
+
+    item = PrototypeIdea(
+        title=title,
+        summary=summary,
+        proposed_screen=(data.proposed_screen or "").strip(),
+        mock_link=(data.mock_link or "").strip(),
+        status="draft",
+        created_by=admin.get("name", admin["username"]),
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )
+    await prototype_ideas_col.insert_one(item.dict())
+    return item
+
+
+@api.patch("/admin/prototype-ideas/{idea_id}/publish", response_model=PrototypeIdea)
+async def publish_prototype_idea(idea_id: str, admin=Depends(get_current_admin)):
+    existing = await prototype_ideas_col.find_one({"id": idea_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    now = datetime.now(timezone.utc).isoformat()
+    await prototype_ideas_col.update_one(
+        {"id": idea_id},
+        {"$set": {
+            "status": "published",
+            "published_at": now,
+            "published_by": admin.get("name", admin["username"]),
+        }},
+    )
+    updated = await prototype_ideas_col.find_one({"id": idea_id}, {"_id": 0})
+    return updated
+
+
+@api.delete("/admin/prototype-ideas/{idea_id}")
+async def delete_prototype_idea(idea_id: str, admin=Depends(get_current_admin)):
+    res = await prototype_ideas_col.delete_one({"id": idea_id})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}

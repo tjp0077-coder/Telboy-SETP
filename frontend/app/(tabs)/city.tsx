@@ -33,12 +33,17 @@ const TRANSPORT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function CityGuideScreen() {
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<any>(null);
+  const [ideas, setIdeas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
       const res = await api.cityGuide();
       setData(res);
+      const publishedIdeas = await api.listPrototypeIdeas();
+      setIdeas(publishedIdeas || []);
+    } catch {
+      setIdeas([]);
     } finally { setLoading(false); }
   }, []);
 
@@ -165,6 +170,25 @@ export default function CityGuideScreen() {
           </Pressable>
         </View>
       ))}
+
+      {/* Published prototypes */}
+      <Text style={styles.sectionTitle}>What We Are Prototyping</Text>
+      {ideas.length === 0 ? (
+        <View style={[styles.ideaCard, shadow.card]} testID="prototype-public-empty">
+          <Text style={styles.ideaTitle}>No published concepts yet</Text>
+          <Text style={styles.ideaSummary}>Admins are currently reviewing upcoming ideas.</Text>
+        </View>
+      ) : ideas.map((idea: any) => (
+        <View key={idea.id} style={[styles.ideaCard, shadow.card]} testID={`prototype-public-${idea.id}`}>
+          <View style={styles.ideaHead}>
+            <Ionicons name="bulb" size={16} color={colors.brandTertiary} />
+            <Text style={styles.ideaTag}>PUBLISHED CONCEPT</Text>
+          </View>
+          <Text style={styles.ideaTitle}>{idea.title}</Text>
+          <Text style={styles.ideaSummary}>{idea.summary}</Text>
+          {idea.proposed_screen ? <Text style={styles.ideaMeta}>Planned for: {idea.proposed_screen}</Text> : null}
+        </View>
+      ))}
       </ScrollView>
     </View>
   );
@@ -254,4 +278,14 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill, flexDirection: "row", alignItems: "center", gap: 4,
   },
   mapBtnText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+
+  ideaCard: {
+    marginHorizontal: spacing.lg, marginBottom: spacing.md,
+    backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
+  },
+  ideaHead: { flexDirection: "row", alignItems: "center", gap: 6 },
+  ideaTag: { fontSize: 10, fontWeight: "800", letterSpacing: 0.8, color: colors.brandTertiary },
+  ideaTitle: { fontSize: 15, fontWeight: "700", color: colors.onSurface, marginTop: spacing.xs, fontFamily: "Georgia" },
+  ideaSummary: { fontSize: 13, color: colors.onSurface, marginTop: spacing.xs, lineHeight: 19 },
+  ideaMeta: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: spacing.sm },
 });

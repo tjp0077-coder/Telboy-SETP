@@ -174,3 +174,46 @@ class TestScheduleCRUD:
         assert r4.status_code == 200
         r5 = s.get(f"{API}/schedule")
         assert not any(x["id"] == sid for x in r5.json())
+
+
+# ---------- Prototype Lab ----------
+class TestPrototypeLab:
+    def test_public_prototype_endpoint_returns_list(self, s):
+        r = s.get(f"{API}/prototype-ideas")
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+
+    def test_create_publish_delete_prototype_idea(self, s, auth_headers):
+        payload = {
+            "title": "TEST Prototype Card",
+            "summary": "Draft concept for committee review.",
+            "proposed_screen": "City",
+            "mock_link": "https://example.com/mock",
+        }
+
+        # create draft
+        r = s.post(f"{API}/admin/prototype-ideas", json=payload, headers=auth_headers)
+        assert r.status_code == 200, r.text
+        created = r.json()
+        assert created["status"] == "draft"
+        idea_id = created["id"]
+
+        # not publicly visible while draft
+        r2 = s.get(f"{API}/prototype-ideas")
+        assert r2.status_code == 200
+        assert not any(x["id"] == idea_id for x in r2.json())
+
+        # publish
+        r3 = s.patch(f"{API}/admin/prototype-ideas/{idea_id}/publish", headers=auth_headers)
+        assert r3.status_code == 200, r3.text
+        published = r3.json()
+        assert published["status"] == "published"
+
+        # now publicly visible
+        r4 = s.get(f"{API}/prototype-ideas")
+        assert r4.status_code == 200
+        assert any(x["id"] == idea_id for x in r4.json())
+
+        # cleanup
+        r5 = s.delete(f"{API}/admin/prototype-ideas/{idea_id}", headers=auth_headers)
+        assert r5.status_code == 200

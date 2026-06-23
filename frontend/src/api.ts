@@ -121,6 +121,19 @@ export type ContactItem = {
   event_title?: string | null;
 };
 
+export type PrototypeIdea = {
+  id: string;
+  title: string;
+  summary: string;
+  proposed_screen?: string;
+  mock_link?: string;
+  status: "draft" | "published";
+  created_by: string;
+  created_at: string;
+  published_at?: string | null;
+  published_by?: string | null;
+};
+
 export const api = {
   // schedule
   listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
@@ -149,6 +162,16 @@ export const api = {
     request<MessageItem>("/messages", { method: "POST", body: JSON.stringify(data) }, true),
   deleteMessage: (id: string) =>
     request<{ deleted: boolean }>(`/messages/${id}`, { method: "DELETE" }, true),
+
+  // prototype lab
+  listPrototypeIdeas: () => cachedGet<PrototypeIdea[]>("/prototype-ideas", "cache:prototypeideas"),
+  listAdminPrototypeIdeas: () => request<PrototypeIdea[]>("/admin/prototype-ideas", {}, true),
+  createPrototypeIdea: (data: { title: string; summary: string; proposed_screen?: string; mock_link?: string }) =>
+    request<PrototypeIdea>("/admin/prototype-ideas", { method: "POST", body: JSON.stringify(data) }, true),
+  publishPrototypeIdea: (id: string) =>
+    request<PrototypeIdea>(`/admin/prototype-ideas/${id}/publish`, { method: "PATCH" }, true),
+  deletePrototypeIdea: (id: string) =>
+    request<{ deleted: boolean }>(`/admin/prototype-ideas/${id}`, { method: "DELETE" }, true),
 
   // contact
   submitContact: (data: { name: string; email?: string; subject: string; message: string; event_id?: string | null }) =>
