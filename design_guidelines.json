@@ -114,7 +114,7 @@
         "empty": "Illustration of a map with 'Guide content unavailable'.",
         "error": "Message 'City guide unavailable offline.' with Retry button."
       },
-      "layout": "Hero image of Edinburgh skyline with a dark gradient scrim and \"Welcome to Edinburgh\" header in Playfair Display. Below, a 2-column grid of category cards (Trams/Transport, USD to GBP, Plugs/Adapters, Tips). Venues section features horizontal scrolling cards with images (e.g., Royal Yacht Britannia, Royal College of Surgeons) and map links."
+      "layout": "Hero image of Edinburgh skyline with a dark gradient scrim and \"Welcome to Edinburgh\" header in Playfair Display. Below, a 2-column grid of category cards (Trams/Transport, USD to GBP, Plugs/Adapters, Tips). Venues section features horizontal scrolling cards with images (e.g., Royal Yacht Britannia, Royal College of Physicians of Edinburgh) and map links."
     },
     {
       "name": "Personal Agenda & Profile",
@@ -152,7 +152,7 @@
     "Ensure all hero images (like the Edinburgh skyline on the City Guide) have a mandatory vertical gradient scrim (transparent to surfaceInverse at the bottom) so overlaid text is fully readable.",
     "Session cards should have an unmistakable 'Save/Favorite' button using the brandTertiary (tartan ochre) color for active states.",
     "The Live Messages tab is a read-only feed for delegates. Hide the 'Post Message' FAB or input area unless logged in as one of the 3 seeded admins.",
-    "Include a mock data set for July 25-29, including sessions at the Royal Yacht Britannia, Royal College of Surgeons, and St Paul's & St George's church.",
+    "Include a mock data set for July 25-29, including sessions at the Royal Yacht Britannia, Royal College of Physicians of Edinburgh, and St Paul's & St George's church.",
     "Make touch targets large (>=44pt), especially for the Schedule date selector and session 'Favorite' toggles."
   ],
   "haptics": {
