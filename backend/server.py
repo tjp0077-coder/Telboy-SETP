@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
- 
+import httpx
 import os
 import logging
 from pathlib import Path
@@ -39,6 +39,10 @@ contact_col = db["contact_messages"]
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "no-reply@edi.zeneagles.com")
+RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "setp@edi.zeneagles.com")
+RESEND_API_URL = "https://api.resend.com/emails"
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
@@ -597,7 +601,45 @@ async def create_contact(data: ContactCreate):
         "event_id": event_id,
     }
     await contact_col.insert_one(item)
+    await send_contact_email(item)
     return {"id": item["id"], "ok": True}
+
+
+async def send_contact_email(item: dict):
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY is not configured; skipping contact email send.")
+        return
+
+    subject = f"[SETP contact] {item['subject']}"
+    event_text = item.get("event_id") or "None"
+    sender_email = item.get("email") or "(not provided)"
+    body = (
+        f"Name: {item['name']}\n"
+        f"Email: {sender_email}\n"
+        f"Event ID: {event_text}\n"
+        f"Received: {item['created_at']}\n\n"
+        f"Message:\n{item['message']}"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": RESEND_FROM_EMAIL,
+                    "to": [RESEND_CONTACT_RECIPIENT],
+                    "subject": subject,
+                    "text": body,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        logging.error("Failed to send contact notification email via Resend: %s", exc)
 
 
 @api.get("/contact", response_model=List[ContactItem])
