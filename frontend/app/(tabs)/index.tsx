@@ -33,7 +33,7 @@ if (Platform.OS !== "web") {
 
 const HOME_BG = require("@/assets/images/brand/home_bg.png");
 
-const VIMEO_ID = "1202537119";
+const VIMEO_ID = "1204657737";
 const VIMEO_PLAYER_URL = `https://player.vimeo.com/video/${VIMEO_ID}?autoplay=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1`;
 const ASPECT = 240 / 360; // portrait 2:3
 
