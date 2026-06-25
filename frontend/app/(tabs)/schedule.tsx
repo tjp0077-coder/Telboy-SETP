@@ -13,7 +13,7 @@ import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
-const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton_v2.jpg");
+const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
 
