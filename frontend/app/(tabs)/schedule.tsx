@@ -13,6 +13,7 @@ import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
+const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
 
@@ -143,33 +144,17 @@ export default function ScheduleListScreen() {
           activeDate === LANDING_FEE_DATE ? (
             <View style={styles.paymentWrap} testID="landing-fee-card">
               <View style={[styles.paymentHeader, shadow.card]}>
-                <View style={styles.paymentIconWrap}>
-                  <Ionicons name="card" size={20} color={colors.brandTertiary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.paymentTitle}>Inchcolm landing fee</Text>
-                  <Text style={styles.paymentSub}>Pay £8.50 each or £17.00 with partner</Text>
-                </View>
+                <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
               </View>
 
-              <View style={styles.paymentBtnRow}>
-                <Pressable
-                  onPress={openLandingFeePayment}
-                  style={[styles.paymentBtn, shadow.card]}
-                  testID="pay-landing-fee-single"
-                >
-                  <Text style={styles.paymentBtnTitle}>Pay £8.50</Text>
-                  <Text style={styles.paymentBtnSub}>Single ticket</Text>
-                </Pressable>
-                <Pressable
-                  onPress={openLandingFeePayment}
-                  style={[styles.paymentBtn, shadow.card]}
-                  testID="pay-landing-fee-pair"
-                >
-                  <Text style={styles.paymentBtnTitle}>Pay £17.00</Text>
-                  <Text style={styles.paymentBtnSub}>With partner</Text>
-                </Pressable>
-              </View>
+              <Pressable
+                onPress={openLandingFeePayment}
+                style={[styles.paymentBtn, shadow.card]}
+                testID="pay-landing-fee-single"
+              >
+                <Text style={styles.paymentBtnTitle}>Pay £8.50</Text>
+                <Text style={styles.paymentBtnSub}>Single ticket</Text>
+              </Pressable>
             </View>
           ) : null
         }
@@ -262,38 +247,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   paymentHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: spacing.sm,
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
-    padding: spacing.md,
+    overflow: "hidden",
   },
-  paymentIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "#FFF1E6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  paymentTitle: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: colors.onSurface,
-  },
-  paymentSub: {
-    fontSize: 12,
-    color: colors.onSurfaceMuted,
-    marginTop: 2,
-  },
-  paymentBtnRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
+  paymentBanner: { width: "100%", aspectRatio: 1536 / 1024 },
   paymentBtn: {
-    flex: 1,
+    marginTop: spacing.sm,
     borderRadius: radius.md,
     backgroundColor: "#E8ECF2",
     paddingVertical: 12,
