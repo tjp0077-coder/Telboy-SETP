@@ -156,8 +156,7 @@ export default function ScheduleListScreen() {
                 style={[styles.paymentBtn, shadow.card]}
                 testID="pay-landing-fee-single"
               >
-                <Text style={styles.paymentBtnTitle}>Pay £8.50</Text>
-                <Text style={styles.paymentBtnSub}>Single ticket</Text>
+                <Text style={styles.paymentBtnTitle}>Pay Historic Scotland £8.50 landing fee</Text>
               </Pressable>
             </View>
           ) : null
