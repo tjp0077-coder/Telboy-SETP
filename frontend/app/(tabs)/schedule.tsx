@@ -143,9 +143,13 @@ export default function ScheduleListScreen() {
         ListFooterComponent={
           activeDate === LANDING_FEE_DATE ? (
             <View style={styles.paymentWrap} testID="landing-fee-card">
-              <View style={[styles.paymentHeader, shadow.card]}>
+              <Pressable
+                onPress={openLandingFeePayment}
+                style={[styles.paymentHeader, shadow.card]}
+                testID="pay-landing-fee-image"
+              >
                 <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
-              </View>
+              </Pressable>
 
               <Pressable
                 onPress={openLandingFeePayment}
