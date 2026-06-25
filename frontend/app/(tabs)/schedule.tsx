@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, Pressable, ActivityIndicator,
-  RefreshControl, FlatList, Dimensions, Platform,
+  RefreshControl, FlatList, Dimensions, Platform, Linking, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -13,6 +13,8 @@ import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
+const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
+const LANDING_FEE_DATE = "2026-07-30";
 
 const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   session: "document-text",
@@ -61,6 +63,19 @@ export default function ScheduleListScreen() {
     () => items.filter((i) => i.date === activeDate),
     [items, activeDate]
   );
+
+  const openLandingFeePayment = useCallback(async () => {
+    try {
+      const supported = await Linking.canOpenURL(LANDING_FEE_LINK);
+      if (!supported) {
+        Alert.alert("Unable to open payment link", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(LANDING_FEE_LINK);
+    } catch {
+      Alert.alert("Unable to open payment link", "Please try again in a few moments.");
+    }
+  }, []);
 
   if (loading) {
     return (
@@ -123,6 +138,40 @@ export default function ScheduleListScreen() {
             <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
             <Text style={styles.emptyText}>No sessions for this day</Text>
           </View>
+        }
+        ListFooterComponent={
+          activeDate === LANDING_FEE_DATE ? (
+            <View style={styles.paymentWrap} testID="landing-fee-card">
+              <View style={[styles.paymentHeader, shadow.card]}>
+                <View style={styles.paymentIconWrap}>
+                  <Ionicons name="card" size={20} color={colors.brandTertiary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.paymentTitle}>Inchcolm landing fee</Text>
+                  <Text style={styles.paymentSub}>Pay £8.50 each or £17.00 with partner</Text>
+                </View>
+              </View>
+
+              <View style={styles.paymentBtnRow}>
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentBtn, shadow.card]}
+                  testID="pay-landing-fee-single"
+                >
+                  <Text style={styles.paymentBtnTitle}>Pay £8.50</Text>
+                  <Text style={styles.paymentBtnSub}>Single ticket</Text>
+                </Pressable>
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentBtn, shadow.card]}
+                  testID="pay-landing-fee-pair"
+                >
+                  <Text style={styles.paymentBtnTitle}>Pay £17.00</Text>
+                  <Text style={styles.paymentBtnSub}>With partner</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : null
         }
         renderItem={({ item }) => {
           const fav = favorites.has(item.id);
@@ -207,4 +256,57 @@ const styles = StyleSheet.create({
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: colors.onSurfaceMuted },
+
+  paymentWrap: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  paymentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  paymentIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FFF1E6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  paymentTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  paymentSub: {
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+    marginTop: 2,
+  },
+  paymentBtnRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  paymentBtn: {
+    flex: 1,
+    borderRadius: radius.md,
+    backgroundColor: "#E8ECF2",
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  paymentBtnTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.brand,
+  },
+  paymentBtnSub: {
+    marginTop: 2,
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+  },
 });
