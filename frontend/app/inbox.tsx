@@ -148,32 +148,36 @@ export default function InboxScreen() {
             const replyError = replyErrors[item.id];
             const replyBusy = replyBusyId === item.id;
             return (
-              <Pressable
-                onPress={() => toggleExpand(item)}
+              <View
                 style={[styles.card, shadow.card, !item.read && styles.cardUnread]}
-                testID={`inbox-item-${item.id}`}
               >
-                <View style={styles.cardHead}>
-                  {!item.read ? <View style={styles.dot} /> : null}
-                  <Text style={styles.cardSubject} numberOfLines={1}>
-                    {item.subject}
-                  </Text>
-                  <Text style={styles.cardWhen}>{formatDate(item.created_at)}</Text>
-                </View>
-                <View style={styles.cardMeta}>
-                  <Ionicons name="person" size={13} color={colors.onSurfaceMuted} />
-                  <Text style={styles.cardMetaText}>{item.name}</Text>
-                  {item.email ? (
-                    <>
-                      <Text style={styles.dotSep}>·</Text>
-                      <Text style={styles.cardEmail}>{item.email}</Text>
-                    </>
+                <Pressable onPress={() => toggleExpand(item)} testID={`inbox-item-${item.id}`}>
+                  <View style={styles.cardHead}>
+                    {!item.read ? <View style={styles.dot} /> : null}
+                    <Text style={styles.cardSubject} numberOfLines={1}>
+                      {item.subject}
+                    </Text>
+                    <Text style={styles.cardWhen}>{formatDate(item.created_at)}</Text>
+                  </View>
+                  <View style={styles.cardMeta}>
+                    <Ionicons name="person" size={13} color={colors.onSurfaceMuted} />
+                    <Text style={styles.cardMetaText}>{item.name}</Text>
+                    {item.email ? (
+                      <>
+                        <Text style={styles.dotSep}>·</Text>
+                        <Text style={styles.cardEmail}>{item.email}</Text>
+                      </>
+                    ) : null}
+                  </View>
+
+                  {!expanded ? (
+                    <Text style={styles.cardPreview} numberOfLines={2}>{item.message}</Text>
                   ) : null}
-                </View>
+                </Pressable>
 
                 {item.event_title && item.event_id ? (
                   <Pressable
-                    onPress={(e) => { e.stopPropagation?.(); router.push(`/event/${item.event_id}`); }}
+                    onPress={() => router.push(`/event/${item.event_id}`)}
                     style={styles.sessionChip}
                     testID={`inbox-jump-${item.id}`}
                   >
@@ -185,9 +189,7 @@ export default function InboxScreen() {
                   </Pressable>
                 ) : null}
 
-                {!expanded ? (
-                  <Text style={styles.cardPreview} numberOfLines={2}>{item.message}</Text>
-                ) : (
+                {expanded ? (
                   <>
                     <Text style={styles.cardMessage}>{item.message}</Text>
                     <View style={styles.actions}>
@@ -259,8 +261,8 @@ export default function InboxScreen() {
                       </View>
                     ) : null}
                   </>
-                )}
-              </Pressable>
+                ) : null}
+              </View>
             );
           }}
         />
