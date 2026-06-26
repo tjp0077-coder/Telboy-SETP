@@ -109,6 +109,16 @@ export type FeedItem = {
 };
 
 // Contact form submission (admin inbox)
+export type ContactThreadMessage = {
+  id: string;
+  sender_role: "delegate" | "admin" | string;
+  sender_name: string;
+  sender_email?: string | null;
+  subject?: string | null;
+  message: string;
+  created_at: string;
+};
+
 export type ContactItem = {
   id: string;
   name: string;
@@ -116,9 +126,11 @@ export type ContactItem = {
   subject: string;
   message: string;
   created_at: string;
+  updated_at: string;
   read: boolean;
   event_id?: string | null;
   event_title?: string | null;
+  messages: ContactThreadMessage[];
 };
 
 export type PrototypeIdea = {
@@ -182,7 +194,7 @@ export const api = {
   markContactRead: (id: string) =>
     request<{ ok: boolean }>(`/contact/${id}/read`, { method: "PATCH" }, true),
   replyContact: (id: string, data: { message: string; subject?: string }) =>
-    request<{ ok: boolean }>(`/contact/${id}/reply`, {
+    request<{ ok: boolean; message: ContactThreadMessage }>(`/contact/${id}/reply`, {
       method: "POST", body: JSON.stringify(data),
     }, true),
   deleteContact: (id: string) =>

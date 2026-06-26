@@ -224,6 +224,7 @@ class ContactCreate(BaseModel):
     subject: str
     message: str
     event_id: Optional[str] = None
+    thread_id: Optional[str] = None
 
     @field_validator("email", mode="before")
     @classmethod
@@ -243,14 +244,67 @@ class ContactItem(BaseModel):
     subject: str
     message: str
     created_at: str
+    updated_at: str
     read: bool = False
     event_id: Optional[str] = None
     event_title: Optional[str] = None
+    messages: List[dict] = Field(default_factory=list)
+
+
+class ContactThreadMessage(BaseModel):
+    id: str
+    sender_role: str
+    sender_name: str
+    sender_email: Optional[str] = None
+    subject: Optional[str] = None
+    message: str
+    created_at: str
 
 
 class ContactReplyCreate(BaseModel):
     message: str
     subject: Optional[str] = None
+
+
+def build_contact_thread_message(
+    sender_role: str,
+    sender_name: str,
+    sender_email: str,
+    subject: str,
+    message: str,
+    created_at: str,
+):
+    return ContactThreadMessage(
+        id=str(uuid.uuid4()),
+        sender_role=sender_role,
+        sender_name=sender_name,
+        sender_email=sender_email or None,
+        subject=subject,
+        message=message,
+        created_at=created_at,
+    ).model_dump()
+
+
+def normalize_contact_thread(doc: dict) -> dict:
+    normalized = dict(doc)
+    messages = normalized.get("messages")
+    if isinstance(messages, list) and messages:
+        messages = [dict(m) for m in messages]
+    if not isinstance(messages, list) or not messages:
+        messages = [
+            build_contact_thread_message(
+                "delegate",
+                normalized.get("name", "Delegate"),
+                normalized.get("email", ""),
+                normalized.get("subject", ""),
+                normalized.get("message", ""),
+                normalized.get("created_at") or datetime.now(timezone.utc).isoformat(),
+            )
+        ]
+    messages = sorted(messages, key=lambda m: m.get("created_at", ""))
+    normalized["messages"] = messages
+    normalized["updated_at"] = normalized.get("updated_at") or messages[-1].get("created_at") or normalized.get("created_at")
+    return normalized
 
 
 # ---------- Seed data ----------
@@ -635,15 +689,50 @@ async def create_contact(data: ContactCreate):
         if not ev:
             event_id = None
 
+    sender_email = str(data.email) if data.email else ""
+    created_at = datetime.now(timezone.utc).isoformat()
+    thread_id = (data.thread_id or "").strip() or None
+    delegate_message = build_contact_thread_message(
+        "delegate", name, sender_email, subject, message, created_at
+    )
+
+    if thread_id:
+        existing = await contact_col.find_one({"id": thread_id}, {"_id": 0})
+        if not existing:
+            raise HTTPException(status_code=404, detail="Thread not found")
+        existing = normalize_contact_thread(existing)
+        update_doc = {
+            "messages": existing["messages"] + [delegate_message],
+            "updated_at": created_at,
+            "read": False,
+        }
+        if sender_email:
+            update_doc["email"] = sender_email
+        if event_id is not None:
+            update_doc["event_id"] = event_id
+        await contact_col.update_one({"id": thread_id}, {"$set": update_doc})
+        email_item = {
+            **existing,
+            "email": sender_email or existing.get("email", ""),
+            "subject": subject,
+            "message": message,
+            "created_at": created_at,
+            "event_id": event_id if event_id is not None else existing.get("event_id"),
+        }
+        await send_contact_email(email_item)
+        return {"id": thread_id, "ok": True}
+
     item = {
         "id": str(uuid.uuid4()),
         "name": name,
-        "email": str(data.email) if data.email else "",
+        "email": sender_email,
         "subject": subject,
         "message": message,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": created_at,
+        "updated_at": created_at,
         "read": False,
         "event_id": event_id,
+        "messages": [delegate_message],
     }
     await contact_col.insert_one(item)
     await send_contact_email(item)
@@ -733,7 +822,8 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
 @api.get("/contact", response_model=List[ContactItem])
 async def list_contact(admin=Depends(get_current_admin)):
     docs = await contact_col.find({}, {"_id": 0}).to_list(500)
-    docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
+    docs = [normalize_contact_thread(d) for d in docs]
+    docs.sort(key=lambda d: d.get("updated_at", d.get("created_at", "")), reverse=True)
 
     event_ids = [d["event_id"] for d in docs if d.get("event_id")]
     titles: dict = {}
@@ -765,9 +855,30 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
 
+    item = normalize_contact_thread(item)
     subject = (data.subject or "").strip() or f"Re: {item['subject']}"
-    await send_contact_reply_email(item, subject, message, admin.get("name") or admin.get("username") or "SETP admin")
-    return {"ok": True}
+    created_at = datetime.now(timezone.utc).isoformat()
+    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    reply_message = build_contact_thread_message(
+        "admin",
+        admin_name,
+        RESEND_CONTACT_RECIPIENT,
+        subject,
+        message,
+        created_at,
+    )
+    await send_contact_reply_email(item, subject, message, admin_name)
+    await contact_col.update_one(
+        {"id": cid},
+        {
+            "$set": {
+                "messages": item["messages"] + [reply_message],
+                "updated_at": created_at,
+                "read": True,
+            }
+        },
+    )
+    return {"ok": True, "message": reply_message}
 
 
 @api.delete("/contact/{cid}")

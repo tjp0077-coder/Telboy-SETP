@@ -85,6 +85,35 @@ class TestContactPublicCreate:
         assert d.get("ok") is True
         assert d.get("id")
 
+    def test_create_contact_follow_up_appends_to_existing_thread(self, s, H):
+        seed = s.post(f"{API}/contact", json={
+            "name": "TEST_ThreadSeed",
+            "email": "thread@example.com",
+            "subject": "TEST_Thread_subject",
+            "message": "first thread message",
+        }).json()
+        cid = seed["id"]
+
+        try:
+            follow = s.post(f"{API}/contact", json={
+                "name": "TEST_ThreadSeed",
+                "email": "thread@example.com",
+                "subject": "TEST_Thread_subject",
+                "message": "follow up from delegate",
+                "thread_id": cid,
+            })
+            assert follow.status_code == 200, follow.text
+            assert follow.json()["id"] == cid
+
+            items = s.get(f"{API}/contact", headers=H).json()
+            found = next((i for i in items if i["id"] == cid), None)
+            assert found is not None
+            assert len(found["messages"]) >= 2
+            assert found["messages"][-1]["sender_role"] == "delegate"
+            assert found["messages"][-1]["message"] == "follow up from delegate"
+        finally:
+            s.delete(f"{API}/contact/{cid}", headers=H)
+
     def test_create_contact_missing_message_400(self, s):
         r = s.post(f"{API}/contact", json={"name": "A", "subject": "B", "message": "   "})
         assert r.status_code == 400
@@ -124,7 +153,14 @@ class TestContactAdminInbox:
 
             rok = s.post(f"{API}/contact/{cid}/reply", json={"message": "Thanks for your message."}, headers=H)
             assert rok.status_code == 200, rok.text
-            assert rok.json() == {"ok": True}
+            reply = rok.json()
+            assert reply["ok"] is True
+            assert reply["message"]["sender_role"] == "admin"
+            items = s.get(f"{API}/contact", headers=H).json()
+            found = next((i for i in items if i["id"] == cid), None)
+            assert found is not None
+            assert found["messages"][-1]["sender_role"] == "admin"
+            assert found["messages"][-1]["message"] == "Thanks for your message."
         finally:
             s.delete(f"{API}/contact/{cid}", headers=H)
 
@@ -150,6 +186,7 @@ class TestContactAdminInbox:
         assert found is not None
         assert found["read"] is False
         assert found["subject"] == "TEST_Lifecycle"
+        assert found["messages"][0]["sender_role"] == "delegate"
         assert "_id" not in found
 
         # PATCH read on unknown -> 404

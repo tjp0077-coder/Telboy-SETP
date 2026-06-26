@@ -6,7 +6,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api, ContactItem } from "@/src/api";
+import { api, ContactItem, ContactThreadMessage } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 
@@ -24,17 +24,23 @@ export default function InboxScreen() {
   const [replyErrors, setReplyErrors] = useState<Record<string, string>>({});
   const [replySuccessId, setReplySuccessId] = useState<string | null>(null);
 
+  const sortThreads = useCallback((threads: ContactItem[]) => {
+    return [...threads].sort(
+      (left, right) => (right.updated_at || right.created_at || "").localeCompare(left.updated_at || left.created_at || "")
+    );
+  }, []);
+
   const load = useCallback(async () => {
     try {
       const data = await api.listContact();
-      setItems(data);
+      setItems(sortThreads(data));
     } catch {
       setItems([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [sortThreads]);
 
   useEffect(() => {
     if (!auth.username && !auth.loading) {
@@ -77,10 +83,20 @@ export default function InboxScreen() {
     setReplyErrors((prev) => ({ ...prev, [item.id]: "" }));
     setReplySuccessId(null);
     try {
-      await api.replyContact(item.id, { message: draft });
+      const result = await api.replyContact(item.id, { message: draft });
       setReplyDrafts((prev) => ({ ...prev, [item.id]: "" }));
       setReplyingId(null);
       setReplySuccessId(item.id);
+      setItems((prev) => sortThreads(prev.map((thread) => {
+        if (thread.id !== item.id) return thread;
+        const messages = sortMessages([...(thread.messages || []), result.message]);
+        return {
+          ...thread,
+          updated_at: result.message.created_at,
+          read: true,
+          messages,
+        };
+      })));
     } catch {
       setReplyErrors((prev) => ({ ...prev, [item.id]: "Couldn't send reply. Please try again." }));
     } finally {
@@ -147,6 +163,8 @@ export default function InboxScreen() {
             const replyDraft = replyDrafts[item.id] || "";
             const replyError = replyErrors[item.id];
             const replyBusy = replyBusyId === item.id;
+            const threadMessages = sortMessages(item.messages || []);
+            const latestMessage = threadMessages[threadMessages.length - 1] || buildFallbackMessage(item);
             return (
               <View
                 style={[styles.card, shadow.card, !item.read && styles.cardUnread]}
@@ -155,13 +173,15 @@ export default function InboxScreen() {
                   <View style={styles.cardHead}>
                     {!item.read ? <View style={styles.dot} /> : null}
                     <Text style={styles.cardSubject} numberOfLines={1}>
-                      {item.subject}
+                      {latestMessage.subject || item.subject}
                     </Text>
-                    <Text style={styles.cardWhen}>{formatDate(item.created_at)}</Text>
+                    <Text style={styles.cardWhen}>{formatDate(item.updated_at || latestMessage.created_at || item.created_at)}</Text>
                   </View>
                   <View style={styles.cardMeta}>
                     <Ionicons name="person" size={13} color={colors.onSurfaceMuted} />
                     <Text style={styles.cardMetaText}>{item.name}</Text>
+                    <Text style={styles.dotSep}>·</Text>
+                    <Text style={styles.cardMetaText}>{threadMessages.length} {threadMessages.length === 1 ? "message" : "messages"}</Text>
                     {item.email ? (
                       <>
                         <Text style={styles.dotSep}>·</Text>
@@ -171,7 +191,7 @@ export default function InboxScreen() {
                   </View>
 
                   {!expanded ? (
-                    <Text style={styles.cardPreview} numberOfLines={2}>{item.message}</Text>
+                    <Text style={styles.cardPreview} numberOfLines={2}>{latestMessage.message}</Text>
                   ) : null}
                 </Pressable>
 
@@ -191,7 +211,32 @@ export default function InboxScreen() {
 
                 {expanded ? (
                   <>
-                    <Text style={styles.cardMessage}>{item.message}</Text>
+                    <View style={styles.threadWrap}>
+                      {threadMessages.map((threadMessage) => {
+                        const isAdmin = threadMessage.sender_role === "admin";
+                        return (
+                          <View
+                            key={threadMessage.id}
+                            style={[
+                              styles.threadBubble,
+                              isAdmin ? styles.threadBubbleAdmin : styles.threadBubbleDelegate,
+                            ]}
+                          >
+                            <View style={styles.threadMetaRow}>
+                              <Text style={styles.threadSender}>
+                                {isAdmin ? "Admin Reply" : "Delegate Message"}
+                              </Text>
+                              <Text style={styles.threadTime}>{formatDate(threadMessage.created_at)}</Text>
+                            </View>
+                            <Text style={styles.threadAuthor}>{threadMessage.sender_name}</Text>
+                            {threadMessage.subject ? (
+                              <Text style={styles.threadSubject}>{threadMessage.subject}</Text>
+                            ) : null}
+                            <Text style={styles.threadMessage}>{threadMessage.message}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
                     <View style={styles.actions}>
                       {item.email ? (
                         <Pressable
@@ -310,7 +355,27 @@ const styles = StyleSheet.create({
   dotSep: { color: colors.onSurfaceMuted, marginHorizontal: 4 },
   cardEmail: { fontSize: 12, color: colors.brand },
   cardPreview: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 18 },
-  cardMessage: { fontSize: 14, color: colors.onSurface, marginTop: spacing.sm, lineHeight: 20 },
+  threadWrap: { marginTop: spacing.md, gap: spacing.sm },
+  threadBubble: {
+    borderRadius: radius.md,
+    padding: spacing.md,
+  },
+  threadBubbleDelegate: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  threadBubbleAdmin: {
+    backgroundColor: "#E8ECF2",
+    borderWidth: 1,
+    borderColor: "#D6DEE9",
+  },
+  threadMetaRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: spacing.sm },
+  threadSender: { fontSize: 11, fontWeight: "800", color: colors.brandTertiary, textTransform: "uppercase" },
+  threadTime: { fontSize: 11, color: colors.onSurfaceMuted },
+  threadAuthor: { fontSize: 13, fontWeight: "700", color: colors.onSurface, marginTop: 4 },
+  threadSubject: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
+  threadMessage: { fontSize: 14, color: colors.onSurface, marginTop: spacing.sm, lineHeight: 20 },
 
   actions: { flexDirection: "row", gap: spacing.sm, marginTop: spacing.md },
   actionBtn: {
@@ -347,3 +412,19 @@ const styles = StyleSheet.create({
   },
   sessionChipText: { fontSize: 12, fontWeight: "700", color: colors.brand, flexShrink: 1 },
 });
+
+function sortMessages(messages: ContactThreadMessage[]) {
+  return [...messages].sort((left, right) => left.created_at.localeCompare(right.created_at));
+}
+
+function buildFallbackMessage(item: ContactItem): ContactThreadMessage {
+  return {
+    id: `${item.id}-fallback`,
+    sender_role: "delegate",
+    sender_name: item.name,
+    sender_email: item.email || null,
+    subject: item.subject,
+    message: item.message,
+    created_at: item.created_at,
+  };
+}
