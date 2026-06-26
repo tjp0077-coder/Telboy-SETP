@@ -181,6 +181,10 @@ export const api = {
   listContact: () => request<ContactItem[]>("/contact", {}, true),
   markContactRead: (id: string) =>
     request<{ ok: boolean }>(`/contact/${id}/read`, { method: "PATCH" }, true),
+  replyContact: (id: string, data: { message: string; subject?: string }) =>
+    request<{ ok: boolean }>(`/contact/${id}/reply`, {
+      method: "POST", body: JSON.stringify(data),
+    }, true),
   deleteContact: (id: string) =>
     request<{ deleted: boolean }>(`/contact/${id}`, { method: "DELETE" }, true),
 

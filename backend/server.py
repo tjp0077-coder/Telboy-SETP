@@ -7,7 +7,7 @@ import httpx
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -220,10 +220,20 @@ class PrototypeIdeaCreate(BaseModel):
 
 class ContactCreate(BaseModel):
     name: str
-    email: Optional[str] = ""
+    email: Optional[EmailStr] = None
     subject: str
     message: str
     event_id: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
 
 
 class ContactItem(BaseModel):
@@ -236,6 +246,11 @@ class ContactItem(BaseModel):
     read: bool = False
     event_id: Optional[str] = None
     event_title: Optional[str] = None
+
+
+class ContactReplyCreate(BaseModel):
+    message: str
+    subject: Optional[str] = None
 
 
 # ---------- Seed data ----------
@@ -623,7 +638,7 @@ async def create_contact(data: ContactCreate):
     item = {
         "id": str(uuid.uuid4()),
         "name": name,
-        "email": (data.email or "").strip(),
+        "email": str(data.email) if data.email else "",
         "subject": subject,
         "message": message,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -642,6 +657,7 @@ async def send_contact_email(item: dict):
 
     subject = f"[SETP contact] {item['subject']}"
     event_text = item.get("event_id") or "None"
+    reply_to = [item["email"]] if item.get("email") else []
     sender_email = item.get("email") or "(not provided)"
     body = (
         f"Name: {item['name']}\n"
@@ -662,6 +678,7 @@ async def send_contact_email(item: dict):
                 json={
                     "from": RESEND_FROM_EMAIL,
                     "to": [RESEND_CONTACT_RECIPIENT],
+                    "replyTo": reply_to,
                     "subject": subject,
                     "text": body,
                 },
@@ -670,6 +687,47 @@ async def send_contact_email(item: dict):
             response.raise_for_status()
     except Exception as exc:
         logging.error("Failed to send contact notification email via Resend: %s", exc)
+
+
+async def send_contact_reply_email(item: dict, subject: str, message: str, admin_name: str):
+    if not RESEND_API_KEY:
+        raise HTTPException(status_code=503, detail="Email delivery is not configured")
+
+    if not item.get("email"):
+        raise HTTPException(status_code=400, detail="This contact did not provide an email address")
+
+    body = (
+        f"{message}\n\n"
+        f"---\n"
+        f"Sent by {admin_name} via the SETP admin inbox\n\n"
+        f"Original enquiry from {item['name']} on {item['created_at']}:\n"
+        f"Subject: {item['subject']}\n"
+        f"{item['message']}"
+    )
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": RESEND_FROM_EMAIL,
+                    "to": [item["email"]],
+                    "replyTo": [RESEND_CONTACT_RECIPIENT],
+                    "subject": subject,
+                    "text": body,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.error("Failed to send admin reply email via Resend: %s", exc)
+        raise HTTPException(status_code=502, detail="Failed to send email")
 
 
 @api.get("/contact", response_model=List[ContactItem])
@@ -694,6 +752,21 @@ async def mark_contact_read(cid: str, admin=Depends(get_current_admin)):
     res = await contact_col.update_one({"id": cid}, {"$set": {"read": True}})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.post("/contact/{cid}/reply")
+async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_current_admin)):
+    item = await contact_col.find_one({"id": cid}, {"_id": 0})
+    if not item:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    message = data.message.strip()
+    if not message:
+        raise HTTPException(status_code=400, detail="message is required")
+
+    subject = (data.subject or "").strip() or f"Re: {item['subject']}"
+    await send_contact_reply_email(item, subject, message, admin.get("name") or admin.get("username") or "SETP admin")
     return {"ok": True}
 
 

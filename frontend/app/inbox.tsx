@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator,
-  RefreshControl, Linking,
+  RefreshControl, TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -18,6 +18,11 @@ export default function InboxScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [replyingId, setReplyingId] = useState<string | null>(null);
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [replyBusyId, setReplyBusyId] = useState<string | null>(null);
+  const [replyErrors, setReplyErrors] = useState<Record<string, string>>({});
+  const [replySuccessId, setReplySuccessId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -42,9 +47,11 @@ export default function InboxScreen() {
   const toggleExpand = async (item: ContactItem) => {
     if (expandedId === item.id) {
       setExpandedId(null);
+      if (replyingId === item.id) setReplyingId(null);
       return;
     }
     setExpandedId(item.id);
+    setReplySuccessId(null);
     if (!item.read) {
       try {
         await api.markContactRead(item.id);
@@ -58,6 +65,27 @@ export default function InboxScreen() {
       await api.deleteContact(id);
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch {}
+  };
+
+  const sendReply = async (item: ContactItem) => {
+    const draft = (replyDrafts[item.id] || "").trim();
+    if (!draft) {
+      setReplyErrors((prev) => ({ ...prev, [item.id]: "Reply message is required." }));
+      return;
+    }
+    setReplyBusyId(item.id);
+    setReplyErrors((prev) => ({ ...prev, [item.id]: "" }));
+    setReplySuccessId(null);
+    try {
+      await api.replyContact(item.id, { message: draft });
+      setReplyDrafts((prev) => ({ ...prev, [item.id]: "" }));
+      setReplyingId(null);
+      setReplySuccessId(item.id);
+    } catch {
+      setReplyErrors((prev) => ({ ...prev, [item.id]: "Couldn't send reply. Please try again." }));
+    } finally {
+      setReplyBusyId(null);
+    }
   };
 
   const unread = items.filter((i) => !i.read).length;
@@ -115,6 +143,10 @@ export default function InboxScreen() {
           }
           renderItem={({ item }) => {
             const expanded = expandedId === item.id;
+            const replyOpen = replyingId === item.id;
+            const replyDraft = replyDrafts[item.id] || "";
+            const replyError = replyErrors[item.id];
+            const replyBusy = replyBusyId === item.id;
             return (
               <Pressable
                 onPress={() => toggleExpand(item)}
@@ -161,12 +193,16 @@ export default function InboxScreen() {
                     <View style={styles.actions}>
                       {item.email ? (
                         <Pressable
-                          onPress={() => Linking.openURL(`mailto:${item.email}?subject=Re: ${encodeURIComponent(item.subject)}`)}
+                          onPress={() => {
+                            setReplyingId(replyOpen ? null : item.id);
+                            setReplyErrors((prev) => ({ ...prev, [item.id]: "" }));
+                            setReplySuccessId(null);
+                          }}
                           style={[styles.actionBtn, styles.actionPrimary]}
                           testID={`inbox-reply-${item.id}`}
                         >
                           <Ionicons name="mail" size={14} color="#fff" />
-                          <Text style={styles.actionPrimaryText}>Reply by email</Text>
+                          <Text style={styles.actionPrimaryText}>{replyOpen ? "Close reply" : "Reply in app"}</Text>
                         </Pressable>
                       ) : null}
                       <Pressable
@@ -178,6 +214,50 @@ export default function InboxScreen() {
                         <Text style={styles.actionGhostText}>Delete</Text>
                       </Pressable>
                     </View>
+                    {replySuccessId === item.id ? (
+                      <Text style={styles.replySuccess} testID={`inbox-reply-success-${item.id}`}>
+                        Reply sent.
+                      </Text>
+                    ) : null}
+                    {replyOpen ? (
+                      <View style={styles.replyComposer} testID={`inbox-reply-composer-${item.id}`}>
+                        <Text style={styles.replyLabel}>Reply to {item.name}</Text>
+                        <TextInput
+                          style={styles.replyInput}
+                          multiline
+                          placeholder="Type your reply here..."
+                          placeholderTextColor={colors.onSurfaceMuted}
+                          value={replyDraft}
+                          onChangeText={(text) => setReplyDrafts((prev) => ({ ...prev, [item.id]: text }))}
+                          testID={`inbox-reply-input-${item.id}`}
+                        />
+                        {replyError ? <Text style={styles.replyError}>{replyError}</Text> : null}
+                        <View style={styles.replyActions}>
+                          <Pressable
+                            onPress={() => setReplyingId(null)}
+                            style={[styles.actionBtn, styles.actionGhost]}
+                            testID={`inbox-reply-cancel-${item.id}`}
+                          >
+                            <Text style={styles.actionGhostText}>Cancel</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => sendReply(item)}
+                            disabled={replyBusy}
+                            style={[styles.actionBtn, styles.actionPrimary, replyBusy && { opacity: 0.5 }]}
+                            testID={`inbox-reply-send-${item.id}`}
+                          >
+                            {replyBusy ? (
+                              <ActivityIndicator color="#fff" />
+                            ) : (
+                              <>
+                                <Ionicons name="send" size={14} color="#fff" />
+                                <Text style={styles.actionPrimaryText}>Send reply</Text>
+                              </>
+                            )}
+                          </Pressable>
+                        </View>
+                      </View>
+                    ) : null}
                   </>
                 )}
               </Pressable>
@@ -239,6 +319,23 @@ const styles = StyleSheet.create({
   actionPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 13 },
   actionGhost: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   actionGhostText: { color: colors.error, fontWeight: "700", fontSize: 13 },
+  replyComposer: { marginTop: spacing.md, gap: spacing.sm },
+  replyLabel: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted },
+  replyInput: {
+    minHeight: 100,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: 14,
+    color: colors.onSurface,
+    textAlignVertical: "top",
+  },
+  replyActions: { flexDirection: "row", gap: spacing.sm },
+  replyError: { color: colors.error, fontSize: 12 },
+  replySuccess: { color: colors.success, fontSize: 12, fontWeight: "700", marginTop: spacing.sm },
 
   sessionChip: {
     flexDirection: "row", alignItems: "center", gap: 6,

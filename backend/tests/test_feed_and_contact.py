@@ -103,6 +103,31 @@ class TestContactAdminInbox:
         r = s.get(f"{API}/contact")
         assert r.status_code == 401
 
+    def test_reply_contact_requires_auth_and_succeeds(self, s, H):
+        seed = s.post(f"{API}/contact", json={
+            "name": "TEST_ReplySender",
+            "email": "reply@example.com",
+            "subject": "TEST_Reply",
+            "message": "reply test body",
+        }).json()
+        cid = seed["id"]
+
+        try:
+            r401 = s.post(f"{API}/contact/{cid}/reply", json={"message": "Thanks for your message."})
+            assert r401.status_code == 401
+
+            r404 = s.post(f"{API}/contact/does-not-exist/reply", json={"message": "x"}, headers=H)
+            assert r404.status_code == 404
+
+            r400 = s.post(f"{API}/contact/{cid}/reply", json={"message": "   "}, headers=H)
+            assert r400.status_code == 400
+
+            rok = s.post(f"{API}/contact/{cid}/reply", json={"message": "Thanks for your message."}, headers=H)
+            assert rok.status_code == 200, rok.text
+            assert rok.json() == {"ok": True}
+        finally:
+            s.delete(f"{API}/contact/{cid}", headers=H)
+
     def test_full_inbox_lifecycle(self, s, H):
         # Seed a fresh contact message
         seed = s.post(f"{API}/contact", json={
