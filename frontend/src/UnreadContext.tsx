@@ -4,6 +4,7 @@ import { AppState } from "react-native";
 import { api } from "@/src/api";
 
 const KEY = "setp_messages_last_read_at";
+const BADGE_KINDS = new Set(["announcement", "event_note"]);
 
 type Ctx = {
   unreadCount: number;
@@ -12,6 +13,10 @@ type Ctx = {
 };
 
 const UnreadCtx = createContext<Ctx | null>(null);
+
+function shouldTriggerBadge(kind?: string): boolean {
+  return BADGE_KINDS.has(kind || "");
+}
 
 export const UnreadProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -35,7 +40,9 @@ export const UnreadProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setUnreadCount(0);
         return;
       }
-      const count = feed.filter((f) => (f.created_at || "") > lastRead).length;
+      const count = feed.filter(
+        (f) => shouldTriggerBadge(f.kind) && (f.created_at || "") > lastRead
+      ).length;
       setUnreadCount(count);
     } catch {
       // network failure — keep previous count

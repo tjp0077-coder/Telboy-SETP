@@ -97,11 +97,11 @@ export type AdminInfo = { username: string; name: string; role: string };
 
 // Aggregated comms feed item (global messages + event notes)
 export type FeedItem = {
-  kind: "message" | "event_note";
+  kind: "announcement" | "event_note";
   id: string;
   text: string;
   title?: string;
-  priority?: "info" | "alert" | "schedule_change" | null;
+  priority?: "info" | "important" | "urgent" | null;
   author?: string;
   created_at: string;
   event_id?: string | null;

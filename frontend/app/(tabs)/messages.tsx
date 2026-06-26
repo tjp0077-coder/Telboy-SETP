@@ -92,7 +92,7 @@ export default function MessagesScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Comms Feed</Text>
         <Text style={styles.headerSub}>
-          Live announcements + session-specific updates
+          Broadcasts to all delegates, plus live session notes
         </Text>
       </View>
 
@@ -229,7 +229,7 @@ export default function MessagesScreen() {
           testID="messages-compose-fab"
         >
           <Ionicons name="create" size={24} color="#fff" />
-          <Text style={styles.fabText}>Post</Text>
+          <Text style={styles.fabText}>Broadcast</Text>
         </Pressable>
       ) : null}
 
@@ -245,11 +245,14 @@ export default function MessagesScreen() {
         >
           <View style={[styles.modalSheet, { paddingBottom: insets.bottom + spacing.lg }]}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>New Announcement</Text>
+            <Text style={styles.modalTitle}>Broadcast to all delegates</Text>
+            <Text style={styles.modalSubtext}>
+              This posts an app-only update to the delegate comms feed and triggers the red dot.
+            </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="Title (optional)"
+              placeholder="Broadcast headline (optional)"
               placeholderTextColor={colors.onSurfaceMuted}
               value={title}
               onChangeText={setTitle}
@@ -257,7 +260,7 @@ export default function MessagesScreen() {
             />
             <TextInput
               style={[styles.input, styles.inputMulti]}
-              placeholder="Message…"
+              placeholder="Broadcast message..."
               placeholderTextColor={colors.onSurfaceMuted}
               value={text}
               onChangeText={setText}
@@ -296,7 +299,7 @@ export default function MessagesScreen() {
                 style={[styles.btn, styles.btnPrimary, (!text.trim() || posting) && { opacity: 0.5 }]}
                 testID="message-post"
               >
-                <Text style={styles.btnPrimaryText}>{posting ? "Posting…" : "Post"}</Text>
+                <Text style={styles.btnPrimaryText}>{posting ? "Sending..." : "Send Broadcast"}</Text>
               </Pressable>
             </View>
           </View>
@@ -357,6 +360,7 @@ const styles = StyleSheet.create({
   modalSheet: { backgroundColor: colors.surfaceSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: spacing.md },
   modalTitle: { fontSize: 22, fontWeight: "700", color: colors.onSurface, marginBottom: spacing.lg, fontFamily: "Georgia" },
+  modalSubtext: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: -8, marginBottom: spacing.lg, lineHeight: 19 },
   input: {
     backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md, color: colors.onSurface, fontSize: 15,

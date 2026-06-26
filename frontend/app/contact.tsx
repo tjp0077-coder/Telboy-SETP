@@ -81,7 +81,7 @@ export default function ContactScreen() {
         </View>
         <Text style={styles.successTitle}>Message sent</Text>
         <Text style={styles.successText}>
-          Thanks {name.split(" ")[0] || "delegate"} — one of the organisers will get back to you.
+          Thanks {name.split(" ")[0] || "delegate"} — a committee member will get back to you.
         </Text>
         <Pressable
           onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/profile")}
@@ -107,7 +107,7 @@ export default function ContactScreen() {
         >
           <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
         </Pressable>
-        <Text style={styles.topTitle}>Contact organisers</Text>
+        <Text style={styles.topTitle}>Contact the committee</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -119,9 +119,9 @@ export default function ContactScreen() {
           <View style={styles.introIcon}>
             <Ionicons name="mail" size={22} color={colors.brand} />
           </View>
-          <Text style={styles.introTitle}>Get in touch with the symposium team</Text>
+          <Text style={styles.introTitle}>Get in touch with the committee</Text>
           <Text style={styles.introText}>
-            Use this form to ask a question or report an issue. The 3 admins will receive your message.
+            Use this form to ask a question or report an issue. The committee will receive your message.
           </Text>
         </View>
 
@@ -216,7 +216,7 @@ export default function ContactScreen() {
           ) : (
             <>
               <Ionicons name="send" size={16} color="#fff" />
-              <Text style={[styles.btnPrimaryText, { marginLeft: 8 }]}>Send to organisers</Text>
+              <Text style={[styles.btnPrimaryText, { marginLeft: 8 }]}>Send to the committee</Text>
             </>
           )}
         </Pressable>

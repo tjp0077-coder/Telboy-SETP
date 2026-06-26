@@ -166,7 +166,7 @@ export default function ProfileScreen() {
           <Ionicons name="mail" size={24} color={colors.brandTertiary} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.loginTitle}>Contact organisers</Text>
+          <Text style={styles.loginTitle}>Contact the committee</Text>
           <Text style={styles.loginSub}>Send a question or report an issue</Text>
         </View>
         <Ionicons name="chevron-forward" size={22} color={colors.onSurfaceMuted} />
