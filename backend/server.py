@@ -42,8 +42,17 @@ JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "no-reply@edi.zeneagles.com")
-RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "setp@edi.zeneagles.com")
+RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
+
+if not RESEND_CONTACT_RECIPIENT:
+    raise RuntimeError("RESEND_CONTACT_RECIPIENT must be set.")
+if "@" not in RESEND_CONTACT_RECIPIENT or RESEND_CONTACT_RECIPIENT.endswith("@"):
+    raise RuntimeError("RESEND_CONTACT_RECIPIENT must be a valid email address.")
+logging.info(
+    "Contact email recipient domain configured: %s",
+    RESEND_CONTACT_RECIPIENT.rsplit("@", 1)[1],
+)
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)

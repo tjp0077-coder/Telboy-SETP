@@ -61,8 +61,18 @@ button in Emergent).
    - ADMIN3_USERNAME            = (leave blank)
    - ADMIN3_PASSWORD            = (leave blank)
    - ADMIN3_NAME                = (leave blank)
+   - RESEND_API_KEY             = <your Resend API key>
+   - RESEND_FROM_EMAIL          = no-reply@edi.zeneagles.com
+   - RESEND_CONTACT_RECIPIENT   = setp@zeneagles.com
 5. Click "Create Web Service". Render builds & deploys (a few minutes).
 6. When live, your URL is e.g. `https://setp-2026-api.onrender.com`.
+
+Email note:
+- `RESEND_CONTACT_RECIPIENT` no longer has a fallback in code. Render must set it explicitly.
+- Use `setp@zeneagles.com` if the mailbox lives in IONOS, because `zeneagles.com` MX points to IONOS while `edi.zeneagles.com` currently points to AWS SES inbound.
+- Add a DMARC TXT record for `edi.zeneagles.com`:
+  - Host/name: `_dmarc.edi.zeneagles.com`
+  - Value: `v=DMARC1; p=none;`
 
 ================================================================
 PART 3 — Verify the backend
