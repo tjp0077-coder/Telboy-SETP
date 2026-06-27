@@ -85,6 +85,9 @@ export type MessageItem = {
   priority: "info" | "important" | "urgent";
   author: string;
   created_at: string;
+  deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 export type EventNote = {
@@ -93,6 +96,9 @@ export type EventNote = {
   text: string;
   author: string;
   created_at: string;
+  deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 export type AdminInfo = { username: string; name: string; role: string };
@@ -108,6 +114,9 @@ export type FeedItem = {
   created_at: string;
   event_id?: string | null;
   event_title?: string | null;
+  deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 // Contact form submission (admin inbox)
@@ -171,14 +180,23 @@ export const api = {
     }, true),
   deleteEventNote: (id: string, noteId: string) =>
     request<{ deleted: boolean }>(`/schedule/${id}/notes/${noteId}`, { method: "DELETE" }, true),
+  restoreEventNote: (id: string, noteId: string) =>
+    request<{ ok: boolean }>(`/schedule/${id}/notes/${noteId}/restore`, { method: "POST" }, true),
+  permanentDeleteEventNote: (id: string, noteId: string) =>
+    request<{ deleted: boolean }>(`/schedule/${id}/notes/${noteId}/permanent`, { method: "DELETE" }, true),
 
   // messages
   listMessages: () => cachedGet<MessageItem[]>("/messages", "cache:messages"),
   listFeed: () => cachedGet<FeedItem[]>("/feed", "cache:feed"),
+  listDeletedFeed: () => request<FeedItem[]>("/feed/deleted", {}, true),
   createMessage: (data: { text: string; title?: string; priority?: string }) =>
     request<MessageItem>("/messages", { method: "POST", body: JSON.stringify(data) }, true),
   deleteMessage: (id: string) =>
     request<{ deleted: boolean }>(`/messages/${id}`, { method: "DELETE" }, true),
+  restoreMessage: (id: string) =>
+    request<{ ok: boolean }>(`/messages/${id}/restore`, { method: "POST" }, true),
+  permanentDeleteMessage: (id: string) =>
+    request<{ deleted: boolean }>(`/messages/${id}/permanent`, { method: "DELETE" }, true),
 
   // prototype lab
   listPrototypeIdeas: () => cachedGet<PrototypeIdea[]>("/prototype-ideas", "cache:prototypeideas"),

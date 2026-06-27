@@ -89,9 +89,28 @@ class TestEventNotes:
         assert r3.status_code == 200
         assert r3.json() == {"deleted": True}
 
-        # gone
+        # hidden from active list
         lst2 = s.get(f"{API}/schedule/{sample_event_id}/notes").json()
         assert not any(n["id"] == note_id for n in lst2)
+
+        # appears in deleted feed
+        deleted_feed = s.get(f"{API}/feed/deleted", headers=H)
+        assert deleted_feed.status_code == 200
+        deleted_note = next((n for n in deleted_feed.json() if n["kind"] == "event_note" and n["id"] == note_id), None)
+        assert deleted_note is not None
+        assert deleted_note["deleted"] is True
+
+        # restore
+        r4 = s.post(f"{API}/schedule/{sample_event_id}/notes/{note_id}/restore", headers=H)
+        assert r4.status_code == 200
+        assert r4.json() == {"ok": True}
+
+        lst3 = s.get(f"{API}/schedule/{sample_event_id}/notes").json()
+        assert any(n["id"] == note_id for n in lst3)
+
+        # cleanup for real
+        assert s.delete(f"{API}/schedule/{sample_event_id}/notes/{note_id}", headers=H).status_code == 200
+        assert s.delete(f"{API}/schedule/{sample_event_id}/notes/{note_id}/permanent", headers=H).status_code == 200
 
 
 # ---------- PUT/DELETE schedule (admin) + cascade ----------

@@ -40,6 +40,7 @@ export default function RootLayout() {
                 <Stack.Screen name="contact" />
                 <Stack.Screen name="inbox" />
                 <Stack.Screen name="deleted-inbox" />
+                <Stack.Screen name="deleted-feed" />
                 <Stack.Screen name="admins" />
                 <Stack.Screen name="prototypes" />
               </Stack>

@@ -131,10 +131,29 @@ class TestMessages:
         r3 = s.delete(f"{API}/messages/{mid}", headers=auth_headers)
         assert r3.status_code == 200
 
-        # verify deleted
+        # verify hidden from active list
         r4 = s.get(f"{API}/messages")
         ids = [m["id"] for m in r4.json()]
         assert mid not in ids
+
+        # verify visible in deleted feed, then restore
+        r5 = s.get(f"{API}/feed/deleted", headers=auth_headers)
+        assert r5.status_code == 200
+        deleted = next((m for m in r5.json() if m["kind"] == "announcement" and m["id"] == mid), None)
+        assert deleted is not None
+        assert deleted["deleted"] is True
+
+        r6 = s.post(f"{API}/messages/{mid}/restore", headers=auth_headers)
+        assert r6.status_code == 200
+        assert r6.json() == {"ok": True}
+
+        r7 = s.get(f"{API}/messages")
+        ids2 = [m["id"] for m in r7.json()]
+        assert mid in ids2
+
+        # cleanup for real
+        assert s.delete(f"{API}/messages/{mid}", headers=auth_headers).status_code == 200
+        assert s.delete(f"{API}/messages/{mid}/permanent", headers=auth_headers).status_code == 200
 
     def test_delete_message_requires_auth(self, s):
         r = s.delete(f"{API}/messages/nonexistent-id")

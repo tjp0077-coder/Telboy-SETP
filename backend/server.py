@@ -172,6 +172,9 @@ class MessageItem(BaseModel):
     priority: str = "info"   # info | important | urgent
     author: str
     created_at: str          # ISO
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
 
 
 class MessageCreate(BaseModel):
@@ -186,6 +189,9 @@ class EventNote(BaseModel):
     text: str
     author: str
     created_at: str
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
 
 
 class EventNoteCreate(BaseModel):
@@ -202,6 +208,9 @@ class FeedItem(BaseModel):
     created_at: str
     event_id: Optional[str] = None
     event_title: Optional[str] = None
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
 
 
 class PrototypeIdea(BaseModel):
@@ -614,7 +623,7 @@ async def delete_session(session_id: str, admin=Depends(get_current_admin)):
 # ---------- Per-Event Notes ----------
 @api.get("/schedule/{session_id}/notes", response_model=List[EventNote])
 async def list_event_notes(session_id: str):
-    docs = await event_notes_col.find({"event_id": session_id}, {"_id": 0}).to_list(200)
+    docs = await event_notes_col.find({"event_id": session_id, "deleted": {"$ne": True}}, {"_id": 0}).to_list(200)
     docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
     return docs
 
@@ -638,7 +647,31 @@ async def create_event_note(
 
 @api.delete("/schedule/{session_id}/notes/{note_id}")
 async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
-    res = await event_notes_col.delete_one({"id": note_id, "event_id": session_id})
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    deleted_by = admin.get("username") or admin.get("name") or "admin"
+    res = await event_notes_col.update_one(
+        {"id": note_id, "event_id": session_id, "deleted": {"$ne": True}},
+        {"$set": {"deleted": True, "deleted_at": deleted_at, "deleted_by": deleted_by}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@api.post("/schedule/{session_id}/notes/{note_id}/restore")
+async def restore_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    res = await event_notes_col.update_one(
+        {"id": note_id, "event_id": session_id, "deleted": True},
+        {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/schedule/{session_id}/notes/{note_id}/permanent")
+async def permanently_delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    res = await event_notes_col.delete_one({"id": note_id, "event_id": session_id, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}
@@ -647,8 +680,15 @@ async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_cur
 # ---------- Merged Feed (announcements + event notes) ----------
 @api.get("/feed", response_model=List[FeedItem])
 async def merged_feed():
-    msgs = await messages_col.find({}, {"_id": 0}).to_list(500)
-    notes = await event_notes_col.find({}, {"_id": 0}).to_list(500)
+    msgs = await messages_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(500)
+    notes = await event_notes_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(500)
+
+    return await build_feed_items(msgs, notes)
+
+
+async def build_feed_items(msgs: List[dict], notes: List[dict]) -> List[dict]:
+    msgs = [dict(m) for m in msgs]
+    notes = [dict(n) for n in notes]
 
     event_ids = list({n["event_id"] for n in notes})
     titles: dict = {}
@@ -670,6 +710,9 @@ async def merged_feed():
             "created_at": m["created_at"],
             "event_id": None,
             "event_title": None,
+            "deleted": bool(m.get("deleted")),
+            "deleted_at": m.get("deleted_at"),
+            "deleted_by": m.get("deleted_by"),
         })
     for n in notes:
         items.append({
@@ -682,8 +725,21 @@ async def merged_feed():
             "created_at": n["created_at"],
             "event_id": n.get("event_id"),
             "event_title": titles.get(n.get("event_id")),
+            "deleted": bool(n.get("deleted")),
+            "deleted_at": n.get("deleted_at"),
+            "deleted_by": n.get("deleted_by"),
         })
     items.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return items
+
+
+@api.get("/feed/deleted", response_model=List[FeedItem])
+async def deleted_feed(admin=Depends(get_current_admin)):
+    msgs = await messages_col.find({"deleted": True}, {"_id": 0}).to_list(500)
+    notes = await event_notes_col.find({"deleted": True}, {"_id": 0}).to_list(500)
+
+    items = await build_feed_items(msgs, notes)
+    items.sort(key=lambda x: x.get("deleted_at") or x.get("created_at", ""), reverse=True)
     return items
 
 
@@ -941,7 +997,7 @@ async def permanently_delete_contact(cid: str, admin=Depends(get_current_admin))
 # ---------- Live Messages ----------
 @api.get("/messages", response_model=List[MessageItem])
 async def list_messages():
-    docs = await messages_col.find({}, {"_id": 0}).to_list(1000)
+    docs = await messages_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(1000)
     docs.sort(key=lambda d: d.get("created_at", ""), reverse=True)
     return docs
 
@@ -961,7 +1017,31 @@ async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
 
 @api.delete("/messages/{message_id}")
 async def delete_message(message_id: str, admin=Depends(get_current_admin)):
-    res = await messages_col.delete_one({"id": message_id})
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    deleted_by = admin.get("username") or admin.get("name") or "admin"
+    res = await messages_col.update_one(
+        {"id": message_id, "deleted": {"$ne": True}},
+        {"$set": {"deleted": True, "deleted_at": deleted_at, "deleted_by": deleted_by}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@api.post("/messages/{message_id}/restore")
+async def restore_message(message_id: str, admin=Depends(get_current_admin)):
+    res = await messages_col.update_one(
+        {"id": message_id, "deleted": True},
+        {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/messages/{message_id}/permanent")
+async def permanently_delete_message(message_id: str, admin=Depends(get_current_admin)):
+    res = await messages_col.delete_one({"id": message_id, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}

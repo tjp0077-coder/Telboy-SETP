@@ -90,10 +90,19 @@ export default function MessagesScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="messages-screen">
       <ScreenBg />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Comms Feed</Text>
-        <Text style={styles.headerSub}>
-          Broadcasts to all delegates, plus live session notes
-        </Text>
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerTitle}>Comms Feed</Text>
+            <Text style={styles.headerSub}>
+              Broadcasts to all delegates, plus live session notes
+            </Text>
+          </View>
+          {auth.username ? (
+            <Pressable onPress={() => router.push("/deleted-feed")} hitSlop={10} testID="messages-archived-link">
+              <Ionicons name="archive-outline" size={22} color={onSunset.primary} />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       {/* Filter chips */}
@@ -319,6 +328,7 @@ function formatDate(iso: string): string {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  headerTopRow: { flexDirection: "row", alignItems: "flex-start", gap: spacing.sm },
   headerTitle: { fontSize: 28, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
   headerSub: { fontSize: 13, color: onSunset.secondary, marginTop: 4 },
 
