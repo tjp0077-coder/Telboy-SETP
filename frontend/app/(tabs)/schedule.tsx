@@ -188,7 +188,7 @@ export default function ScheduleListScreen() {
                 {coachMeta ? (
                   <View style={styles.cardMeta}>
                     <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
-                    <Text style={styles.cardMetaText}>{coachMeta}</Text>
+                    <Text style={styles.coachMetaText}>{coachMeta}</Text>
                   </View>
                 ) : null}
                 {item.description ? (
@@ -247,6 +247,7 @@ const styles = StyleSheet.create({
   cardTitle: { fontSize: 15, fontWeight: "600", color: colors.onSurface, lineHeight: 20 },
   cardMeta: { flexDirection: "row", alignItems: "center", marginTop: 4, gap: 4 },
   cardMetaText: { fontSize: 12, color: colors.onSurfaceMuted },
+  coachMetaText: { fontSize: 12, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
   cardDesc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 17 },
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },

@@ -218,7 +218,7 @@ export default function EventDetail() {
             {coachMeta ? (
               <View style={styles.metaRow}>
                 <Ionicons name="bus" size={16} color={colors.onSurfaceMuted} />
-                <Text style={styles.metaText}>{coachMeta}</Text>
+                <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
             <View style={styles.metaRow}>
@@ -455,6 +455,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 34 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.sm },
   metaText: { fontSize: 14, color: colors.onSurfaceMuted },
+  coachMetaText: { fontSize: 14, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
 
   sectionTitle: {
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,
