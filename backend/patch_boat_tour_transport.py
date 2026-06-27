@@ -9,7 +9,21 @@ from pymongo import MongoClient
 
 
 ROOT_DIR = Path(__file__).resolve().parent
-load_dotenv(ROOT_DIR / ".env")
+
+
+def load_environment(env_file: str | None) -> None:
+    candidates = []
+    if env_file:
+        candidates.append(Path(env_file))
+    candidates.extend([
+        ROOT_DIR / ".env",
+        ROOT_DIR.parent / "frontend" / ".env",
+    ])
+
+    for candidate in candidates:
+        if candidate.exists():
+            load_dotenv(candidate)
+            break
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,6 +33,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--date", default="2026-07-30", help="Event date to match.")
     parser.add_argument("--title", default="Technical Boat Tour", help="Event title to match.")
     parser.add_argument("--coach-time", default="08:45", help="Coach departure time.")
+    parser.add_argument("--env-file", default=None, help="Optional path to a .env file to load first.")
+    parser.add_argument("--mongo-url", default=None, help="Optional Mongo connection string override.")
+    parser.add_argument("--db-name", default=None, help="Optional Mongo database name override.")
     parser.add_argument(
         "--transport-details",
         default=None,
@@ -32,22 +49,23 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def get_collection():
-    mongo_url = os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
+def get_collection(mongo_url_override: str | None, db_name_override: str | None):
+    mongo_url = mongo_url_override or os.environ.get("MONGO_URL") or os.environ.get("MONGODB_URI")
     if not mongo_url:
         raise RuntimeError("No Mongo connection string found. Set MONGO_URL or MONGODB_URI.")
 
-    db_name = os.environ.get("DB_NAME") or os.environ.get("MONGO_DB_NAME") or "Telboy_SETP"
+    db_name = db_name_override or os.environ.get("DB_NAME") or os.environ.get("MONGO_DB_NAME") or "Telboy_SETP"
     client = MongoClient(mongo_url)
     return client, client[db_name]["schedule"]
 
 
 def main() -> int:
     args = parse_args()
+    load_environment(args.env_file)
     transport_details = args.transport_details or f"{args.coach_time} – Coach leaves hotel"
     query = {"date": args.date, "title": args.title}
 
-    client, schedule_col = get_collection()
+    client, schedule_col = get_collection(args.mongo_url, args.db_name)
     try:
         existing = schedule_col.find_one(query, {"_id": 0})
         if not existing:

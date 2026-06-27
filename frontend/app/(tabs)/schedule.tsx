@@ -165,6 +165,7 @@ export default function ScheduleListScreen() {
           const fav = favorites.has(item.id);
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
+          const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
             <Pressable
               onPress={() => router.push(`/event/${item.id}`)}
@@ -184,6 +185,12 @@ export default function ScheduleListScreen() {
                   <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
                 </View>
+                {coachMeta ? (
+                  <View style={styles.cardMeta}>
+                    <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
+                    <Text style={styles.cardMetaText}>{coachMeta}</Text>
+                  </View>
+                ) : null}
                 {item.description ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
                 ) : null}
