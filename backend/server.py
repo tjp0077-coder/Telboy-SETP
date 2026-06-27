@@ -41,7 +41,7 @@ JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "no-reply@edi.zeneagles.com")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "admin@edi.zeneagles.com")
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 
