@@ -133,6 +133,9 @@ export type ContactItem = {
   event_id?: string | null;
   event_title?: string | null;
   messages: ContactThreadMessage[];
+  deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
 };
 
 export type PrototypeIdea = {
@@ -193,6 +196,7 @@ export const api = {
       method: "POST", body: JSON.stringify(data),
     }),
   listContact: () => request<ContactItem[]>("/contact", {}, true),
+  listDeletedContact: () => request<ContactItem[]>("/contact/deleted", {}, true),
   markContactRead: (id: string) =>
     request<{ ok: boolean }>(`/contact/${id}/read`, { method: "PATCH" }, true),
   replyContact: (id: string, data: { message: string; subject?: string }) =>
@@ -201,6 +205,10 @@ export const api = {
     }, true),
   deleteContact: (id: string) =>
     request<{ deleted: boolean }>(`/contact/${id}`, { method: "DELETE" }, true),
+  restoreContact: (id: string) =>
+    request<{ ok: boolean }>(`/contact/${id}/restore`, { method: "POST" }, true),
+  permanentDeleteContact: (id: string) =>
+    request<{ deleted: boolean }>(`/contact/${id}/permanent`, { method: "DELETE" }, true),
 
   // admins (committee management)
   listAdmins: () => request<AdminInfo[]>("/admins", {}, true),

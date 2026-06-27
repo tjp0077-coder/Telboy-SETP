@@ -113,6 +113,7 @@ class TestContactPublicCreate:
             assert found["messages"][-1]["message"] == "follow up from delegate"
         finally:
             s.delete(f"{API}/contact/{cid}", headers=H)
+            s.delete(f"{API}/contact/{cid}/permanent", headers=H)
 
     def test_create_contact_missing_message_400(self, s):
         r = s.post(f"{API}/contact", json={"name": "A", "subject": "B", "message": "   "})
@@ -163,6 +164,7 @@ class TestContactAdminInbox:
             assert found["messages"][-1]["message"] == "Thanks for your message."
         finally:
             s.delete(f"{API}/contact/{cid}", headers=H)
+            s.delete(f"{API}/contact/{cid}/permanent", headers=H)
 
     def test_full_inbox_lifecycle(self, s, H):
         # Seed a fresh contact message
@@ -220,6 +222,53 @@ class TestContactAdminInbox:
         assert rdel.status_code == 200
         assert rdel.json() == {"deleted": True}
 
-        # Verify gone
+        # Verify hidden from primary inbox
         items3 = s.get(f"{API}/contact", headers=H).json()
         assert not any(i["id"] == cid for i in items3)
+
+        # Deleted list requires auth
+        rdeleted401 = s.get(f"{API}/contact/deleted")
+        assert rdeleted401.status_code == 401
+
+        # Verify visible in deleted inbox
+        deleted_items = s.get(f"{API}/contact/deleted", headers=H)
+        assert deleted_items.status_code == 200
+        deleted_found = next((i for i in deleted_items.json() if i["id"] == cid), None)
+        assert deleted_found is not None
+        assert deleted_found["deleted"] is True
+        assert deleted_found["deleted_at"]
+        assert deleted_found["deleted_by"]
+
+        # Restore without auth -> 401
+        rrestore401 = s.post(f"{API}/contact/{cid}/restore")
+        assert rrestore401.status_code == 401
+
+        # Restore OK
+        rrestore = s.post(f"{API}/contact/{cid}/restore", headers=H)
+        assert rrestore.status_code == 200
+        assert rrestore.json() == {"ok": True}
+
+        items4 = s.get(f"{API}/contact", headers=H).json()
+        restored = next((i for i in items4 if i["id"] == cid), None)
+        assert restored is not None
+        assert restored["deleted"] is False
+
+        deleted_items_after_restore = s.get(f"{API}/contact/deleted", headers=H).json()
+        assert not any(i["id"] == cid for i in deleted_items_after_restore)
+
+        # Archive again and permanently delete
+        rdel2 = s.delete(f"{API}/contact/{cid}", headers=H)
+        assert rdel2.status_code == 200
+
+        rperm401 = s.delete(f"{API}/contact/{cid}/permanent")
+        assert rperm401.status_code == 401
+
+        rperm404 = s.delete(f"{API}/contact/does-not-exist/permanent", headers=H)
+        assert rperm404.status_code == 404
+
+        rperm = s.delete(f"{API}/contact/{cid}/permanent", headers=H)
+        assert rperm.status_code == 200
+        assert rperm.json() == {"deleted": True}
+
+        deleted_items_final = s.get(f"{API}/contact/deleted", headers=H).json()
+        assert not any(i["id"] == cid for i in deleted_items_final)

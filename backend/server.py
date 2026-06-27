@@ -255,6 +255,9 @@ class ContactItem(BaseModel):
     event_id: Optional[str] = None
     event_title: Optional[str] = None
     messages: List[dict] = Field(default_factory=list)
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
 
 
 class ContactThreadMessage(BaseModel):
@@ -310,6 +313,9 @@ def normalize_contact_thread(doc: dict) -> dict:
     messages = sorted(messages, key=lambda m: m.get("created_at", ""))
     normalized["messages"] = messages
     normalized["updated_at"] = normalized.get("updated_at") or messages[-1].get("created_at") or normalized.get("created_at")
+    normalized["deleted"] = bool(normalized.get("deleted"))
+    normalized["deleted_at"] = normalized.get("deleted_at")
+    normalized["deleted_by"] = normalized.get("deleted_by")
     return normalized
 
 
@@ -827,9 +833,7 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
         raise HTTPException(status_code=502, detail="Failed to send email")
 
 
-@api.get("/contact", response_model=List[ContactItem])
-async def list_contact(admin=Depends(get_current_admin)):
-    docs = await contact_col.find({}, {"_id": 0}).to_list(500)
+async def hydrate_contact_threads(docs: List[dict]) -> List[dict]:
     docs = [normalize_contact_thread(d) for d in docs]
     docs.sort(key=lambda d: d.get("updated_at", d.get("created_at", "")), reverse=True)
 
@@ -845,9 +849,21 @@ async def list_contact(admin=Depends(get_current_admin)):
     return docs
 
 
+@api.get("/contact", response_model=List[ContactItem])
+async def list_contact(admin=Depends(get_current_admin)):
+    docs = await contact_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(500)
+    return await hydrate_contact_threads(docs)
+
+
+@api.get("/contact/deleted", response_model=List[ContactItem])
+async def list_deleted_contact(admin=Depends(get_current_admin)):
+    docs = await contact_col.find({"deleted": True}, {"_id": 0}).to_list(500)
+    return await hydrate_contact_threads(docs)
+
+
 @api.patch("/contact/{cid}/read")
 async def mark_contact_read(cid: str, admin=Depends(get_current_admin)):
-    res = await contact_col.update_one({"id": cid}, {"$set": {"read": True}})
+    res = await contact_col.update_one({"id": cid, "deleted": {"$ne": True}}, {"$set": {"read": True}})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"ok": True}
@@ -855,7 +871,7 @@ async def mark_contact_read(cid: str, admin=Depends(get_current_admin)):
 
 @api.post("/contact/{cid}/reply")
 async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_current_admin)):
-    item = await contact_col.find_one({"id": cid}, {"_id": 0})
+    item = await contact_col.find_one({"id": cid, "deleted": {"$ne": True}}, {"_id": 0})
     if not item:
         raise HTTPException(status_code=404, detail="Not found")
 
@@ -891,7 +907,32 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
 
 @api.delete("/contact/{cid}")
 async def delete_contact(cid: str, admin=Depends(get_current_admin)):
-    res = await contact_col.delete_one({"id": cid})
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    deleted_by = admin.get("username") or admin.get("name") or "admin"
+    res = await contact_col.update_one(
+        {"id": cid, "deleted": {"$ne": True}},
+        {"$set": {"deleted": True, "deleted_at": deleted_at, "deleted_by": deleted_by, "updated_at": deleted_at, "read": True}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@api.post("/contact/{cid}/restore")
+async def restore_contact(cid: str, admin=Depends(get_current_admin)):
+    restored_at = datetime.now(timezone.utc).isoformat()
+    res = await contact_col.update_one(
+        {"id": cid, "deleted": True},
+        {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None, "updated_at": restored_at, "read": True}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/contact/{cid}/permanent")
+async def permanently_delete_contact(cid: str, admin=Depends(get_current_admin)):
+    res = await contact_col.delete_one({"id": cid, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}

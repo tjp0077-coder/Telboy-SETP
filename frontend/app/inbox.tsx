@@ -125,13 +125,16 @@ export default function InboxScreen() {
           <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
         </Pressable>
         <Text style={styles.topTitle}>Inbox</Text>
-        {unread > 0 ? (
-          <View style={styles.unreadBadge}>
-            <Text style={styles.unreadBadgeText}>{unread}</Text>
-          </View>
-        ) : (
-          <View style={{ width: 26 }} />
-        )}
+        <View style={styles.topRight}>
+          <Pressable onPress={() => router.push("/deleted-inbox")} hitSlop={10} testID="inbox-archived-link">
+            <Ionicons name="archive-outline" size={22} color={colors.onSurface} />
+          </Pressable>
+          {unread > 0 ? (
+            <View style={styles.unreadBadge}>
+              <Text style={styles.unreadBadgeText}>{unread}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       {loading ? (
@@ -257,8 +260,8 @@ export default function InboxScreen() {
                         style={[styles.actionBtn, styles.actionGhost]}
                         testID={`inbox-delete-${item.id}`}
                       >
-                        <Ionicons name="trash-outline" size={14} color={colors.error} />
-                        <Text style={styles.actionGhostText}>Delete</Text>
+                        <Ionicons name="archive-outline" size={14} color={colors.error} />
+                        <Text style={styles.actionGhostText}>Archive</Text>
                       </Pressable>
                     </View>
                     {replySuccessId === item.id ? (
@@ -331,6 +334,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
   topTitle: { fontSize: 20, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
+  topRight: { flexDirection: "row", alignItems: "center", gap: spacing.sm, minWidth: 54, justifyContent: "flex-end" },
   unreadBadge: {
     minWidth: 24, height: 22, paddingHorizontal: 8, borderRadius: 11,
     backgroundColor: colors.brandTertiary, alignItems: "center", justifyContent: "center",
