@@ -647,6 +647,10 @@ async def create_event_note(
 
 @api.delete("/schedule/{session_id}/notes/{note_id}")
 async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    existing = await event_notes_col.find_one({"id": note_id, "event_id": session_id, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     deleted_at = datetime.now(timezone.utc).isoformat()
     deleted_by = admin.get("username") or admin.get("name") or "admin"
     res = await event_notes_col.update_one(
@@ -655,25 +659,66 @@ async def delete_event_note(session_id: str, note_id: str, admin=Depends(get_cur
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    event = await schedule_col.find_one({"id": session_id}, {"_id": 0, "title": 1})
+    await send_admin_audit_email(
+        "[SETP admin] Session note archived",
+        build_admin_audit_body("archive", "session note", admin, [
+            f"Note ID: {note_id}",
+            f"Event ID: {session_id}",
+            f"Event title: {(event or {}).get('title', '(unknown)')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
 @api.post("/schedule/{session_id}/notes/{note_id}/restore")
 async def restore_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    existing = await event_notes_col.find_one({"id": note_id, "event_id": session_id, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     res = await event_notes_col.update_one(
         {"id": note_id, "event_id": session_id, "deleted": True},
         {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None}},
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    event = await schedule_col.find_one({"id": session_id}, {"_id": 0, "title": 1})
+    await send_admin_audit_email(
+        "[SETP admin] Session note restored",
+        build_admin_audit_body("restore", "session note", admin, [
+            f"Note ID: {note_id}",
+            f"Event ID: {session_id}",
+            f"Event title: {(event or {}).get('title', '(unknown)')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"ok": True}
 
 
 @api.delete("/schedule/{session_id}/notes/{note_id}/permanent")
 async def permanently_delete_event_note(session_id: str, note_id: str, admin=Depends(get_current_admin)):
+    existing = await event_notes_col.find_one({"id": note_id, "event_id": session_id, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     res = await event_notes_col.delete_one({"id": note_id, "event_id": session_id, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    event = await schedule_col.find_one({"id": session_id}, {"_id": 0, "title": 1})
+    await send_admin_audit_email(
+        "[SETP admin] Session note permanently deleted",
+        build_admin_audit_body("permanent delete", "session note", admin, [
+            f"Note ID: {note_id}",
+            f"Event ID: {session_id}",
+            f"Event title: {(event or {}).get('title', '(unknown)')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
@@ -848,6 +893,46 @@ async def send_contact_email(item: dict):
         logging.error("Failed to send contact notification email via Resend: %s", exc)
 
 
+async def send_admin_audit_email(subject: str, body: str):
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY is not configured; skipping admin audit email send.")
+        return
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": RESEND_FROM_EMAIL,
+                    "to": [RESEND_CONTACT_RECIPIENT],
+                    "subject": subject,
+                    "text": body,
+                },
+                timeout=15,
+            )
+            response.raise_for_status()
+    except Exception as exc:
+        logging.error("Failed to send admin audit email via Resend: %s", exc)
+
+
+def build_admin_audit_body(action: str, item_type: str, admin: dict, details: List[str]) -> str:
+    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    timestamp = datetime.now(timezone.utc).isoformat()
+    return "\n".join([
+        f"Action: {action}",
+        f"Item type: {item_type}",
+        f"Performed by: {admin_name}",
+        f"Timestamp: {timestamp}",
+        "",
+        "Details:",
+        *details,
+    ])
+
+
 async def send_contact_reply_email(item: dict, subject: str, message: str, admin_name: str):
     if not RESEND_API_KEY:
         raise HTTPException(status_code=503, detail="Email delivery is not configured")
@@ -963,6 +1048,10 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
 
 @api.delete("/contact/{cid}")
 async def delete_contact(cid: str, admin=Depends(get_current_admin)):
+    existing = await contact_col.find_one({"id": cid, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     deleted_at = datetime.now(timezone.utc).isoformat()
     deleted_by = admin.get("username") or admin.get("name") or "admin"
     res = await contact_col.update_one(
@@ -971,11 +1060,25 @@ async def delete_contact(cid: str, admin=Depends(get_current_admin)):
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Contact thread archived",
+        build_admin_audit_body("archive", "contact thread", admin, [
+            f"Thread ID: {cid}",
+            f"Name: {existing.get('name', '(unknown)')}",
+            f"Email: {existing.get('email') or '(not provided)'}",
+            f"Subject: {existing.get('subject', '')}",
+            f"Message: {existing.get('message', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
 @api.post("/contact/{cid}/restore")
 async def restore_contact(cid: str, admin=Depends(get_current_admin)):
+    existing = await contact_col.find_one({"id": cid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     restored_at = datetime.now(timezone.utc).isoformat()
     res = await contact_col.update_one(
         {"id": cid, "deleted": True},
@@ -983,14 +1086,36 @@ async def restore_contact(cid: str, admin=Depends(get_current_admin)):
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Contact thread restored",
+        build_admin_audit_body("restore", "contact thread", admin, [
+            f"Thread ID: {cid}",
+            f"Name: {existing.get('name', '(unknown)')}",
+            f"Email: {existing.get('email') or '(not provided)'}",
+            f"Subject: {existing.get('subject', '')}",
+        ]),
+    )
     return {"ok": True}
 
 
 @api.delete("/contact/{cid}/permanent")
 async def permanently_delete_contact(cid: str, admin=Depends(get_current_admin)):
+    existing = await contact_col.find_one({"id": cid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     res = await contact_col.delete_one({"id": cid, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Contact thread permanently deleted",
+        build_admin_audit_body("permanent delete", "contact thread", admin, [
+            f"Thread ID: {cid}",
+            f"Name: {existing.get('name', '(unknown)')}",
+            f"Email: {existing.get('email') or '(not provided)'}",
+            f"Subject: {existing.get('subject', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
@@ -1017,6 +1142,10 @@ async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
 
 @api.delete("/messages/{message_id}")
 async def delete_message(message_id: str, admin=Depends(get_current_admin)):
+    existing = await messages_col.find_one({"id": message_id, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     deleted_at = datetime.now(timezone.utc).isoformat()
     deleted_by = admin.get("username") or admin.get("name") or "admin"
     res = await messages_col.update_one(
@@ -1025,25 +1154,63 @@ async def delete_message(message_id: str, admin=Depends(get_current_admin)):
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Announcement archived",
+        build_admin_audit_body("archive", "announcement", admin, [
+            f"Message ID: {message_id}",
+            f"Title: {existing.get('title', '')}",
+            f"Priority: {existing.get('priority', 'info')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
 @api.post("/messages/{message_id}/restore")
 async def restore_message(message_id: str, admin=Depends(get_current_admin)):
+    existing = await messages_col.find_one({"id": message_id, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     res = await messages_col.update_one(
         {"id": message_id, "deleted": True},
         {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None}},
     )
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Announcement restored",
+        build_admin_audit_body("restore", "announcement", admin, [
+            f"Message ID: {message_id}",
+            f"Title: {existing.get('title', '')}",
+            f"Priority: {existing.get('priority', 'info')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"ok": True}
 
 
 @api.delete("/messages/{message_id}/permanent")
 async def permanently_delete_message(message_id: str, admin=Depends(get_current_admin)):
+    existing = await messages_col.find_one({"id": message_id, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
     res = await messages_col.delete_one({"id": message_id, "deleted": True})
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Not found")
+    await send_admin_audit_email(
+        "[SETP admin] Announcement permanently deleted",
+        build_admin_audit_body("permanent delete", "announcement", admin, [
+            f"Message ID: {message_id}",
+            f"Title: {existing.get('title', '')}",
+            f"Priority: {existing.get('priority', 'info')}",
+            f"Author: {existing.get('author', '(unknown)')}",
+            f"Text: {existing.get('text', '')}",
+        ]),
+    )
     return {"deleted": True}
 
 
