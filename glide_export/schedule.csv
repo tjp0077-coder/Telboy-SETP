@@ -1,4 +1,4 @@
-id,date,day_label,time,end_time,title,location,description,category
+id,date,day_label,time,end_time,title,location,description,category,coachTime,transportDetails
 31f5992f-bd41-4d05-a7cb-b53010ce8f47,2026-07-26,Sun 26 July,16:00,20:00,Registration & Welcome Reception,Edinburgh Marriott Hotel,"Collect delegate badges, welcome packs, and meet fellow attendees over drinks and canapés.",social
 17a867a7-0f10-4a7c-9b96-3b1ded81d8f7,2026-07-27,Mon 27 July,08:00,,Check In,St Paul's & St George's (Ps&Gs),"Light snacks, coffee, and tea.",meal
 64be3ecf-87f4-4725-9664-e532dc3bc689,2026-07-27,Mon 27 July,08:30,,Opening Address,Ps&Gs,"Welcome address by Symposium Chairman, Dave Mackay.",session
@@ -34,4 +34,4 @@ ae8535cb-08d1-4499-9aad-7b5b81e9b6ce,2026-07-29,Wed 29 July,08:00,,Check In,Roya
 7bf0d9cc-97f1-4c74-b61b-546e7d7136a8,2026-07-29,Wed 29 July,11:55,,Lunch,Royal College of Physicians of Edinburgh,Midday lunch break.,meal
 7a61a185-58fa-4480-ad1b-db0043098b48,2026-07-29,Wed 29 July,13:15,,Guest Speaker,Royal College of Physicians of Edinburgh,Speaker presentation (Paul Beaver TBC).,session
 7b508d71-845a-4387-8df4-e4116bd48214,2026-07-29,Wed 29 July,19:00,23:00,Symposium Banquet,Royal College of Physicians of Edinburgh,Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from Marriott.,social
-a3efe180-3edf-49bf-bfd7-fee2bb66dcdf,2026-07-30,Thu 30 July,10:00,15:00,Technical Boat Tour,Forth Boat Tours,Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.,tour
+a3efe180-3edf-49bf-bfd7-fee2bb66dcdf,2026-07-30,Thu 30 July,10:00,15:00,Technical Boat Tour,Forth Boat Tours,Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.,tour,08:45,08:45 – Coach leaves hotel

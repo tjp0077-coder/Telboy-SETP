@@ -163,6 +163,7 @@ export default function EventDetail() {
 
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
+  const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
 
   return (
     <KeyboardAvoidingView
@@ -214,6 +215,12 @@ export default function EventDetail() {
                 {event.time}{event.end_time ? ` – ${event.end_time}` : ""}
               </Text>
             </View>
+            {coachMeta ? (
+              <View style={styles.metaRow}>
+                <Ionicons name="bus" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.metaText}>{coachMeta}</Text>
+              </View>
+            ) : null}
             <View style={styles.metaRow}>
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{event.location}</Text>

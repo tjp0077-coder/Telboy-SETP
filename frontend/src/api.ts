@@ -70,6 +70,8 @@ export type SessionItem = {
   day_label: string;
   time: string;
   end_time?: string | null;
+  coachTime?: string | null;
+  transportDetails?: string | null;
   title: string;
   location: string;
   description?: string;

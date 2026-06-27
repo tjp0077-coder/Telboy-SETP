@@ -131,6 +131,8 @@ class SessionItem(BaseModel):
     day_label: str       # e.g. "Mon 27 July"
     time: str            # e.g. "08:30"
     end_time: Optional[str] = None
+    coachTime: Optional[str] = None
+    transportDetails: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -142,6 +144,8 @@ class SessionCreate(BaseModel):
     day_label: str
     time: str
     end_time: Optional[str] = None
+    coachTime: Optional[str] = None
+    transportDetails: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -153,6 +157,8 @@ class SessionUpdate(BaseModel):
     day_label: Optional[str] = None
     time: Optional[str] = None
     end_time: Optional[str] = None
+    coachTime: Optional[str] = None
+    transportDetails: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -408,7 +414,9 @@ SEED_SCHEDULE = [
     # Thu 30 July
     {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
      "title": "Technical Boat Tour", "location": "Forth Boat Tours",
-     "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
+        "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
+        "coachTime": "08:45",
+        "transportDetails": "08:45 – Coach leaves hotel",
      "category": "tour"},
 ]
 
