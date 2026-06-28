@@ -456,6 +456,7 @@ async def seed_admins():
         # and lets credentials be managed entirely via env vars + a redeploy.
         await admins_col.update_one(
             {"username": username},
+            {
                 "$set": {
                     "username": username,
                     "name": name,
@@ -1040,11 +1041,12 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
     await send_contact_reply_email(item, subject, message, admin_name)
     await contact_col.update_one(
         {"id": cid},
+        {
             "$set": {
                 "messages": item["messages"] + [reply_message],
                 "updated_at": created_at,
                 "read": True,
-            }
+            },
         },
     )
     return {"ok": True, "message": reply_message}
