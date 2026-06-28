@@ -400,6 +400,8 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "19:00", "end_time": "22:00",
      "title": "Royal Yacht Britannia Reception", "location": "Royal Yacht Britannia",
      "description": "Reception sponsored by QinetiQ. Transport provided from Marriott.",
+     "coachTime": "18:30",
+     "transportDetails": "6:30 pm - Coach leaves hotel",
      "category": "social"},
 
     # Wed 29 July
@@ -454,7 +456,6 @@ async def seed_admins():
         # and lets credentials be managed entirely via env vars + a redeploy.
         await admins_col.update_one(
             {"username": username},
-            {
                 "$set": {
                     "username": username,
                     "name": name,
@@ -1035,7 +1036,6 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
     await send_contact_reply_email(item, subject, message, admin_name)
     await contact_col.update_one(
         {"id": cid},
-        {
             "$set": {
                 "messages": item["messages"] + [reply_message],
                 "updated_at": created_at,
