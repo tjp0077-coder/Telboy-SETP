@@ -889,7 +889,7 @@ async def send_contact_email(item: dict):
     payload = {
         "from": RESEND_FROM_EMAIL,
         "to": [RESEND_CONTACT_RECIPIENT],
-        "replyTo": reply_to,
+        "reply_to": reply_to,
         "subject": subject,
     }
     if RESEND_CONTACT_TEMPLATE_ID:
