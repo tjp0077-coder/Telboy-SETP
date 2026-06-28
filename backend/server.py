@@ -41,8 +41,9 @@ JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
 JWT_ALG = os.environ.get("JWT_ALGORITHM", "HS256")
 ACCESS_MIN = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
-RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "admin@edi.zeneagles.com")
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com")
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
+RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 
 if not RESEND_CONTACT_RECIPIENT:
@@ -236,6 +237,8 @@ class PrototypeIdeaCreate(BaseModel):
 class ContactCreate(BaseModel):
     name: str
     email: Optional[EmailStr] = None
+    organisation: Optional[str] = None
+    phone: Optional[str] = None
     subject: str
     message: str
     event_id: Optional[str] = None
@@ -256,6 +259,8 @@ class ContactItem(BaseModel):
     id: str
     name: str
     email: str
+    organisation: Optional[str] = None
+    phone: Optional[str] = None
     subject: str
     message: str
     created_at: str
@@ -800,6 +805,8 @@ async def create_contact(data: ContactCreate):
     name = data.name.strip()
     subject = data.subject.strip()
     message = data.message.strip()
+    organisation = (data.organisation or "").strip()
+    phone = (data.phone or "").strip()
     if not name or not subject or not message:
         raise HTTPException(status_code=400, detail="name, subject and message are required")
 
@@ -829,12 +836,18 @@ async def create_contact(data: ContactCreate):
         }
         if sender_email:
             update_doc["email"] = sender_email
+        if organisation:
+            update_doc["organisation"] = organisation
+        if phone:
+            update_doc["phone"] = phone
         if event_id is not None:
             update_doc["event_id"] = event_id
         await contact_col.update_one({"id": thread_id}, {"$set": update_doc})
         email_item = {
             **existing,
             "email": sender_email or existing.get("email", ""),
+            "organisation": organisation or existing.get("organisation", ""),
+            "phone": phone or existing.get("phone", ""),
             "subject": subject,
             "message": message,
             "created_at": created_at,
@@ -847,6 +860,8 @@ async def create_contact(data: ContactCreate):
         "id": str(uuid.uuid4()),
         "name": name,
         "email": sender_email,
+        "organisation": organisation,
+        "phone": phone,
         "subject": subject,
         "message": message,
         "created_at": created_at,
@@ -869,13 +884,38 @@ async def send_contact_email(item: dict):
     event_text = item.get("event_id") or "None"
     reply_to = [item["email"]] if item.get("email") else []
     sender_email = item.get("email") or "(not provided)"
-    body = (
-        f"Name: {item['name']}\n"
-        f"Email: {sender_email}\n"
-        f"Event ID: {event_text}\n"
-        f"Received: {item['created_at']}\n\n"
-        f"Message:\n{item['message']}"
-    )
+    organisation = item.get("organisation") or "(not provided)"
+    phone = item.get("phone") or "(not provided)"
+    payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [RESEND_CONTACT_RECIPIENT],
+        "replyTo": reply_to,
+        "subject": subject,
+    }
+    if RESEND_CONTACT_TEMPLATE_ID:
+        payload["template"] = {
+            "id": RESEND_CONTACT_TEMPLATE_ID,
+            "variables": {
+                "name": item["name"],
+                "email": sender_email,
+                "organisation": organisation,
+                "phone": phone,
+                "message": item["message"],
+                "subject": item["subject"],
+                "eventId": event_text,
+                "createdAt": item["created_at"],
+            },
+        }
+    else:
+        payload["text"] = (
+            f"Name: {item['name']}\n"
+            f"Email: {sender_email}\n"
+            f"Organisation: {organisation}\n"
+            f"Phone: {phone}\n"
+            f"Event ID: {event_text}\n"
+            f"Received: {item['created_at']}\n\n"
+            f"Message:\n{item['message']}"
+        )
 
     try:
         async with httpx.AsyncClient() as client:
@@ -885,13 +925,7 @@ async def send_contact_email(item: dict):
                     "Authorization": f"Bearer {RESEND_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "from": RESEND_FROM_EMAIL,
-                    "to": [RESEND_CONTACT_RECIPIENT],
-                    "replyTo": reply_to,
-                    "subject": subject,
-                    "text": body,
-                },
+                json=payload,
                 timeout=15,
             )
             response.raise_for_status()
