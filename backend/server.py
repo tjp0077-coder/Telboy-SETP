@@ -471,6 +471,10 @@ async def seed_admins():
 
 
 async def seed_schedule():
+    await schedule_col.update_one(
+        {"title": "Royal Yacht Britannia Reception", "date": "2026-07-28"},
+        {"$set": {"coachTime": "18:30", "transportDetails": "6:30 pm - Coach leaves hotel"}},
+    )
     count = await schedule_col.count_documents({})
     if count > 0:
         return
