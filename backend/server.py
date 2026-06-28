@@ -889,9 +889,10 @@ async def send_contact_email(item: dict):
     payload = {
         "from": RESEND_FROM_EMAIL,
         "to": [RESEND_CONTACT_RECIPIENT],
-        "reply_to": reply_to,
         "subject": subject,
     }
+    if reply_to:
+        payload["reply_to"] = reply_to
     if RESEND_CONTACT_TEMPLATE_ID:
         payload["template"] = {
             "id": RESEND_CONTACT_TEMPLATE_ID,
@@ -929,6 +930,9 @@ async def send_contact_email(item: dict):
                 timeout=15,
             )
             response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        details = exc.response.text if exc.response is not None else str(exc)
+        logging.error("Resend rejected contact email payload: %s", details)
     except Exception as exc:
         logging.error("Failed to send contact notification email via Resend: %s", exc)
 
