@@ -128,6 +128,21 @@ export default function MessagesScreen() {
         })}
       </View>
 
+      <Pressable
+        onPress={() => router.push("/contact")}
+        style={[styles.contactCard, shadow.card]}
+        testID="feed-contact-committee-btn"
+      >
+        <View style={styles.contactIcon}>
+          <Ionicons name="mail" size={20} color={colors.brandTertiary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.contactTitle}>Contact the committee</Text>
+          <Text style={styles.contactSub}>Send a question or report an issue</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+      </Pressable>
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 40 }} />
       ) : (
@@ -340,6 +355,27 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: "#F2C265", borderColor: "#F2C265" },
   filterChipText: { fontSize: 12, fontWeight: "700", color: onSunset.secondary },
   filterChipTextActive: { color: "#1A2841" },
+
+  contactCard: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  contactIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "#FBF1E5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  contactTitle: { fontSize: 15, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
+  contactSub: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
 
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: onSunset.secondary },

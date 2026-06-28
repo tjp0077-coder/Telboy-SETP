@@ -179,8 +179,8 @@ export default function ProfileScreen() {
           contentFit="contain"
         />
         <Text style={styles.footnote}>
-          EDI SETP 2026 · v1.0{"\n"}
-          Built for delegates with ❤
+          EDI SETP 2026{"\n"}
+          Built by Zeneagles for delegates with ❤.
         </Text>
       </View>
     </ScrollView>
