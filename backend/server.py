@@ -459,12 +459,13 @@ SEED_SCHEDULE = [
      "category": "social"},
 
     # Thu 30 July
-    {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
-     "title": "Technical Boat Tour", "location": "Forth Boat Tours",
-        "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
-        "coachTime": "08:45",
-        "transportDetails": "08:45 – Coach leaves hotel",
-     "category": "tour"},
+     {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
+      "title": "Technical Boat Tour", "location": "Forth Boat Tours",
+          "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
+          "coachTime": "08:45",
+          "transportDetails": "08:45 – Coach leaves hotel",
+          "maps_url": "https://www.google.com/maps/search/Forth+Boat+Tours+EH30+9SQ/@55.9916263,-3.3960035,3003m/data=!3m2!1e3!4b1?entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
+      "category": "tour"},
 ]
 
 

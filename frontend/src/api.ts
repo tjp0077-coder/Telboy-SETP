@@ -72,6 +72,7 @@ export type SessionItem = {
   end_time?: string | null;
   coachTime?: string | null;
   transportDetails?: string | null;
+  maps_url?: string | null;
   title: string;
   location: string;
   description?: string;

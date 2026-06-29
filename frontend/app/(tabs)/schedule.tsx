@@ -81,9 +81,8 @@ export default function ScheduleListScreen() {
     }
   }, []);
 
-  const openLocationMap = useCallback(async (location: string, title?: string) => {
-    const query = `${location}${title ? ` ${title}` : ""}`.trim();
-    const url = buildMapsSearchUrl(query);
+  const openLocationMap = useCallback(async (location: string, title?: string, mapsUrl?: string | null) => {
+    const url = mapsUrl || buildMapsSearchUrl(`${location}${title ? ` ${title}` : ""}`.trim());
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
@@ -202,7 +201,7 @@ export default function ScheduleListScreen() {
                 <Pressable
                   onPress={(e) => {
                     e.stopPropagation?.();
-                    openLocationMap(item.location, item.title);
+                      openLocationMap(item.location, item.title, item.maps_url);
                   }}
                   hitSlop={8}
                   style={styles.cardMeta}

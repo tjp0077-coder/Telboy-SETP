@@ -169,8 +169,7 @@ export default function EventDetail() {
   const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
 
   const openLocationMap = async () => {
-    const query = `${event.location} ${event.title}`.trim();
-    const url = buildMapsSearchUrl(query);
+    const url = event.maps_url || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
