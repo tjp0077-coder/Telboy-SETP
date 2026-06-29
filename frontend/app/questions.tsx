@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput, KeyboardAvoidingView,
   Platform, ActivityIndicator, Modal, FlatList,
@@ -33,6 +33,7 @@ export default function AskSpeakerScreen() {
   const [done, setDone] = useState(false);
   const [queued, setQueued] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const appliedTalkParamRef = useRef<string | null>(null);
 
   const loadTalks = useCallback(async () => {
     try {
@@ -49,21 +50,21 @@ export default function AskSpeakerScreen() {
   }, [loadTalks]);
 
   useEffect(() => {
-    if (!eventIdParam) return;
+    if (!eventIdParam || talks.length === 0) return;
+    if (appliedTalkParamRef.current === eventIdParam) return;
     const match = talks.find((talk) => talk.id === eventIdParam);
     if (match) {
-      if (selectedTalk?.id !== match.id) {
-        setSelectedTalk({
-          id: match.id,
-          title: match.title,
-          day_label: match.day_label,
-          time: match.time,
-          location: match.location,
-        });
-      }
+      setSelectedTalk({
+        id: match.id,
+        title: match.title,
+        day_label: match.day_label,
+        time: match.time,
+        location: match.location,
+      });
+      appliedTalkParamRef.current = eventIdParam;
       return;
     }
-    if (eventTitleParam && selectedTalk?.id !== eventIdParam) {
+    if (eventTitleParam) {
       setSelectedTalk({
         id: eventIdParam,
         title: eventTitleParam,
@@ -71,8 +72,9 @@ export default function AskSpeakerScreen() {
         time: "",
         location: "",
       });
+      appliedTalkParamRef.current = eventIdParam;
     }
-  }, [eventIdParam, eventTitleParam, selectedTalk?.id, talks]);
+  }, [eventIdParam, eventTitleParam, talks]);
 
   const groupedTalks = useMemo(() => {
     const q = search.trim().toLowerCase();

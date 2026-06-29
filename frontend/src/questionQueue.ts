@@ -54,8 +54,10 @@ export async function flushQueuedQuestionSubmissions() {
 
   const remaining: QueuedQuestion[] = [];
   let sent = 0;
+  let stopIndex = queue.length;
 
-  for (const item of queue) {
+  for (let index = 0; index < queue.length; index += 1) {
+    const item = queue[index];
     try {
       await api.submitQuestion({
         name: item.name,
@@ -67,14 +69,14 @@ export async function flushQueuedQuestionSubmissions() {
     } catch (error) {
       if (isRetryableQuestionError(error)) {
         remaining.push(item);
+        stopIndex = index + 1;
         break;
       }
     }
   }
 
-  const tailStart = sent + remaining.length;
-  if (tailStart < queue.length) {
-    remaining.push(...queue.slice(tailStart));
+  if (stopIndex < queue.length) {
+    remaining.push(...queue.slice(stopIndex));
   }
 
   await saveQueue(remaining);
