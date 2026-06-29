@@ -390,8 +390,8 @@ class SessionSpeakerBio(BaseModel):
     @classmethod
     def validate_bio_text(cls, value: str):
         words = count_words(value)
-        if words < 200 or words > 500:
-            raise ValueError("bioText must be between 200 and 500 words")
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
         return value
 
 
@@ -407,8 +407,8 @@ class SpeakerItem(BaseModel):
     @classmethod
     def validate_bio_text(cls, value: str):
         words = count_words(value)
-        if words < 200 or words > 500:
-            raise ValueError("bioText must be between 200 and 500 words")
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
         return value
 
 
@@ -425,8 +425,8 @@ class SpeakerUpdate(BaseModel):
         if value is None:
             return value
         words = count_words(value)
-        if words < 200 or words > 500:
-            raise ValueError("bioText must be between 200 and 500 words")
+            if words > 500:
+                raise ValueError("bioText must be between 0 and 500 words")
         return value
 
 

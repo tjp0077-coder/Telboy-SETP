@@ -63,7 +63,7 @@ export default function SpeakerBioScreen() {
 
   const draftWordCount = useMemo(() => countWords(draft?.bioText || ""), [draft?.bioText]);
   const bioWordCount = useMemo(() => countWords(speaker?.bioText || ""), [speaker?.bioText]);
-  const wordCountValid = draftWordCount >= 200 && draftWordCount <= 500;
+  const wordCountValid = draftWordCount <= 500;
 
   const pickImage = useCallback(() => {
     if (Platform.OS !== "web") {
@@ -93,7 +93,7 @@ export default function SpeakerBioScreen() {
   const save = useCallback(async () => {
     if (!id || !draft) return;
     if (!wordCountValid) {
-      Alert.alert("Bio length", "Biography must be between 200 and 500 words.");
+      Alert.alert("Bio length", "Biography must be between 0 and 500 words.");
       return;
     }
 
@@ -229,7 +229,7 @@ export default function SpeakerBioScreen() {
                 <Text style={styles.uploadBtnText}>Upload image (or paste URL)</Text>
               </Pressable>
 
-              <Text style={styles.label}>Biography (200-500 words)</Text>
+              <Text style={styles.label}>Biography (0-500 words)</Text>
               <TextInput
                 value={draft.bioText}
                 onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, bioText: value } : prev))}
@@ -241,7 +241,7 @@ export default function SpeakerBioScreen() {
                 testID="speaker-input-bio"
               />
               <Text style={[styles.counter, wordCountValid ? styles.counterGood : styles.counterBad]}>
-                {draftWordCount} words {wordCountValid ? "(within limit)" : "(must be 200-500)"}
+                {draftWordCount} words {wordCountValid ? "(within limit)" : "(must be 0-500)"}
               </Text>
 
               <View style={styles.formActions}>

@@ -73,7 +73,7 @@ export default function SessionSpeakerBiosScreen() {
   const validation = useMemo(() => {
     return bios.map((bio) => {
       const words = countWords(bio.bioText);
-      const validWords = words >= 200 && words <= 500;
+      const validWords = words <= 500;
       const validRequired = !!bio.paperTitle.trim() && !!bio.name.trim() && !!bio.title.trim() && !!bio.company.trim() && !!bio.imageUrl.trim();
       return { words, validWords, validRequired, valid: validWords && validRequired };
     });
@@ -97,7 +97,7 @@ export default function SessionSpeakerBiosScreen() {
   const save = async () => {
     if (!sessionId || !session) return;
     if (!allValid) {
-      Alert.alert("Validation", "Each bio needs all fields and 200-500 words.");
+      Alert.alert("Validation", "Each bio needs all fields and 0-500 words.");
       return;
     }
 
@@ -248,7 +248,7 @@ export default function SessionSpeakerBiosScreen() {
                     testID={`bio-image-${index}`}
                   />
 
-                  <Text style={styles.label}>Biography (200-500 words)</Text>
+                  <Text style={styles.label}>Biography (0-500 words)</Text>
                   <TextInput
                     style={[styles.input, styles.bioInput]}
                     value={bio.bioText}
@@ -260,7 +260,7 @@ export default function SessionSpeakerBiosScreen() {
                     testID={`bio-text-${index}`}
                   />
                   <Text style={[styles.counter, check?.valid ? styles.counterGood : styles.counterBad]}>
-                    {check?.words || 0} words {(check?.validWords ? "(within limit)" : "(must be 200-500)")}
+                    {check?.words || 0} words {(check?.validWords ? "(within limit)" : "(must be 0-500)")}
                   </Text>
                 </>
               )}
