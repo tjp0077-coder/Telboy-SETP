@@ -76,12 +76,12 @@ export default function ChairQuestionsScreen() {
   }, [activeItems, archivedItems]);
 
   const markReviewed = async (id: string) => {
+    setActiveItems((prev) => prev.map((item) => item.id === id ? { ...item, reviewed: true } : item));
     setBusyId(id);
     try {
       await api.markQuestionReviewed(id);
-      setActiveItems((prev) => prev.map((item) => item.id === id ? { ...item, reviewed: true } : item));
     } catch {
-      // Ignore transient failures; the item remains visible.
+      // Keep the optimistic reviewed state so the admin flow remains responsive.
     } finally {
       setBusyId(null);
     }
