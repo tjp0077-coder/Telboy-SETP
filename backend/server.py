@@ -425,8 +425,8 @@ class SpeakerUpdate(BaseModel):
         if value is None:
             return value
         words = count_words(value)
-            if words > 500:
-                raise ValueError("bioText must be between 0 and 500 words")
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
         return value
 
 
