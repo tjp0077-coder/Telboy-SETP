@@ -253,7 +253,7 @@ export default function InboxScreen() {
                           testID={`inbox-reply-${item.id}`}
                         >
                           <Ionicons name="mail" size={14} color="#fff" />
-                          <Text style={styles.actionPrimaryText}>{replyOpen ? "Close reply" : "Reply in app"}</Text>
+                          <Text style={styles.actionPrimaryText}>{replyOpen ? "Close reply" : "Reply by email"}</Text>
                         </Pressable>
                       ) : null}
                       <Pressable
