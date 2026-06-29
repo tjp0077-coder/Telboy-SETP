@@ -1409,6 +1409,9 @@ async def city_guide():
             {"name": "Royal Yacht Britannia", "address": "Ocean Terminal, Leith, Edinburgh EH6 6JJ",
              "notes": "Tue evening reception. Transport provided from Marriott.",
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},
+            {"name": "Forth Boat Tours", "address": "Hawes Pier, South Queensferry EH30 9SQ",
+             "notes": "Thu technical boat tour departure point in South Queensferry.",
+             "maps_url": "https://www.google.com/maps/search/Forth+Boat+Tours+EH30+9SQ"},
         ],
     }
 
