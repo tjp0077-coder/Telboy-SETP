@@ -408,8 +408,8 @@ const styles = StyleSheet.create({
     width: 68, height: 68, borderRadius: 34, backgroundColor: "#EAF5EE",
     alignItems: "center", justifyContent: "center", marginBottom: spacing.lg,
   },
-  successTitle: { fontSize: 24, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", textAlign: "center" },
-  successText: { fontSize: 13, color: colors.onSurfaceMuted, textAlign: "center", marginTop: spacing.sm, lineHeight: 19 },
+  successTitle: { fontSize: 24, fontWeight: "700", color: "#fff", fontFamily: "Georgia", textAlign: "center" },
+  successText: { fontSize: 13, color: "#fff", textAlign: "center", marginTop: spacing.sm, lineHeight: 19 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: colors.surfaceSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg },
