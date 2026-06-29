@@ -38,6 +38,7 @@ export default function RootLayout() {
                 <Stack.Screen name="login" options={{ presentation: "modal" }} />
                 <Stack.Screen name="event/[id]" />
                 <Stack.Screen name="speaker/[id]" />
+                <Stack.Screen name="speaker-bios/[sessionId]" />
                 <Stack.Screen name="contact" />
                 <Stack.Screen name="inbox" />
                 <Stack.Screen name="deleted-inbox" />
