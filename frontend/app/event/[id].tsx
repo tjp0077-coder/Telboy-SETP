@@ -239,12 +239,10 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            <View style={styles.metaRow}>
-              <Pressable onPress={openLocationMap} hitSlop={8} testID="event-map-link">
-                <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
-              </Pressable>
+            <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
+              <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{event.location}</Text>
-            </View>
+            </Pressable>
 
             {event.description ? (
               <>

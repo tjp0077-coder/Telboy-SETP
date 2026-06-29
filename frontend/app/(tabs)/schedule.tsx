@@ -199,19 +199,18 @@ export default function ScheduleListScreen() {
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <View style={styles.cardMeta}>
-                  <Pressable
-                    onPress={(e) => {
-                      e.stopPropagation?.();
-                      openLocationMap(item.location, item.title);
-                    }}
-                    hitSlop={8}
-                    testID={`session-map-${item.id}`}
-                  >
-                    <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
-                  </Pressable>
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                    openLocationMap(item.location, item.title);
+                  }}
+                  hitSlop={8}
+                  style={styles.cardMeta}
+                  testID={`session-map-${item.id}`}
+                >
+                  <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
-                </View>
+                </Pressable>
                 {coachMeta ? (
                   <View style={styles.cardMeta}>
                     <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
