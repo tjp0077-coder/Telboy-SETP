@@ -464,7 +464,7 @@ SEED_SCHEDULE = [
           "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
           "coachTime": "08:45",
           "transportDetails": "08:45 – Coach leaves hotel",
-          "maps_url": "https://www.google.com/maps/search/Forth+Boat+Tours+EH30+9SQ/@55.9916263,-3.3960035,3003m/data=!3m2!1e3!4b1?entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
+          "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
       "category": "tour"},
 ]
 
@@ -1415,7 +1415,7 @@ async def city_guide():
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},
             {"name": "Forth Boat Tours", "address": "Hawes Pier, South Queensferry EH30 9SQ",
              "notes": "Thu technical boat tour departure point in South Queensferry.",
-             "maps_url": "https://www.google.com/maps/search/Forth+Boat+Tours+EH30+9SQ"},
+             "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"},
         ],
     }
 
