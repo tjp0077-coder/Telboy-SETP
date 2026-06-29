@@ -622,6 +622,13 @@ async def me(admin=Depends(get_current_admin)):
 
 
 # ---------- Admin Management ----------
+ADMIN_MANAGER_NAMES = {"terry parker", "dave mackay"}
+
+
+def can_manage_admins(admin: dict) -> bool:
+    return (admin_display_name(admin) or "").strip().lower() in ADMIN_MANAGER_NAMES
+
+
 @api.get("/admins", response_model=List[AdminOut])
 async def list_admins(admin=Depends(get_current_admin)):
     docs = await admins_col.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
@@ -631,6 +638,8 @@ async def list_admins(admin=Depends(get_current_admin)):
 
 @api.post("/admins", response_model=AdminOut, status_code=201)
 async def create_admin(data: AdminCreate, admin=Depends(get_current_admin)):
+    if not can_manage_admins(admin):
+        raise HTTPException(status_code=403, detail="Not authorized to manage committee members")
     username = data.username.strip().lower()
     name = data.name.strip()
     password = data.password
@@ -655,6 +664,8 @@ async def create_admin(data: AdminCreate, admin=Depends(get_current_admin)):
 
 @api.delete("/admins/{username}")
 async def delete_admin(username: str, admin=Depends(get_current_admin)):
+    if not can_manage_admins(admin):
+        raise HTTPException(status_code=403, detail="Not authorized to manage committee members")
     target = username.strip().lower()
     if target == admin["username"]:
         raise HTTPException(status_code=400, detail="You can't remove your own account")
