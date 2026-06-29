@@ -358,6 +358,7 @@ const styles = StyleSheet.create({
 
   contactCard: {
     marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
     marginBottom: spacing.md,
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
