@@ -156,6 +156,7 @@ class SessionItem(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -169,6 +170,7 @@ class SessionCreate(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -182,6 +184,7 @@ class SessionUpdate(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
