@@ -22,7 +22,6 @@ export default function AskSpeakerScreen() {
   const eventTitleParam = Array.isArray(params.event_title) ? params.event_title[0] : params.event_title;
 
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
   const [question, setQuestion] = useState("");
   const [selectedTalk, setSelectedTalk] = useState<RelatedTalk | null>(null);
   const [talks, setTalks] = useState<SessionItem[]>([]);
@@ -100,7 +99,6 @@ export default function AskSpeakerScreen() {
   const submit = async () => {
     const trimmedName = name.trim();
     const trimmedQuestion = question.trim();
-    const trimmedEmail = email.trim();
     if (!trimmedName || !trimmedQuestion) {
       setError("Your name and question are required.");
       return;
@@ -108,7 +106,6 @@ export default function AskSpeakerScreen() {
 
     const payload = {
       name: trimmedName,
-      email: trimmedEmail || undefined,
       question: trimmedQuestion,
       event_id: selectedTalk?.id || null,
     };
@@ -123,7 +120,6 @@ export default function AskSpeakerScreen() {
       if (isRetryableQuestionError(submitError)) {
         await enqueueQuestionSubmission({
           name: trimmedName,
-          email: trimmedEmail || undefined,
           question: trimmedQuestion,
           event_id: selectedTalk?.id || null,
           event_title: selectedTalk?.title || null,
@@ -237,18 +233,6 @@ export default function AskSpeakerScreen() {
           value={name}
           onChangeText={setName}
           testID="questions-name"
-        />
-
-        <Text style={styles.label}>Email (optional)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="jane@example.com"
-          placeholderTextColor={colors.onSurfaceMuted}
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          testID="questions-email"
         />
 
         <Text style={styles.label}>Your question *</Text>
@@ -385,7 +369,7 @@ const styles = StyleSheet.create({
     alignItems: "center", justifyContent: "center", marginBottom: spacing.md,
   },
   introTitle: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 28 },
-  introText: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: spacing.xs, lineHeight: 18 },
+  introText: { fontSize: 13, color: "#fff", marginTop: spacing.xs, lineHeight: 18 },
 
   selectedTalk: {
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
@@ -407,13 +391,13 @@ const styles = StyleSheet.create({
   },
   pickerBtnText: { color: colors.onSurface, fontWeight: "700" },
 
-  label: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted, marginTop: spacing.md, marginBottom: 6, letterSpacing: 0.8 },
+  label: { fontSize: 12, fontWeight: "700", color: "#fff", marginTop: spacing.md, marginBottom: 6, letterSpacing: 0.8 },
   input: {
     backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
     borderWidth: 1, borderColor: colors.border, color: colors.onSurface, fontSize: 15,
   },
   inputMulti: { minHeight: 120, textAlignVertical: "top" },
-  footerNote: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: spacing.md, lineHeight: 18 },
+  footerNote: { fontSize: 12, color: "#fff", marginTop: spacing.md, lineHeight: 18 },
   error: { color: colors.error, fontSize: 13, marginTop: spacing.md },
 
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", height: 48, borderRadius: radius.md },
