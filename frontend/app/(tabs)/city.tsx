@@ -33,17 +33,13 @@ const TRANSPORT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function CityGuideScreen() {
   const insets = useSafeAreaInsets();
   const [data, setData] = useState<any>(null);
-  const [ideas, setIdeas] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try {
       const res = await api.cityGuide();
       setData(res);
-      const publishedIdeas = await api.listPrototypeIdeas();
-      setIdeas(publishedIdeas || []);
     } catch {
-      setIdeas([]);
     } finally { setLoading(false); }
   }, []);
 
@@ -168,25 +164,6 @@ export default function CityGuideScreen() {
             <Ionicons name="navigate" size={16} color="#fff" />
             <Text style={styles.mapBtnText}>Open</Text>
           </Pressable>
-        </View>
-      ))}
-
-      {/* Published prototypes */}
-      <Text style={styles.sectionTitle}>What We Are Prototyping</Text>
-      {ideas.length === 0 ? (
-        <View style={[styles.ideaCard, shadow.card]} testID="prototype-public-empty">
-          <Text style={styles.ideaTitle}>No published concepts yet</Text>
-          <Text style={styles.ideaSummary}>Admins are currently reviewing upcoming ideas.</Text>
-        </View>
-      ) : ideas.map((idea: any) => (
-        <View key={idea.id} style={[styles.ideaCard, shadow.card]} testID={`prototype-public-${idea.id}`}>
-          <View style={styles.ideaHead}>
-            <Ionicons name="bulb" size={16} color={colors.brandTertiary} />
-            <Text style={styles.ideaTag}>PUBLISHED CONCEPT</Text>
-          </View>
-          <Text style={styles.ideaTitle}>{idea.title}</Text>
-          <Text style={styles.ideaSummary}>{idea.summary}</Text>
-          {idea.proposed_screen ? <Text style={styles.ideaMeta}>Planned for: {idea.proposed_screen}</Text> : null}
         </View>
       ))}
       </ScrollView>
