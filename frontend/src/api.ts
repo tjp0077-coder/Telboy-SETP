@@ -74,10 +74,21 @@ export type SessionItem = {
   transportDetails?: string | null;
   maps_url?: string | null;
   speakerId?: string | null;
+  speakerBios?: SessionSpeakerBio[];
   title: string;
   location: string;
   description?: string;
   category: string;
+};
+
+export type SessionSpeakerBio = {
+  id: string;
+  paperTitle: string;
+  name: string;
+  title: string;
+  company: string;
+  bioText: string;
+  imageUrl: string;
 };
 
 export type SpeakerItem = {

@@ -170,6 +170,7 @@ class SessionItem(BaseModel):
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
     speakerId: Optional[str] = None
+    speakerBios: List["SessionSpeakerBio"] = Field(default_factory=list)
     title: str
     location: str
     description: Optional[str] = ""
@@ -185,6 +186,7 @@ class SessionCreate(BaseModel):
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
     speakerId: Optional[str] = None
+    speakerBios: List["SessionSpeakerBio"] = Field(default_factory=list)
     title: str
     location: str
     description: Optional[str] = ""
@@ -200,6 +202,7 @@ class SessionUpdate(BaseModel):
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
     speakerId: Optional[str] = None
+    speakerBios: Optional[List["SessionSpeakerBio"]] = None
     title: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -365,6 +368,31 @@ class QuestionItem(BaseModel):
 
 def count_words(value: str) -> int:
     return len([word for word in (value or "").strip().split() if word])
+
+
+class SessionSpeakerBio(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    paperTitle: str
+    name: str
+    title: str
+    company: str
+    bioText: str
+    imageUrl: str
+
+    @field_validator("paperTitle", "name", "title", "company", "imageUrl")
+    @classmethod
+    def required_text(cls, value: str):
+        if not value or not value.strip():
+            raise ValueError("Field is required")
+        return value.strip()
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: str):
+        words = count_words(value)
+        if words < 200 or words > 500:
+            raise ValueError("bioText must be between 200 and 500 words")
+        return value
 
 
 class SpeakerItem(BaseModel):
@@ -604,6 +632,39 @@ SEED_SPEAKERS = [
 ]
 
 
+TECHNICAL_SESSION_PAPERS = {
+    "Technical Session 1": "Papers 1 and 2",
+    "Technical Session 1 (Cont.)": "Papers 3, 4, and 5",
+    "Technical Session 2": "Papers 6 and 7",
+    "Technical Session 2 (Cont.)": "Papers 8 and 9",
+    "Technical Session 3": "Papers 10 and 11",
+    "Technical Session 3 (Cont.)": "Papers 12, 13, and 14",
+    "Technical Session 4": "Papers 15 and 16",
+    "Technical Session 4 (Cont.)": "Papers 17 and 18",
+    "Technical Session 5": "Papers 19 and 20",
+    "Technical Session 5 (Cont.)": "Papers 21, 22, and 23",
+    "Guest Speaker": "Guest Speaker Presentation",
+}
+
+
+def speaker_seed_by_id(speaker_id: str) -> Optional[dict]:
+    for speaker in SEED_SPEAKERS:
+        if speaker.get("id") == speaker_id:
+            return speaker
+    return None
+
+
+def build_session_bio(speaker: dict, paper_title: str) -> dict:
+    return SessionSpeakerBio(
+        paperTitle=paper_title,
+        name=speaker.get("name", ""),
+        title=speaker.get("title", ""),
+        company=speaker.get("company", ""),
+        bioText=speaker.get("bioText", ""),
+        imageUrl=speaker.get("imageUrl", ""),
+    ).model_dump()
+
+
 async def seed_admins():
     configs = [
         ("ADMIN1_USERNAME", "ADMIN1_PASSWORD", "ADMIN1_NAME"),
@@ -659,11 +720,44 @@ async def seed_schedule():
         }
         for title, speaker_id in speaker_map.items():
             await schedule_col.update_many({"title": title, "speakerId": {"$exists": False}}, {"$set": {"speakerId": speaker_id}})
+            speaker_doc = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+            if not speaker_doc:
+                continue
+            paper_title = TECHNICAL_SESSION_PAPERS.get(title, title)
+            await schedule_col.update_many(
+                {
+                    "title": title,
+                    "$or": [
+                        {"speakerBios": {"$exists": False}},
+                        {"speakerBios": []},
+                    ],
+                },
+                {"$set": {"speakerBios": [build_session_bio(speaker_doc, paper_title)]}},
+            )
         return
     docs = []
+    speaker_map = {
+        "Technical Session 1": "capt-james-smith",
+        "Technical Session 1 (Cont.)": "capt-james-smith",
+        "Technical Session 2": "dr-amina-khan",
+        "Technical Session 2 (Cont.)": "dr-amina-khan",
+        "Technical Session 3": "capt-james-smith",
+        "Technical Session 3 (Cont.)": "capt-james-smith",
+        "Technical Session 4": "dr-amina-khan",
+        "Technical Session 4 (Cont.)": "dr-amina-khan",
+        "Technical Session 5": "prof-liam-byrne",
+        "Technical Session 5 (Cont.)": "prof-liam-byrne",
+        "Guest Speaker": "paul-beaver",
+    }
     for item in SEED_SCHEDULE:
         d = dict(item)
         d["id"] = str(uuid.uuid4())
+        title = d.get("title", "")
+        speaker_id = speaker_map.get(title)
+        if speaker_id and not d.get("speakerBios"):
+            speaker = speaker_seed_by_id(speaker_id)
+            if speaker:
+                d["speakerBios"] = [build_session_bio(speaker, TECHNICAL_SESSION_PAPERS.get(title, title))]
         docs.append(d)
     if docs:
         await schedule_col.insert_many(docs)
