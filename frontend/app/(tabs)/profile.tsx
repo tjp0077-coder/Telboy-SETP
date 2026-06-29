@@ -180,7 +180,7 @@ export default function ProfileScreen() {
         />
         <Text style={styles.footnote}>
           EDI SETP 2026{"\n"}
-          Built by Zeneagles for delegates with ❤.
+          Built by Zeneagles for delegates with ❤
         </Text>
       </View>
     </ScrollView>
