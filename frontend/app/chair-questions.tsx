@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
   },
-  topTitle: { fontSize: 20, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
+  topTitle: { fontSize: 20, fontWeight: "700", color: "#fff", fontFamily: "Georgia" },
 
   analyticsWrap: {
     flexDirection: "row",
@@ -369,11 +369,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     alignItems: "center",
   },
-  metricValue: { fontSize: 20, fontWeight: "800", color: colors.onSurface, fontFamily: "Georgia" },
-  metricLabel: { fontSize: 11, color: colors.onSurfaceMuted, marginTop: 2, textAlign: "center" },
+  metricValue: { fontSize: 20, fontWeight: "800", color: "#fff", fontFamily: "Georgia" },
+  metricLabel: { fontSize: 11, color: "rgba(255,255,255,0.8)", marginTop: 2, textAlign: "center" },
 
   topTalksWrap: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
-  sectionLabel: { fontSize: 12, fontWeight: "800", color: onSunset.primary, letterSpacing: 0.8, marginBottom: spacing.xs },
+  sectionLabel: { fontSize: 12, fontWeight: "800", color: "#fff", letterSpacing: 0.8, marginBottom: spacing.xs },
   topTalksRow: { gap: spacing.xs },
   topTalkPill: {
     flexDirection: "row",
@@ -385,8 +385,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginBottom: spacing.xs,
   },
-  topTalkCount: { fontSize: 12, fontWeight: "800", color: colors.brand, width: 20, textAlign: "center" },
-  topTalkTitle: { flex: 1, fontSize: 12, color: colors.onSurface },
+  topTalkCount: { fontSize: 12, fontWeight: "800", color: "#fff", width: 20, textAlign: "center" },
+  topTalkTitle: { flex: 1, fontSize: 12, color: "#fff" },
 
   filterRow: { flexDirection: "row", gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   filterChip: {
@@ -394,12 +394,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border,
   },
   filterChipActive: { backgroundColor: colors.brand, borderColor: colors.brand },
-  filterChipText: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted },
+  filterChipText: { fontSize: 12, fontWeight: "700", color: "#fff" },
   filterChipTextActive: { color: "#fff" },
 
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
-  emptyText: { color: colors.onSurface, fontWeight: "700" },
-  emptyHint: { color: colors.onSurfaceMuted, textAlign: "center", fontSize: 12, lineHeight: 17 },
+  emptyText: { color: "#fff", fontWeight: "700" },
+  emptyHint: { color: "rgba(255,255,255,0.82)", textAlign: "center", fontSize: 12, lineHeight: 17 },
 
   card: {
     backgroundColor: colors.surfaceSecondary,
