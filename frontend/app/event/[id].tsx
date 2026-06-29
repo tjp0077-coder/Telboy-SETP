@@ -38,6 +38,9 @@ const CATEGORIES = ["session", "break", "meal", "social", "tour"];
 const buildMapsSearchUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
+const isTechnicalTalk = (event: SessionItem | null) =>
+  !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -167,6 +170,7 @@ export default function EventDetail() {
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
+  const askSpeaker = isTechnicalTalk(event);
 
   const openLocationMap = async () => {
     const url = event.maps_url || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
@@ -242,6 +246,17 @@ export default function EventDetail() {
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{event.location}</Text>
             </Pressable>
+
+            {askSpeaker ? (
+              <Pressable
+                onPress={() => router.push({ pathname: "/questions", params: { event_id: event.id, event_title: event.title } })}
+                style={styles.askBtn}
+                testID="event-ask-speaker"
+              >
+                <Ionicons name="mic-outline" size={16} color={colors.success} />
+                <Text style={styles.askBtnText}>Ask the speaker</Text>
+              </Pressable>
+            ) : null}
 
             {event.description ? (
               <>
@@ -473,6 +488,18 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.sm },
   metaText: { fontSize: 14, color: colors.onSurfaceMuted },
   coachMetaText: { fontSize: 14, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
+  askBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: "#EAF5EE",
+  },
+  askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
 
   sectionTitle: {
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,

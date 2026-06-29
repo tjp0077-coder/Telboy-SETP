@@ -104,7 +104,7 @@ export default function ProfileScreen() {
             <Text style={styles.adminBadgeText}>Signed in as admin</Text>
           </View>
           <Text style={styles.adminText}>
-            You can post live messages, edit the schedule, and read delegate inquiries.
+            You can post live messages, edit the schedule, and read delegate inquiries and speaker questions.
           </Text>
           <Pressable
             onPress={() => router.push("/inbox")}
@@ -113,6 +113,15 @@ export default function ProfileScreen() {
           >
             <Ionicons name="mail-open" size={22} color={colors.brand} />
             <Text style={styles.inboxBtnText}>Open inbox</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/chair-questions")}
+            style={styles.inboxBtn}
+            testID="open-chair-questions-btn"
+          >
+            <Ionicons name="help-buoy" size={22} color={colors.brand} />
+            <Text style={styles.inboxBtnText}>Speaker questions</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
           <Pressable

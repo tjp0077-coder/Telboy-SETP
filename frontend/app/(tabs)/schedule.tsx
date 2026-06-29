@@ -35,6 +35,9 @@ const CATEGORY_COLOR: Record<string, string> = {
 const buildMapsSearchUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
+const isTechnicalTalk = (item: SessionItem) =>
+  item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
+
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -182,6 +185,7 @@ export default function ScheduleListScreen() {
           const fav = favorites.has(item.id);
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
+          const askSpeaker = isTechnicalTalk(item);
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
             <Pressable
@@ -218,6 +222,20 @@ export default function ScheduleListScreen() {
                 ) : null}
                 {item.description ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
+                ) : null}
+                {askSpeaker ? (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      router.push({ pathname: "/questions", params: { event_id: item.id, event_title: item.title } });
+                    }}
+                    style={styles.askBtn}
+                    hitSlop={8}
+                    testID={`ask-speaker-${item.id}`}
+                  >
+                    <Ionicons name="mic-outline" size={14} color={colors.success} />
+                    <Text style={styles.askBtnText}>Ask the speaker</Text>
+                  </Pressable>
                 ) : null}
               </View>
               <Pressable
@@ -274,6 +292,18 @@ const styles = StyleSheet.create({
   cardMetaText: { fontSize: 12, color: colors.onSurfaceMuted },
   coachMetaText: { fontSize: 12, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
   cardDesc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 17 },
+  askBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: "#EAF5EE",
+  },
+  askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: colors.onSurfaceMuted },

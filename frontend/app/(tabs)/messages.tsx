@@ -143,6 +143,21 @@ export default function MessagesScreen() {
         <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
       </Pressable>
 
+      <Pressable
+        onPress={() => router.push("/questions")}
+        style={[styles.contactCard, shadow.card]}
+        testID="feed-ask-speaker-btn"
+      >
+        <View style={[styles.contactIcon, { backgroundColor: "#EAF5EE" }]}>
+          <Ionicons name="mic-outline" size={20} color={colors.success} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.contactTitle}>Ask the speaker</Text>
+          <Text style={styles.contactSub}>Send a question to a technical talk</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} />
+      </Pressable>
+
       {loading ? (
         <ActivityIndicator size="large" color={colors.brand} style={{ marginTop: 40 }} />
       ) : (

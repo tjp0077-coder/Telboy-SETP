@@ -161,6 +161,23 @@ export type PrototypeIdea = {
   published_by?: string | null;
 };
 
+export type QuestionItem = {
+  id: string;
+  name: string;
+  email?: string | null;
+  question: string;
+  created_at: string;
+  updated_at: string;
+  reviewed: boolean;
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  event_id?: string | null;
+  event_title?: string | null;
+  deleted?: boolean;
+  deleted_at?: string | null;
+  deleted_by?: string | null;
+};
+
 export const api = {
   // schedule
   listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
@@ -228,6 +245,22 @@ export const api = {
     request<{ ok: boolean }>(`/contact/${id}/restore`, { method: "POST" }, true),
   permanentDeleteContact: (id: string) =>
     request<{ deleted: boolean }>(`/contact/${id}/permanent`, { method: "DELETE" }, true),
+
+  // speaker questions
+  submitQuestion: (data: { name: string; email?: string; question: string; event_id?: string | null }) =>
+    request<{ id: string; ok: boolean }>("/questions", {
+      method: "POST", body: JSON.stringify(data),
+    }),
+  listQuestions: () => request<QuestionItem[]>("/questions", {}, true),
+  listDeletedQuestions: () => request<QuestionItem[]>("/questions/deleted", {}, true),
+  markQuestionReviewed: (id: string) =>
+    request<{ ok: boolean }>(`/questions/${id}/review`, { method: "PATCH" }, true),
+  deleteQuestion: (id: string) =>
+    request<{ deleted: boolean }>(`/questions/${id}`, { method: "DELETE" }, true),
+  restoreQuestion: (id: string) =>
+    request<{ ok: boolean }>(`/questions/${id}/restore`, { method: "POST" }, true),
+  permanentDeleteQuestion: (id: string) =>
+    request<{ deleted: boolean }>(`/questions/${id}/permanent`, { method: "DELETE" }, true),
 
   // admins (committee management)
   listAdmins: () => request<AdminInfo[]>("/admins", {}, true),

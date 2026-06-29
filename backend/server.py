@@ -34,6 +34,7 @@ schedule_col = db["schedule"]
 messages_col = db["live_messages"]
 event_notes_col = db["event_notes"]
 contact_col = db["contact_messages"]
+questions_col = db["speaker_questions"]
 prototype_ideas_col = db["prototype_ideas"]
 
 # ---------- Auth helpers ----------
@@ -324,6 +325,40 @@ class ContactReplyCreate(BaseModel):
     subject: Optional[str] = None
 
 
+class QuestionCreate(BaseModel):
+    name: str
+    email: Optional[EmailStr] = None
+    question: str
+    event_id: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
+
+
+class QuestionItem(BaseModel):
+    id: str
+    name: str
+    email: Optional[str] = None
+    question: str
+    created_at: str
+    updated_at: str
+    reviewed: bool = False
+    reviewed_at: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    event_id: Optional[str] = None
+    event_title: Optional[str] = None
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
+
+
 def build_contact_thread_message(
     sender_role: str,
     sender_name: str,
@@ -362,6 +397,17 @@ def normalize_contact_thread(doc: dict) -> dict:
     messages = sorted(messages, key=lambda m: m.get("created_at", ""))
     normalized["messages"] = messages
     normalized["updated_at"] = normalized.get("updated_at") or messages[-1].get("created_at") or normalized.get("created_at")
+    normalized["deleted"] = bool(normalized.get("deleted"))
+    normalized["deleted_at"] = normalized.get("deleted_at")
+    normalized["deleted_by"] = normalized.get("deleted_by")
+    return normalized
+
+
+def normalize_question_record(doc: dict) -> dict:
+    normalized = dict(doc)
+    normalized["reviewed"] = bool(normalized.get("reviewed"))
+    normalized["reviewed_at"] = normalized.get("reviewed_at")
+    normalized["reviewed_by"] = normalized.get("reviewed_by")
     normalized["deleted"] = bool(normalized.get("deleted"))
     normalized["deleted_at"] = normalized.get("deleted_at")
     normalized["deleted_by"] = normalized.get("deleted_by")
@@ -1196,6 +1242,164 @@ async def permanently_delete_contact(cid: str, admin=Depends(get_current_admin))
             f"Subject: {existing.get('subject', '')}",
         ]),
     )
+    return {"deleted": True}
+
+
+async def hydrate_question_items(docs: List[dict]) -> List[dict]:
+    docs = [normalize_question_record(d) for d in docs]
+    docs.sort(key=lambda d: d.get("updated_at", d.get("created_at", "")), reverse=True)
+
+    event_ids = [d["event_id"] for d in docs if d.get("event_id")]
+    titles: dict = {}
+    if event_ids:
+        async for ev in schedule_col.find(
+            {"id": {"$in": list(set(event_ids))}}, {"_id": 0, "id": 1, "title": 1}
+        ):
+            titles[ev["id"]] = ev["title"]
+    for d in docs:
+        d["event_title"] = titles.get(d.get("event_id")) if d.get("event_id") else None
+    return docs
+
+
+@api.post("/questions")
+async def create_question(data: QuestionCreate):
+    name = data.name.strip()
+    question_text = data.question.strip()
+    if not name or not question_text:
+        raise HTTPException(status_code=400, detail="name and question are required")
+
+    event_id = (data.event_id or "").strip() or None
+    if event_id:
+        ev = await schedule_col.find_one({"id": event_id}, {"_id": 0, "id": 1})
+        if not ev:
+            event_id = None
+
+    created_at = datetime.now(timezone.utc).isoformat()
+    item = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "email": str(data.email) if data.email else "",
+        "question": question_text,
+        "created_at": created_at,
+        "updated_at": created_at,
+        "reviewed": False,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "event_id": event_id,
+    }
+    await questions_col.insert_one(item)
+    await send_question_email(item)
+    return {"id": item["id"], "ok": True}
+
+
+async def send_question_email(item: dict):
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY is not configured; skipping question email send.")
+        return
+
+    payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [RESEND_CONTACT_RECIPIENT],
+        "subject": f"[SETP ask the speaker] {item.get('event_title') or item.get('event_id') or 'General'}",
+        "text": (
+            f"Name: {item.get('name', '(unknown)')}\n"
+            f"Email: {item.get('email') or '(not provided)'}\n"
+            f"Event ID: {item.get('event_id') or '(not provided)'}\n"
+            f"Received: {item.get('created_at')}\n\n"
+            f"Question:\n{item.get('question', '')}"
+        ),
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=15,
+            )
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        details = exc.response.text if exc.response is not None else str(exc)
+        logging.error("Resend rejected question email payload: %s", details)
+    except Exception as exc:
+        logging.error("Failed to send question notification email via Resend: %s", exc)
+
+
+@api.get("/questions", response_model=List[QuestionItem])
+async def list_questions(admin=Depends(get_current_admin)):
+    docs = await questions_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(500)
+    return await hydrate_question_items(docs)
+
+
+@api.get("/questions/deleted", response_model=List[QuestionItem])
+async def list_deleted_questions(admin=Depends(get_current_admin)):
+    docs = await questions_col.find({"deleted": True}, {"_id": 0}).to_list(500)
+    return await hydrate_question_items(docs)
+
+
+@api.patch("/questions/{qid}/review")
+async def mark_question_reviewed(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    reviewed_at = datetime.now(timezone.utc).isoformat()
+    reviewed_by = admin_display_name(admin)
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": {"$ne": True}},
+        {"$set": {"reviewed": True, "reviewed_at": reviewed_at, "reviewed_by": reviewed_by, "updated_at": reviewed_at}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/questions/{qid}")
+async def delete_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    deleted_by = admin.get("username") or admin.get("name") or "admin"
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": {"$ne": True}},
+        {"$set": {"deleted": True, "deleted_at": deleted_at, "deleted_by": deleted_by, "updated_at": deleted_at, "reviewed": True, "reviewed_at": existing.get("reviewed_at") or deleted_at, "reviewed_by": existing.get("reviewed_by") or deleted_by}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@api.post("/questions/{qid}/restore")
+async def restore_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    restored_at = datetime.now(timezone.utc).isoformat()
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": True},
+        {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None, "updated_at": restored_at}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/questions/{qid}/permanent")
+async def permanently_delete_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    res = await questions_col.delete_one({"id": qid, "deleted": True})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
     return {"deleted": True}
 
 
