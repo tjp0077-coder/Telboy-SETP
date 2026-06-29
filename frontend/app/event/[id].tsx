@@ -171,6 +171,7 @@ export default function EventDetail() {
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
   const askSpeaker = isTechnicalTalk(event);
+  const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
 
   const openLocationMap = async () => {
     const url = event.maps_url || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
@@ -246,6 +247,17 @@ export default function EventDetail() {
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{event.location}</Text>
             </Pressable>
+
+            {askSpeaker && hasSpeakerBios ? (
+              <Pressable
+                onPress={() => router.push(`/speaker-bios/${event.id}`)}
+                style={styles.speakerBtn}
+                testID="event-speaker-bios"
+              >
+                <Ionicons name="people-outline" size={16} color={colors.brand} />
+                <Text style={styles.speakerBtnText}>Speaker Bio's</Text>
+              </Pressable>
+            ) : null}
 
             {askSpeaker ? (
               <Pressable
@@ -500,6 +512,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#EAF5EE",
   },
   askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
+  speakerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: "#E8ECF2",
+  },
+  speakerBtnText: { fontSize: 12, fontWeight: "800", color: colors.brand },
 
   sectionTitle: {
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,
