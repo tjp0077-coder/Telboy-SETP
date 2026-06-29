@@ -231,14 +231,12 @@ export default function ChairQuestionsScreen() {
             const expanded = expandedId === item.id;
             const isBusy = busyId === item.id;
             const archived = !!item.deleted;
+            const reviewed = !!item.reviewed;
             return (
               <View style={[styles.card, shadow.card, !item.reviewed && !archived && styles.cardUnread]}>
                 <Pressable
                   onPress={() => {
                     setExpandedId((current) => current === item.id ? null : item.id);
-                    if (!item.reviewed && !archived) {
-                      markReviewed(item.id);
-                    }
                   }}
                   testID={`question-item-${item.id}`}
                 >
@@ -285,13 +283,21 @@ export default function ChairQuestionsScreen() {
                     <View style={styles.actionRow}>
                       {!archived ? (
                         <Pressable
-                          onPress={() => markReviewed(item.id)}
-                          disabled={isBusy}
-                          style={[styles.actionBtn, styles.actionPrimary, isBusy && { opacity: 0.5 }]}
+                          onPress={() => {
+                            if (!reviewed) {
+                              markReviewed(item.id);
+                            }
+                          }}
+                          disabled={isBusy || reviewed}
+                          style={[
+                            styles.actionBtn,
+                            reviewed ? styles.actionReviewed : styles.actionPrimary,
+                            (isBusy || reviewed) && { opacity: 0.8 },
+                          ]}
                           testID={`question-review-${item.id}`}
                         >
-                          <Ionicons name="checkmark-done" size={14} color="#fff" />
-                          <Text style={styles.actionPrimaryText}>Mark reviewed</Text>
+                          <Ionicons name={reviewed ? "checkmark-circle" : "checkmark-done"} size={14} color="#fff" />
+                          <Text style={styles.actionPrimaryText}>{reviewed ? "Reviewed" : "Mark reviewed"}</Text>
                         </Pressable>
                       ) : null}
                       {!archived ? (
@@ -446,6 +452,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   actionPrimary: { backgroundColor: colors.brand },
+  actionReviewed: { backgroundColor: colors.info },
   actionPrimaryText: { color: "#fff", fontWeight: "700", fontSize: 12 },
   actionGhost: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   actionGhostText: { color: colors.onSurface, fontWeight: "700", fontSize: 12 },
