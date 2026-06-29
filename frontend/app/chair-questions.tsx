@@ -398,8 +398,8 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: "#fff" },
 
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
-  emptyText: { color: colors.onSurface, fontWeight: "700" },
-  emptyHint: { color: colors.onSurfaceMuted, textAlign: "center", fontSize: 12, lineHeight: 17 },
+  emptyText: { color: "#fff", fontWeight: "700" },
+  emptyHint: { color: "#fff", textAlign: "center", fontSize: 12, lineHeight: 17 },
 
   card: {
     backgroundColor: colors.surfaceSecondary,
