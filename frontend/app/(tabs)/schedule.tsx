@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { api, SessionItem } from "@/src/api";
+import { api, SessionItem, SpeakerItem } from "@/src/api";
 import { useFavorites } from "@/src/useFavorites";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
@@ -42,6 +42,7 @@ export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [items, setItems] = useState<SessionItem[]>([]);
+    const [speakersById, setSpeakersById] = useState<Record<string, SpeakerItem>>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(null);
@@ -49,8 +50,17 @@ export default function ScheduleListScreen() {
 
   const load = useCallback(async () => {
     try {
-      const data = await api.listSchedule();
+      const [data, speakers] = await Promise.all([
+        api.listSchedule(),
+        api.listSpeakers().catch(() => []),
+      ]);
       setItems(data);
+      setSpeakersById(
+        speakers.reduce<Record<string, SpeakerItem>>((acc, speaker) => {
+          acc[speaker.id] = speaker;
+          return acc;
+        }, {})
+      );
       if (data.length && !activeDate) setActiveDate(data[0].date);
     } finally {
       setLoading(false);
@@ -186,6 +196,7 @@ export default function ScheduleListScreen() {
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
           const askSpeaker = isTechnicalTalk(item);
+          const speaker = item.speakerId ? speakersById[item.speakerId] : null;
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
             <Pressable
@@ -222,6 +233,24 @@ export default function ScheduleListScreen() {
                 ) : null}
                 {item.description ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
+                ) : null}
+                {askSpeaker ? (
+                  speaker ? (
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        router.push(`/speaker/${speaker.id}`);
+                      }}
+                      style={styles.speakerBtn}
+                      hitSlop={8}
+                      testID={`speaker-bio-link-${item.id}`}
+                    >
+                      <Ionicons name="person-circle-outline" size={14} color={colors.brand} />
+                      <Text style={styles.speakerBtnText}>
+                        Speaker: {speaker.title} {speaker.name} (View Bio)
+                      </Text>
+                    </Pressable>
+                  ) : null
                 ) : null}
                 {askSpeaker ? (
                   <Pressable
@@ -304,6 +333,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#EAF5EE",
   },
   askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
+  speakerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: "#E8ECF2",
+  },
+  speakerBtnText: { fontSize: 12, fontWeight: "800", color: colors.brand },
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: colors.onSurfaceMuted },

@@ -36,6 +36,7 @@ event_notes_col = db["event_notes"]
 contact_col = db["contact_messages"]
 questions_col = db["speaker_questions"]
 prototype_ideas_col = db["prototype_ideas"]
+speakers_col = db["speakers"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
@@ -168,6 +169,7 @@ class SessionItem(BaseModel):
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -182,6 +184,7 @@ class SessionCreate(BaseModel):
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
     title: str
     location: str
     description: Optional[str] = ""
@@ -196,6 +199,7 @@ class SessionUpdate(BaseModel):
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
     maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
     title: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -359,6 +363,45 @@ class QuestionItem(BaseModel):
     deleted_by: Optional[str] = None
 
 
+def count_words(value: str) -> int:
+    return len([word for word in (value or "").strip().split() if word])
+
+
+class SpeakerItem(BaseModel):
+    id: str
+    name: str
+    title: str
+    company: str
+    bioText: str
+    imageUrl: str
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: str):
+        words = count_words(value)
+        if words < 200 or words > 500:
+            raise ValueError("bioText must be between 200 and 500 words")
+        return value
+
+
+class SpeakerUpdate(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    company: Optional[str] = None
+    bioText: Optional[str] = None
+    imageUrl: Optional[str] = None
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: Optional[str]):
+        if value is None:
+            return value
+        words = count_words(value)
+        if words < 200 or words > 500:
+            raise ValueError("bioText must be between 200 and 500 words")
+        return value
+
+
 def build_contact_thread_message(
     sender_role: str,
     sender_name: str,
@@ -430,7 +473,7 @@ SEED_SCHEDULE = [
      "location": "Ps&Gs", "description": "Welcome address by Symposium Chairman, Dave Mackay.",
      "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:50", "title": "Technical Session 1",
-     "location": "Ps&Gs", "description": "Presentation of Papers 1 and 2.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 1 and 2.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning networking and refreshments.", "category": "break"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:00", "title": "Partner's Tour",
@@ -438,17 +481,17 @@ SEED_SCHEDULE = [
      "description": "Tour to Rosslyn Castle, The Kelpies, and Linlithgow Palace. Returns by 16:00.",
      "category": "tour"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:15", "title": "Technical Session 1 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "11:55", "title": "Lunch",
      "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "13:30", "title": "State of the Society Address",
      "location": "Ps&Gs", "description": "Address by SETP President, Kelly Latimer.", "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "14:05", "title": "Technical Session 2",
-     "location": "Ps&Gs", "description": "Presentation of Papers 6 and 7.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 6 and 7.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:10", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:30", "title": "Technical Session 2 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 8 and 9.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 8 and 9.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "16:40", "title": "Closing Remarks",
      "location": "Ps&Gs", "description": "End of day 1 technical sessions.", "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "18:30", "end_time": "21:30",
@@ -462,7 +505,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:30", "title": "Opening Address",
      "location": "Ps&Gs", "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:50", "title": "Technical Session 3",
-     "location": "Ps&Gs", "description": "Presentation of Papers 10 and 11.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 10 and 11.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning refreshments.", "category": "break"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
@@ -470,17 +513,17 @@ SEED_SCHEDULE = [
      "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
      "category": "tour"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "11:55", "title": "Lunch",
      "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "13:30", "title": "State of the Union Address",
      "location": "Ps&Gs", "description": "Address by SETP President.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "14:05", "title": "Technical Session 4",
-     "location": "Ps&Gs", "description": "Presentation of Papers 15 and 16.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 15 and 16.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:10", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:30", "title": "Technical Session 4 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 17 and 18.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 17 and 18.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "16:40", "title": "Closing Remarks",
      "location": "Ps&Gs", "description": "End of day 2 technical sessions.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "19:00", "end_time": "22:00",
@@ -498,17 +541,17 @@ SEED_SCHEDULE = [
      "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:50", "title": "Technical Session 5",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 19 and 20.",
-     "category": "session"},
+        "category": "session", "speakerId": "prof-liam-byrne"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "09:55", "title": "Coffee Break",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Morning refreshments.", "category": "break"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "10:15", "title": "Technical Session 5 (Cont.)",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 21, 22, and 23.",
-     "category": "session"},
+        "category": "session", "speakerId": "prof-liam-byrne"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:55", "title": "Lunch",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "13:15", "title": "Guest Speaker",
     "location": "The Royal College of Physicians of Edinburgh",
-     "description": "Speaker presentation (Paul Beaver TBC).", "category": "session"},
+        "description": "Speaker presentation (Paul Beaver TBC).", "category": "session", "speakerId": "paul-beaver"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "19:00", "end_time": "23:00",
     "title": "Symposium Banquet", "location": "The Royal College of Physicians of Edinburgh",
      "description": "Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from Marriott.",
@@ -522,6 +565,42 @@ SEED_SCHEDULE = [
           "transportDetails": "08:45 – Coach leaves hotel",
           "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
       "category": "tour"},
+]
+
+
+SEED_SPEAKERS = [
+    {
+        "id": "capt-james-smith",
+        "name": "James Smith",
+        "title": "Capt.",
+        "company": "Royal Air Force",
+        "imageUrl": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Captain James Smith is a senior experimental test pilot with more than two decades of service across rotary and fixed-wing flight test programs. He began his operational career on maritime patrol aircraft before transitioning into developmental testing, where he focused on mission systems integration and envelope expansion for high-workload sorties. Across multiple collaborative trials, he has led test planning teams that brought together military operators, airworthiness engineers, and software specialists to de-risk capability insertions under compressed delivery timelines. His published symposium work frequently explores practical methods for balancing evidence-based risk decisions with the realities of squadron tempo and limited instrumentation windows. James is known for his disciplined approach to cockpit data capture, emphasizing repeatable briefing structures, tight card design, and post-flight reconstruction that can be understood by mixed technical audiences. Beyond cockpit duties, he has mentored early-career pilots through transition pathways into formal test organizations, with particular attention to communication habits and technical writing quality. He has represented his unit in multinational exchanges focused on mission autonomy, degraded-navigation resilience, and pilot decision support. At this symposium, he is presenting lessons learned from recent integrated trials and offering recommendations for improving the handoff between design teams and front-line operators. His perspective reflects both operational urgency and long-horizon safety stewardship, and he remains committed to raising standards in collaborative flight test execution across the wider community.",
+    },
+    {
+        "id": "dr-amina-khan",
+        "name": "Amina Khan",
+        "title": "Dr.",
+        "company": "QinetiQ",
+        "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Dr. Amina Khan is a flight sciences specialist and systems evaluation lead at QinetiQ, where she directs multidisciplinary teams working at the boundary between aerodynamic performance, control law behavior, and mission-level effectiveness. She earned her doctorate in aerospace engineering with research centered on pilot-vehicle interaction during high-gain maneuvering, and she has since contributed to both military and civil test campaigns involving advanced augmentation and fault-tolerant control. Amina is recognized for translating dense analytical outputs into briefing material that pilots and program leaders can quickly apply during dynamic campaign planning. Her recent projects have included model-assisted envelope build-up, comparative handling assessments across software baselines, and rapid evidence packages for certification-adjacent reviews. She is a frequent contributor to internal standards on data integrity, telemetry confidence, and test repeatability under weather-constrained schedules. Colleagues value her ability to align specialist perspectives from simulation, instrumentation, and operations without losing focus on test intent. In mentoring roles, she has developed practical curricula for new flight test engineers that emphasize question framing, traceable assumptions, and actionable debrief synthesis. At this year’s symposium, Amina is sharing techniques for accelerating insight generation during technical session campaigns while preserving analytical rigor and safety margins. Her work demonstrates that disciplined preparation, transparent uncertainty handling, and collaborative debrief culture can materially improve both campaign pace and decision quality. She remains committed to strengthening evidence-led practice across the global test pilot and engineer community.",
+    },
+    {
+        "id": "prof-liam-byrne",
+        "name": "Liam Byrne",
+        "title": "Prof.",
+        "company": "University of Glasgow",
+        "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Professor Liam Byrne is Chair of Applied Flight Systems at the University of Glasgow and an advisor to multiple joint-industry programs focused on resilient airborne mission architectures. His academic and consulting work bridges system safety, human factors, and verification strategy for rapidly evolving avionics stacks. Over the last fifteen years, he has partnered with test organizations to design evidence frameworks that connect cockpit observations with traceable engineering claims, allowing teams to make faster yet defensible decisions during campaign execution. Liam has authored widely used guidance on scenario-based test design, emphasizing representative operational contexts rather than narrow requirement demonstrations alone. He has served on review boards for modernization initiatives that integrate new autonomy features into legacy airframes, helping teams identify latent coupling risks before flight. In classroom and executive settings, he is known for making complex assurance concepts practical, with a strong focus on communication quality between pilots, analysts, and program leadership. His recent publications discuss methods for reducing re-test churn through sharper hypothesis definition and better instrumented debrief workflows. At the symposium, Liam is presenting perspectives from technical session five on evidence confidence, argument quality, and sustained learning across campaign phases. He advocates for test cultures that reward curiosity, candor, and disciplined dissent, particularly when schedule pressure is high. His contributions continue to influence how organizations structure cross-functional test collaboration, train emerging specialists, and deliver meaningful capability improvements with safety at the core.",
+    },
+    {
+        "id": "paul-beaver",
+        "name": "Paul Beaver",
+        "title": "Mr.",
+        "company": "Aviation Historian & Broadcaster",
+        "imageUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Paul Beaver is an aviation historian, commentator, and author whose work has helped connect specialist flight test discourse with wider public understanding of aerospace innovation. Over a long career spanning journalism, documentary collaboration, and technical event hosting, he has built a reputation for contextualizing modern program choices against historical lessons from landmark development campaigns. Paul has interviewed generations of pilots, engineers, and maintainers, curating first-hand accounts that illuminate why successful test cultures depend on both technical rigor and candid human communication. His speaking engagements frequently explore how institutional memory can strengthen contemporary decision-making, particularly in periods of rapid capability transition. He has contributed to museum and heritage initiatives that preserve records of experimental programs while translating complex artifacts into accessible narratives for broader audiences. At professional symposia, Paul is known for bridging communities: encouraging engineers to surface assumptions clearly, helping operators articulate mission realities, and challenging leaders to preserve learning pathways beyond individual projects. His current work highlights the value of narrative discipline in post-flight analysis, where the way findings are framed can influence whether teams act decisively or defer critical changes. During this event, he offers a keynote perspective on continuity, leadership, and the enduring principles that underpin safe innovation in flight test. His message emphasizes that technological progress is strongest when technical evidence, operational insight, and historical awareness are considered together. Through writing and public engagement, Paul continues to champion informed dialogue across the international aerospace community.",
+    },
 ]
 
 
@@ -565,6 +644,21 @@ async def seed_schedule():
     )
     count = await schedule_col.count_documents({})
     if count > 0:
+        speaker_map = {
+            "Technical Session 1": "capt-james-smith",
+            "Technical Session 1 (Cont.)": "capt-james-smith",
+            "Technical Session 2": "dr-amina-khan",
+            "Technical Session 2 (Cont.)": "dr-amina-khan",
+            "Technical Session 3": "capt-james-smith",
+            "Technical Session 3 (Cont.)": "capt-james-smith",
+            "Technical Session 4": "dr-amina-khan",
+            "Technical Session 4 (Cont.)": "dr-amina-khan",
+            "Technical Session 5": "prof-liam-byrne",
+            "Technical Session 5 (Cont.)": "prof-liam-byrne",
+            "Guest Speaker": "paul-beaver",
+        }
+        for title, speaker_id in speaker_map.items():
+            await schedule_col.update_many({"title": title, "speakerId": {"$exists": False}}, {"$set": {"speakerId": speaker_id}})
         return
     docs = []
     for item in SEED_SCHEDULE:
@@ -590,9 +684,19 @@ async def seed_messages():
     await messages_col.insert_one(welcome)
 
 
+async def seed_speakers():
+    for speaker in SEED_SPEAKERS:
+        await speakers_col.update_one(
+            {"id": speaker["id"]},
+            {"$set": speaker},
+            upsert=True,
+        )
+
+
 @app.on_event("startup")
 async def on_startup():
     await seed_admins()
+    await seed_speakers()
     await seed_schedule()
     await seed_messages()
 
@@ -722,6 +826,34 @@ async def delete_session(session_id: str, admin=Depends(get_current_admin)):
     # cascade — drop the notes attached to this event
     await event_notes_col.delete_many({"event_id": session_id})
     return {"deleted": True}
+
+
+# ---------- Speakers ----------
+@api.get("/speakers", response_model=List[SpeakerItem])
+async def list_speakers():
+    docs = await speakers_col.find({}, {"_id": 0}).to_list(1000)
+    docs.sort(key=lambda d: (d.get("name", ""), d.get("title", "")))
+    return docs
+
+
+@api.get("/speakers/{speaker_id}", response_model=SpeakerItem)
+async def get_speaker(speaker_id: str):
+    doc = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Speaker not found")
+    return doc
+
+
+@api.put("/speakers/{speaker_id}", response_model=SpeakerItem)
+async def update_speaker(speaker_id: str, data: SpeakerUpdate, admin=Depends(get_current_admin)):
+    existing = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Speaker not found")
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if update_data:
+        await speakers_col.update_one({"id": speaker_id}, {"$set": update_data})
+    updated = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    return updated
 
 
 # ---------- Per-Event Notes ----------

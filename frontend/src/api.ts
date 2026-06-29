@@ -73,10 +73,20 @@ export type SessionItem = {
   coachTime?: string | null;
   transportDetails?: string | null;
   maps_url?: string | null;
+  speakerId?: string | null;
   title: string;
   location: string;
   description?: string;
   category: string;
+};
+
+export type SpeakerItem = {
+  id: string;
+  name: string;
+  title: string;
+  company: string;
+  bioText: string;
+  imageUrl: string;
 };
 
 export type MessageItem = {
@@ -188,6 +198,12 @@ export const api = {
     request<SessionItem>(`/schedule/${id}`, { method: "PUT", body: JSON.stringify(data) }, true),
   deleteSession: (id: string) =>
     request<{ deleted: boolean }>(`/schedule/${id}`, { method: "DELETE" }, true),
+
+  // speakers
+  listSpeakers: () => cachedGet<SpeakerItem[]>("/speakers", "cache:speakers"),
+  getSpeaker: (id: string) => request<SpeakerItem>(`/speakers/${id}`),
+  updateSpeaker: (id: string, data: Partial<SpeakerItem>) =>
+    request<SpeakerItem>(`/speakers/${id}`, { method: "PUT", body: JSON.stringify(data) }, true),
 
   // per-event notes
   listEventNotes: (id: string) =>
