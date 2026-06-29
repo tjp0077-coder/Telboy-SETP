@@ -14,7 +14,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Home", icon: "home", href: "/(tabs)/index", match: (pathname) => pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/index" },
+  { label: "Home", icon: "home", href: "/", match: (pathname) => pathname === "/" || pathname === "/(tabs)" || pathname === "/(tabs)/index" },
   { label: "Schedule", icon: "calendar", href: "/(tabs)/schedule", match: (pathname) => pathname.includes("/schedule") },
   { label: "Messages", icon: "megaphone", href: "/(tabs)/messages", match: (pathname) => pathname.includes("/messages") || pathname.includes("/feed") },
   { label: "City", icon: "map", href: "/(tabs)/city", match: (pathname) => pathname.includes("/city") },
