@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, QuestionItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -333,6 +334,7 @@ export default function ChairQuestionsScreen() {
           }}
         />
       )}
+      <AdminFooterNav />
     </View>
   );
 }

@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ContactItem, ContactThreadMessage } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 
 export default function DeletedInboxScreen() {
   const router = useRouter();
@@ -102,7 +103,7 @@ export default function DeletedInboxScreen() {
         <FlatList
           data={items}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -120,6 +121,8 @@ export default function DeletedInboxScreen() {
             </View>
           }
           renderItem={({ item }) => {
+
+              <AdminFooterNav />
             const expanded = expandedId === item.id;
             const threadMessages = sortMessages(item.messages || []);
             const latestMessage = threadMessages[threadMessages.length - 1] || buildFallbackMessage(item);

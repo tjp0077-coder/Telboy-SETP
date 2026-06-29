@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, PrototypeIdea } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -172,7 +173,7 @@ export default function PrototypesScreen() {
 
       <Pressable
         onPress={() => setComposeOpen(true)}
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
+        style={[styles.fab, { bottom: insets.bottom + 88 }]}
         testID="prototype-add-fab"
       >
         <Ionicons name="add-circle" size={20} color="#1A2841" />
@@ -254,6 +255,8 @@ export default function PrototypesScreen() {
     </View>
   );
 }
+
+      <AdminFooterNav />
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },

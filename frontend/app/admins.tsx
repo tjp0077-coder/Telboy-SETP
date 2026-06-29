@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, AdminInfo } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -114,7 +115,7 @@ export default function AdminsScreen() {
         <FlatList
           data={items}
           keyExtractor={(a) => a.username}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 220 }}
           renderItem={({ item }) => {
             const isSelf = item.username === auth.username;
             return (
@@ -154,7 +155,7 @@ export default function AdminsScreen() {
       {canManageAdmins ? (
         <Pressable
           onPress={() => setComposeOpen(true)}
-          style={[styles.fab, { bottom: insets.bottom + 24 }]}
+          style={[styles.fab, { bottom: insets.bottom + 88 }]}
           testID="admin-add-fab"
         >
           <Ionicons name="person-add" size={20} color="#1A2841" />
@@ -166,6 +167,8 @@ export default function AdminsScreen() {
           <Text style={styles.readOnlyText}>Read-only access</Text>
         </View>
       )}
+
+      <AdminFooterNav />
 
       {/* Compose modal */}
       <Modal
