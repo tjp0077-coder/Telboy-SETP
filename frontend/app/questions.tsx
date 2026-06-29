@@ -177,7 +177,7 @@ export default function AskSpeakerScreen() {
           hitSlop={10}
           testID="questions-close"
         >
-          <Ionicons name="chevron-back" size={26} color={colors.onSurface} />
+          <Ionicons name="chevron-back" size={26} color="#fff" />
         </Pressable>
         <Text style={styles.topTitle}>Ask the speaker</Text>
         <View style={{ width: 26 }} />
@@ -218,7 +218,7 @@ export default function AskSpeakerScreen() {
               style={styles.clearBtn}
               testID="clear-talk"
             >
-              <Ionicons name="close" size={18} color={colors.onSurfaceMuted} />
+              <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
         ) : (
@@ -233,7 +233,7 @@ export default function AskSpeakerScreen() {
         <TextInput
           style={styles.input}
           placeholder="e.g. Jane Doe"
-          placeholderTextColor={colors.onSurfaceMuted}
+          placeholderTextColor="rgba(255,255,255,0.7)"
           value={name}
           onChangeText={setName}
           testID="questions-name"
@@ -243,7 +243,7 @@ export default function AskSpeakerScreen() {
         <TextInput
           style={styles.input}
           placeholder="jane@example.com"
-          placeholderTextColor={colors.onSurfaceMuted}
+          placeholderTextColor="rgba(255,255,255,0.7)"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -255,7 +255,7 @@ export default function AskSpeakerScreen() {
         <TextInput
           style={[styles.input, styles.inputMulti]}
           placeholder="Type your question for the speaker…"
-          placeholderTextColor={colors.onSurfaceMuted}
+          placeholderTextColor="rgba(255,255,255,0.7)"
           value={question}
           onChangeText={setQuestion}
           multiline
@@ -306,14 +306,14 @@ export default function AskSpeakerScreen() {
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search sessions, venues, days…"
-                placeholderTextColor={colors.onSurfaceMuted}
+                placeholderTextColor="rgba(255,255,255,0.7)"
                 value={search}
                 onChangeText={setSearch}
                 testID="talk-search"
               />
               {search ? (
                 <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                  <Ionicons name="close-circle" size={16} color={colors.onSurfaceMuted} />
+                  <Ionicons name="close-circle" size={16} color="#fff" />
                 </Pressable>
               ) : null}
             </View>
@@ -358,7 +358,7 @@ export default function AskSpeakerScreen() {
                 )}
                 ListEmptyComponent={
                   <View style={{ padding: spacing.xl, alignItems: "center" }}>
-                    <Text style={{ color: colors.onSurfaceMuted }}>No sessions match "{search}"</Text>
+                    <Text style={{ color: "#fff" }}>No sessions match "{search}"</Text>
                   </View>
                 }
               />
@@ -377,15 +377,15 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: spacing.lg, paddingBottom: spacing.sm, backgroundColor: colors.surface,
   },
-  topTitle: { fontSize: 17, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
+  topTitle: { fontSize: 17, fontWeight: "700", color: "#fff", fontFamily: "Georgia" },
 
   intro: { marginBottom: spacing.lg },
   introIcon: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center", marginBottom: spacing.md,
   },
-  introTitle: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 28 },
-  introText: { fontSize: 13, color: colors.onSurfaceMuted, marginTop: spacing.xs, lineHeight: 18 },
+  introTitle: { fontSize: 22, fontWeight: "700", color: "#fff", fontFamily: "Georgia", lineHeight: 28 },
+  introText: { fontSize: 13, color: "rgba(255,255,255,0.82)", marginTop: spacing.xs, lineHeight: 18 },
 
   selectedTalk: {
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
@@ -396,8 +396,8 @@ const styles = StyleSheet.create({
     width: 38, height: 38, borderRadius: 19, backgroundColor: "#FBF1E5",
     alignItems: "center", justifyContent: "center",
   },
-  selectedTalkTitle: { fontSize: 15, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
-  selectedTalkMeta: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
+  selectedTalkTitle: { fontSize: 15, fontWeight: "700", color: "#fff", fontFamily: "Georgia" },
+  selectedTalkMeta: { fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 },
   clearBtn: { padding: 4 },
 
   pickerBtn: {
@@ -405,15 +405,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary, borderRadius: radius.md,
     padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginBottom: spacing.md,
   },
-  pickerBtnText: { color: colors.onSurface, fontWeight: "700" },
+  pickerBtnText: { color: "#fff", fontWeight: "700" },
 
-  label: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted, marginTop: spacing.md, marginBottom: 6, letterSpacing: 0.8 },
+  label: { fontSize: 12, fontWeight: "700", color: "rgba(255,255,255,0.78)", marginTop: spacing.md, marginBottom: 6, letterSpacing: 0.8 },
   input: {
     backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.border, color: colors.onSurface, fontSize: 15,
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", color: "#fff", fontSize: 15,
   },
   inputMulti: { minHeight: 120, textAlignVertical: "top" },
-  footerNote: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: spacing.md, lineHeight: 18 },
+  footerNote: { fontSize: 12, color: "rgba(255,255,255,0.78)", marginTop: spacing.md, lineHeight: 18 },
   error: { color: colors.error, fontSize: 13, marginTop: spacing.md },
 
   btn: { flexDirection: "row", alignItems: "center", justifyContent: "center", height: 48, borderRadius: radius.md },
@@ -424,27 +424,27 @@ const styles = StyleSheet.create({
     width: 68, height: 68, borderRadius: 34, backgroundColor: "#EAF5EE",
     alignItems: "center", justifyContent: "center", marginBottom: spacing.lg,
   },
-  successTitle: { fontSize: 24, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", textAlign: "center" },
-  successText: { fontSize: 13, color: colors.onSurfaceMuted, textAlign: "center", marginTop: spacing.sm, lineHeight: 19 },
+  successTitle: { fontSize: 24, fontWeight: "700", color: "#fff", fontFamily: "Georgia", textAlign: "center" },
+  successText: { fontSize: 13, color: "rgba(255,255,255,0.82)", textAlign: "center", marginTop: spacing.sm, lineHeight: 19 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: colors.surfaceSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.border, alignSelf: "center", marginBottom: spacing.md },
   modalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  modalTitle: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
+  modalTitle: { fontSize: 22, fontWeight: "700", color: "#fff", fontFamily: "Georgia" },
   searchWrap: {
     flexDirection: "row", alignItems: "center", gap: 8,
-    backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border,
+    backgroundColor: colors.surface, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
     borderRadius: radius.md, paddingHorizontal: spacing.md, marginTop: spacing.md,
   },
-  searchInput: { flex: 1, paddingVertical: 12, color: colors.onSurface },
-  dayHeader: { fontSize: 12, fontWeight: "800", color: colors.brandTertiary, letterSpacing: 0.8, marginBottom: spacing.xs },
+  searchInput: { flex: 1, paddingVertical: 12, color: "#fff" },
+  dayHeader: { fontSize: 12, fontWeight: "800", color: "#fff", letterSpacing: 0.8, marginBottom: spacing.xs },
   talkRow: {
     flexDirection: "row", alignItems: "center", gap: spacing.sm,
     backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md,
-    marginBottom: spacing.sm, borderWidth: 1, borderColor: colors.border,
+    marginBottom: spacing.sm, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)",
   },
-  talkRowTime: { width: 54, fontSize: 14, fontWeight: "700", color: colors.brand, fontFamily: "Georgia" },
-  talkRowTitle: { fontSize: 14, fontWeight: "600", color: colors.onSurface },
-  talkRowLoc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
+  talkRowTime: { width: 54, fontSize: 14, fontWeight: "700", color: "#fff", fontFamily: "Georgia" },
+  talkRowTitle: { fontSize: 14, fontWeight: "600", color: "#fff" },
+  talkRowLoc: { fontSize: 12, color: "rgba(255,255,255,0.78)", marginTop: 2 },
 });
