@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  TextInput, KeyboardAvoidingView, Platform, Alert, Modal,
+  TextInput, KeyboardAvoidingView, Platform, Alert, Modal, Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -34,6 +34,9 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 const CATEGORIES = ["session", "break", "meal", "social", "tour"];
+
+const buildMapsSearchUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -165,6 +168,21 @@ export default function EventDetail() {
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
 
+  const openLocationMap = async () => {
+    const query = `${event.location} ${event.title}`.trim();
+    const url = buildMapsSearchUrl(query);
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to open map", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Please try again in a few moments.");
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -222,7 +240,9 @@ export default function EventDetail() {
               </View>
             ) : null}
             <View style={styles.metaRow}>
-              <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
+              <Pressable onPress={openLocationMap} hitSlop={8} testID="event-map-link">
+                <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
+              </Pressable>
               <Text style={styles.metaText}>{event.location}</Text>
             </View>
 
