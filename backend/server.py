@@ -70,6 +70,28 @@ def verify_pw(p: str, h: str) -> bool:
         return False
 
 
+def username_to_display_name(username: str) -> str:
+    raw = (username or "").strip()
+    if not raw:
+        return ""
+    cleaned = raw.replace(".", " ").replace("_", " ").replace("-", " ")
+    parts = [p for p in cleaned.split() if p]
+    if not parts:
+        return raw
+    return " ".join(p.capitalize() for p in parts)
+
+
+def admin_display_name(admin: dict) -> str:
+    username = (admin.get("username") or "").strip()
+    name = (admin.get("name") or "").strip()
+    if not name:
+        return username_to_display_name(username) or "SETP admin"
+    # Normalize legacy records where name was persisted as username.
+    if username and name.lower() == username.lower():
+        return username_to_display_name(username) or name
+    return name
+
+
 def create_token(data: dict) -> str:
     to_encode = data.copy()
     to_encode["exp"] = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_MIN)
@@ -452,7 +474,7 @@ async def seed_admins():
     for u_env, p_env, n_env in configs:
         username = (os.getenv(u_env) or "").strip().lower()
         password = os.getenv(p_env)
-        name = os.getenv(n_env, username or "")
+        name = (os.getenv(n_env) or "").strip() or username_to_display_name(username)
         if not username or not password:
             continue
         # Self-healing upsert: keep the admin's password_hash and name in sync
@@ -530,13 +552,13 @@ async def login(data: LoginIn):
         "sub": admin["username"], "username": admin["username"], "role": "admin"
     })
     return TokenOut(
-        access_token=token, username=admin["username"], name=admin.get("name", admin["username"])
+        access_token=token, username=admin["username"], name=admin_display_name(admin)
     )
 
 
 @api.get("/auth/me", response_model=AdminOut)
 async def me(admin=Depends(get_current_admin)):
-    return AdminOut(username=admin["username"], name=admin.get("name", admin["username"]))
+    return AdminOut(username=admin["username"], name=admin_display_name(admin))
 
 
 # ---------- Admin Management ----------
@@ -544,7 +566,7 @@ async def me(admin=Depends(get_current_admin)):
 async def list_admins(admin=Depends(get_current_admin)):
     docs = await admins_col.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
     docs.sort(key=lambda d: d.get("created_at", ""))
-    return [AdminOut(username=d["username"], name=d.get("name", d["username"])) for d in docs]
+    return [AdminOut(username=d["username"], name=admin_display_name(d)) for d in docs]
 
 
 @api.post("/admins", response_model=AdminOut, status_code=201)
@@ -649,7 +671,7 @@ async def create_event_note(
     note = EventNote(
         event_id=session_id,
         text=data.text,
-        author=admin.get("name", admin["username"]),
+        author=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await event_notes_col.insert_one(note.dict())
@@ -964,7 +986,7 @@ async def send_admin_audit_email(subject: str, body: str):
 
 
 def build_admin_audit_body(action: str, item_type: str, admin: dict, details: List[str]) -> str:
-    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    admin_name = admin_display_name(admin)
     timestamp = datetime.now(timezone.utc).isoformat()
     return "\n".join([
         f"Action: {action}",
@@ -1067,7 +1089,7 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
     item = normalize_contact_thread(item)
     subject = (data.subject or "").strip() or f"Re: {item['subject']}"
     created_at = datetime.now(timezone.utc).isoformat()
-    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    admin_name = admin_display_name(admin)
     reply_message = build_contact_thread_message(
         "admin",
         admin_name,
@@ -1177,7 +1199,7 @@ async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
         text=data.text,
         title=data.title or "",
         priority=data.priority,
-        author=admin.get("name", admin["username"]),
+        author=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await messages_col.insert_one(item.dict())
@@ -1286,7 +1308,7 @@ async def create_prototype_idea(data: PrototypeIdeaCreate, admin=Depends(get_cur
         proposed_screen=(data.proposed_screen or "").strip(),
         mock_link=(data.mock_link or "").strip(),
         status="draft",
-        created_by=admin.get("name", admin["username"]),
+        created_by=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await prototype_ideas_col.insert_one(item.dict())
@@ -1305,7 +1327,7 @@ async def publish_prototype_idea(idea_id: str, admin=Depends(get_current_admin))
         {"$set": {
             "status": "published",
             "published_at": now,
-            "published_by": admin.get("name", admin["username"]),
+            "published_by": admin_display_name(admin),
         }},
     )
     updated = await prototype_ideas_col.find_one({"id": idea_id}, {"_id": 0})
