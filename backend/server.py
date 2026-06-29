@@ -45,6 +45,7 @@ RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com"
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
+FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
 
 if not RESEND_CONTACT_RECIPIENT:
     raise RuntimeError("RESEND_CONTACT_RECIPIENT must be set.")
@@ -100,6 +101,15 @@ def create_token(data: dict) -> str:
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+
+
+def normalize_session_maps_url(session: dict) -> dict:
+    if not isinstance(session, dict):
+        return session
+    if session.get("title") == "Technical Boat Tour" and session.get("location") == "Forth Boat Tours":
+        session = dict(session)
+        session["maps_url"] = session.get("maps_url") or FORTH_BOAT_TOURS_MAPS_URL
+    return session
 
 
 async def get_current_admin(token: Optional[str] = Depends(oauth2_scheme)):
@@ -617,7 +627,7 @@ async def list_schedule():
     docs = await schedule_col.find({}, {"_id": 0}).to_list(1000)
     # sort by date then time
     docs.sort(key=lambda d: (d.get("date", ""), d.get("time", "")))
-    return docs
+    return [normalize_session_maps_url(doc) for doc in docs]
 
 
 @api.get("/schedule/{session_id}", response_model=SessionItem)
@@ -625,14 +635,14 @@ async def get_session(session_id: str):
     doc = await schedule_col.find_one({"id": session_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
-    return doc
+    return normalize_session_maps_url(doc)
 
 
 @api.post("/schedule", response_model=SessionItem)
 async def create_session(data: SessionCreate, admin=Depends(get_current_admin)):
     item = SessionItem(**data.dict())
     await schedule_col.insert_one(item.dict())
-    return item
+    return normalize_session_maps_url(item.dict())
 
 
 @api.put("/schedule/{session_id}", response_model=SessionItem)
@@ -644,7 +654,7 @@ async def update_session(session_id: str, data: SessionUpdate, admin=Depends(get
     if update_data:
         await schedule_col.update_one({"id": session_id}, {"$set": update_data})
     updated = await schedule_col.find_one({"id": session_id}, {"_id": 0})
-    return updated
+    return normalize_session_maps_url(updated)
 
 
 @api.delete("/schedule/{session_id}")
