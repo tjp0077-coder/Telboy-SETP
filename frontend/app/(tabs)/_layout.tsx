@@ -5,6 +5,13 @@ import { useUnread } from "@/src/UnreadContext";
 
 export default function TabLayout() {
   const { unreadCount } = useUnread();
+  const isIOSWeb =
+    Platform.OS === "web" &&
+    typeof navigator !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent || "");
+  const webSafeInset = isIOSWeb
+    ? "env(safe-area-inset-bottom, constant(safe-area-inset-bottom))"
+    : "env(safe-area-inset-bottom, 0px)";
 
   return (
     <Tabs
@@ -23,8 +30,12 @@ export default function TabLayout() {
           margin: 0,
           ...Platform.select({
             web: {
-              height: "calc(60px + env(safe-area-inset-bottom, 0px))",
-              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+              position: "fixed",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: `calc(60px + ${webSafeInset})`,
+              paddingBottom: webSafeInset,
             },
             default: {
               height: 60,

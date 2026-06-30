@@ -21,6 +21,7 @@ const INDEX = path.join(DIST, "index.html");
 const MARKER = "<!-- pwa:injected -->";
 
 const HEAD_BLOCK = `${MARKER}
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Official delegate companion app for the SETP European Symposium, Edinburgh — schedule, comms, city guide." />
     <meta name="theme-color" content="#1A2841" />
     <link rel="manifest" href="/manifest.webmanifest" />
