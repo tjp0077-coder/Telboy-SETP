@@ -12,7 +12,13 @@ function CustomTabBar(props) {
   const insets = useSafeAreaInsets();
   
   return (
-    <View style={{ paddingBottom: insets.bottom, backgroundColor: "#0F1A2E" }}>
+    <View 
+      style={{
+        backgroundColor: "#0F1A2E",
+        paddingBottom: insets.bottom,
+        width: "100%",
+      }}
+    >
       <BottomTabBar
         {...props}
         style={[
@@ -22,7 +28,10 @@ function CustomTabBar(props) {
             borderTopColor: "rgba(245,240,230,0.1)",
             borderTopWidth: StyleSheet.hairlineWidth,
             paddingTop: 8,
-            paddingBottom: 0, // Padding is handled by the wrapper View
+            paddingBottom: 0,
+            paddingHorizontal: 0,
+            marginBottom: 0,
+            marginHorizontal: 0,
           },
         ]}
       />
