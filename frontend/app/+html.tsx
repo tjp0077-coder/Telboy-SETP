@@ -56,7 +56,7 @@ export default function Root({ children }: PropsWithChildren) {
               :root {
                 --sat: env(safe-area-inset-top, 0px);
                 --sar: env(safe-area-inset-right, 0px);
-                --sab: env(safe-area-inset-bottom, 0px);
+                --sab-fallback: 0px;
                 --sal: env(safe-area-inset-left, 0px);
               }
               html, body {
@@ -95,7 +95,7 @@ export default function Root({ children }: PropsWithChildren) {
                 left: 0 !important;
                 right: 0 !important;
                 background-color: #0F1A2E !important;
-                padding-bottom: env(safe-area-inset-bottom) !important;
+                padding-bottom: max(12px, env(safe-area-inset-bottom), var(--sab-fallback)) !important;
                 z-index: 999 !important;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
@@ -104,7 +104,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
 
-        {/* ── iOS PWA: early script to disable scroll restoration ─────── */}
+        {/* ── iOS PWA: early script to disable scroll restoration & set safe-area fallback ─────── */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -115,6 +115,18 @@ export default function Root({ children }: PropsWithChildren) {
                 window.scrollTo(0, 0);
                 document.documentElement.scrollTop = 0;
                 document.body.scrollTop = 0;
+                
+                // Set fallback for safe-area-inset-bottom if env() returns 0
+                var getComputedStyleValue = function(prop) {
+                  var el = document.documentElement;
+                  return window.getComputedStyle(el).getPropertyValue(prop).trim();
+                };
+                var safeBottom = getComputedStyleValue('--sat'); // test if env() works
+                if (!safeBottom || safeBottom === '0px') {
+                  // env() not working, set fallback based on viewport
+                  var fallback = window.innerHeight > 800 ? '34px' : '20px';
+                  document.documentElement.style.setProperty('--sab-fallback', fallback);
+                }
               })();
             `,
           }}

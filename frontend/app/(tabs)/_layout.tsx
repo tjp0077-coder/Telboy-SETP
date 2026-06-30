@@ -23,7 +23,7 @@ export default function TabLayout() {
           borderTopWidth: StyleSheet.hairlineWidth,
           height: tabHeight,
           paddingTop: 10,
-          paddingBottom: bottomSafeArea,
+          paddingBottom: Math.max(12, bottomSafeArea),
           paddingLeft: 0,
           paddingRight: 0,
           marginLeft: 0,
