@@ -12,7 +12,7 @@ function CustomTabBar(props) {
   return (
     <BottomTabBar
       {...props}
-      safeAreaInsets={{ bottom: 0 }}
+      safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }}
       style={[
         props.style,
         {
@@ -20,10 +20,9 @@ function CustomTabBar(props) {
           borderTopColor: "rgba(245,240,230,0.1)",
           borderTopWidth: StyleSheet.hairlineWidth,
           paddingTop: 8,
-          paddingBottom: 8,
+          paddingBottom: 0,
           paddingHorizontal: 0,
-          marginBottom: 0,
-          marginHorizontal: 0,
+          margin: 0,
           height: 60,
         },
       ]}
@@ -40,9 +39,10 @@ export default function TabLayout() {
   return (
     <SafeAreaView
       edges={["bottom"]}
-      style={{ flex: 1, backgroundColor: "#0F1A2E" }}
+      style={{ flex: 1, backgroundColor: "#0F1A2E", margin: 0, padding: 0 }}
     >
       <Tabs
+        sceneContainerStyle={{ backgroundColor: "#1A2841" }}
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
