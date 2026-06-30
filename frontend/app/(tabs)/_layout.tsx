@@ -1,15 +1,40 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useUnread } from "@/src/UnreadContext";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
+
+/**
+ * CustomTabBar — wraps the default BottomTabBar and applies safe area inset padding directly
+ */
+function CustomTabBar(props) {
+  const insets = useSafeAreaInsets();
+  
+  return (
+    <View style={{ paddingBottom: insets.bottom, backgroundColor: "#0F1A2E" }}>
+      <BottomTabBar
+        {...props}
+        style={[
+          props.style,
+          {
+            backgroundColor: "#0F1A2E",
+            borderTopColor: "rgba(245,240,230,0.1)",
+            borderTopWidth: StyleSheet.hairlineWidth,
+            paddingTop: 8,
+            paddingBottom: 0, // Padding is handled by the wrapper View
+          },
+        ]}
+      />
+    </View>
+  );
+}
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { unreadCount } = useUnread();
   const bottomSafeArea = Math.max(insets.bottom, 10);
-  const tabBarHeight = 60; // Fixed icon area
-  const totalTabHeight = tabBarHeight + bottomSafeArea; // Total including safe area
+  const tabBarHeight = 60 + bottomSafeArea; // Tab height + safe area
 
   return (
     <Tabs
@@ -18,23 +43,9 @@ export default function TabLayout() {
         tabBarShowLabel: false,
         tabBarActiveTintColor: "#F2C265",
         tabBarInactiveTintColor: "rgba(245,240,230,0.78)",
-        tabBarStyle: {
-          backgroundColor: "#0F1A2E",
-          borderTopColor: "rgba(245,240,230,0.1)",
-          borderTopWidth: StyleSheet.hairlineWidth,
-          height: totalTabHeight,
-          paddingTop: 8,
-          paddingBottom: bottomSafeArea,
-          paddingHorizontal: 0,
-          marginHorizontal: 0,
-          marginBottom: 0,
-          position: "absolute",
-          left: 0,
-          right: 0,
-          bottom: 0,
-        },
+        tabBar: (props) => <CustomTabBar {...props} />,
         contentStyle: {
-          paddingBottom: totalTabHeight,
+          paddingBottom: tabBarHeight,
           backgroundColor: "#1A2841",
         },
         tabBarItemStyle: {
