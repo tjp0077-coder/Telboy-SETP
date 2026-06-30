@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ContactItem, ContactThreadMessage } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 
 export default function InboxScreen() {
   const router = useRouter();
@@ -143,7 +144,7 @@ export default function InboxScreen() {
         <FlatList
           data={items}
           keyExtractor={(i) => i.id}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 60 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -252,7 +253,7 @@ export default function InboxScreen() {
                           testID={`inbox-reply-${item.id}`}
                         >
                           <Ionicons name="mail" size={14} color="#fff" />
-                          <Text style={styles.actionPrimaryText}>{replyOpen ? "Close reply" : "Reply in app"}</Text>
+                          <Text style={styles.actionPrimaryText}>{replyOpen ? "Close reply" : "Reply by email"}</Text>
                         </Pressable>
                       ) : null}
                       <Pressable
@@ -318,6 +319,8 @@ export default function InboxScreen() {
     </View>
   );
 }
+
+      <AdminFooterNav />
 
 function formatDate(iso: string): string {
   try {

@@ -34,7 +34,9 @@ schedule_col = db["schedule"]
 messages_col = db["live_messages"]
 event_notes_col = db["event_notes"]
 contact_col = db["contact_messages"]
+questions_col = db["speaker_questions"]
 prototype_ideas_col = db["prototype_ideas"]
+speakers_col = db["speakers"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
@@ -45,6 +47,7 @@ RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com"
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
+FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
 
 if not RESEND_CONTACT_RECIPIENT:
     raise RuntimeError("RESEND_CONTACT_RECIPIENT must be set.")
@@ -70,6 +73,28 @@ def verify_pw(p: str, h: str) -> bool:
         return False
 
 
+def username_to_display_name(username: str) -> str:
+    raw = (username or "").strip()
+    if not raw:
+        return ""
+    cleaned = raw.replace(".", " ").replace("_", " ").replace("-", " ")
+    parts = [p for p in cleaned.split() if p]
+    if not parts:
+        return raw
+    return " ".join(p.capitalize() for p in parts)
+
+
+def admin_display_name(admin: dict) -> str:
+    username = (admin.get("username") or "").strip()
+    name = (admin.get("name") or "").strip()
+    if not name:
+        return username_to_display_name(username) or "SETP admin"
+    # Normalize legacy records where name was persisted as username.
+    if username and name.lower() == username.lower():
+        return username_to_display_name(username) or name
+    return name
+
+
 def create_token(data: dict) -> str:
     to_encode = data.copy()
     to_encode["exp"] = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_MIN)
@@ -78,6 +103,15 @@ def create_token(data: dict) -> str:
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+
+
+def normalize_session_maps_url(session: dict) -> dict:
+    if not isinstance(session, dict):
+        return session
+    if session.get("title") == "Technical Boat Tour" and session.get("location") == "Forth Boat Tours":
+        session = dict(session)
+        session["maps_url"] = session.get("maps_url") or FORTH_BOAT_TOURS_MAPS_URL
+    return session
 
 
 async def get_current_admin(token: Optional[str] = Depends(oauth2_scheme)):
@@ -134,6 +168,9 @@ class SessionItem(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
+    speakerBios: List["SessionSpeakerBio"] = Field(default_factory=list)
     title: str
     location: str
     description: Optional[str] = ""
@@ -147,6 +184,9 @@ class SessionCreate(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
+    speakerBios: List["SessionSpeakerBio"] = Field(default_factory=list)
     title: str
     location: str
     description: Optional[str] = ""
@@ -160,6 +200,9 @@ class SessionUpdate(BaseModel):
     end_time: Optional[str] = None
     coachTime: Optional[str] = None
     transportDetails: Optional[str] = None
+    maps_url: Optional[str] = None
+    speakerId: Optional[str] = None
+    speakerBios: Optional[List["SessionSpeakerBio"]] = None
     title: Optional[str] = None
     location: Optional[str] = None
     description: Optional[str] = None
@@ -289,6 +332,104 @@ class ContactReplyCreate(BaseModel):
     subject: Optional[str] = None
 
 
+class QuestionCreate(BaseModel):
+    name: str
+    email: Optional[EmailStr] = None
+    question: str
+    event_id: Optional[str] = None
+
+    @field_validator("email", mode="before")
+    @classmethod
+    def normalize_email(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            value = value.strip()
+            return value or None
+        return value
+
+
+class QuestionItem(BaseModel):
+    id: str
+    name: str
+    email: Optional[str] = None
+    question: str
+    created_at: str
+    updated_at: str
+    reviewed: bool = False
+    reviewed_at: Optional[str] = None
+    reviewed_by: Optional[str] = None
+    event_id: Optional[str] = None
+    event_title: Optional[str] = None
+    deleted: bool = False
+    deleted_at: Optional[str] = None
+    deleted_by: Optional[str] = None
+
+
+def count_words(value: str) -> int:
+    return len([word for word in (value or "").strip().split() if word])
+
+
+class SessionSpeakerBio(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    paperTitle: str
+    name: str
+    title: str
+    company: str
+    bioText: str
+    imageUrl: str
+
+    @field_validator("paperTitle", "name", "title", "company", "imageUrl")
+    @classmethod
+    def required_text(cls, value: str):
+        if not value or not value.strip():
+            raise ValueError("Field is required")
+        return value.strip()
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: str):
+        words = count_words(value)
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
+        return value
+
+
+class SpeakerItem(BaseModel):
+    id: str
+    name: str
+    title: str
+    company: str
+    bioText: str
+    imageUrl: str
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: str):
+        words = count_words(value)
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
+        return value
+
+
+class SpeakerUpdate(BaseModel):
+    name: Optional[str] = None
+    title: Optional[str] = None
+    company: Optional[str] = None
+    bioText: Optional[str] = None
+    imageUrl: Optional[str] = None
+
+    @field_validator("bioText")
+    @classmethod
+    def validate_bio_text(cls, value: Optional[str]):
+        if value is None:
+            return value
+        words = count_words(value)
+        if words > 500:
+            raise ValueError("bioText must be between 0 and 500 words")
+        return value
+
+
 def build_contact_thread_message(
     sender_role: str,
     sender_name: str,
@@ -333,6 +474,17 @@ def normalize_contact_thread(doc: dict) -> dict:
     return normalized
 
 
+def normalize_question_record(doc: dict) -> dict:
+    normalized = dict(doc)
+    normalized["reviewed"] = bool(normalized.get("reviewed"))
+    normalized["reviewed_at"] = normalized.get("reviewed_at")
+    normalized["reviewed_by"] = normalized.get("reviewed_by")
+    normalized["deleted"] = bool(normalized.get("deleted"))
+    normalized["deleted_at"] = normalized.get("deleted_at")
+    normalized["deleted_by"] = normalized.get("deleted_by")
+    return normalized
+
+
 # ---------- Seed data ----------
 SEED_SCHEDULE = [
     # Sun 26 July - Registration day
@@ -349,7 +501,7 @@ SEED_SCHEDULE = [
      "location": "Ps&Gs", "description": "Welcome address by Symposium Chairman, Dave Mackay.",
      "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "08:50", "title": "Technical Session 1",
-     "location": "Ps&Gs", "description": "Presentation of Papers 1 and 2.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 1 and 2.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning networking and refreshments.", "category": "break"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:00", "title": "Partner's Tour",
@@ -357,17 +509,17 @@ SEED_SCHEDULE = [
      "description": "Tour to Rosslyn Castle, The Kelpies, and Linlithgow Palace. Returns by 16:00.",
      "category": "tour"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:15", "title": "Technical Session 1 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "11:55", "title": "Lunch",
      "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "13:30", "title": "State of the Society Address",
      "location": "Ps&Gs", "description": "Address by SETP President, Kelly Latimer.", "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "14:05", "title": "Technical Session 2",
-     "location": "Ps&Gs", "description": "Presentation of Papers 6 and 7.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 6 and 7.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:10", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "15:30", "title": "Technical Session 2 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 8 and 9.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 8 and 9.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "16:40", "title": "Closing Remarks",
      "location": "Ps&Gs", "description": "End of day 1 technical sessions.", "category": "session"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "18:30", "end_time": "21:30",
@@ -381,7 +533,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:30", "title": "Opening Address",
      "location": "Ps&Gs", "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "08:50", "title": "Technical Session 3",
-     "location": "Ps&Gs", "description": "Presentation of Papers 10 and 11.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 10 and 11.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning refreshments.", "category": "break"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
@@ -389,17 +541,17 @@ SEED_SCHEDULE = [
      "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
      "category": "tour"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session", "speakerId": "capt-james-smith"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "11:55", "title": "Lunch",
      "location": "Ps&Gs", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "13:30", "title": "State of the Union Address",
      "location": "Ps&Gs", "description": "Address by SETP President.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "14:05", "title": "Technical Session 4",
-     "location": "Ps&Gs", "description": "Presentation of Papers 15 and 16.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 15 and 16.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:10", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Afternoon refreshments.", "category": "break"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "15:30", "title": "Technical Session 4 (Cont.)",
-     "location": "Ps&Gs", "description": "Presentation of Papers 17 and 18.", "category": "session"},
+        "location": "Ps&Gs", "description": "Presentation of Papers 17 and 18.", "category": "session", "speakerId": "dr-amina-khan"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "16:40", "title": "Closing Remarks",
      "location": "Ps&Gs", "description": "End of day 2 technical sessions.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "19:00", "end_time": "22:00",
@@ -411,36 +563,106 @@ SEED_SCHEDULE = [
 
     # Wed 29 July
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:00", "title": "Check In",
-     "location": "Royal College of Physicians of Edinburgh", "description": "Light snacks, coffee, and tea.", "category": "meal"},
+    "location": "The Royal College of Physicians of Edinburgh", "description": "Light snacks, coffee, and tea.", "category": "meal"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:30", "title": "Opening Address",
-     "location": "Royal College of Physicians of Edinburgh",
+    "location": "The Royal College of Physicians of Edinburgh",
      "description": "Address by Symposium Chairman, Dave Mackay.", "category": "session"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "08:50", "title": "Technical Session 5",
-     "location": "Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 19 and 20.",
-     "category": "session"},
+    "location": "The Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 19 and 20.",
+        "category": "session", "speakerId": "prof-liam-byrne"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "09:55", "title": "Coffee Break",
-     "location": "Royal College of Physicians of Edinburgh", "description": "Morning refreshments.", "category": "break"},
+    "location": "The Royal College of Physicians of Edinburgh", "description": "Morning refreshments.", "category": "break"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "10:15", "title": "Technical Session 5 (Cont.)",
-     "location": "Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 21, 22, and 23.",
-     "category": "session"},
+    "location": "The Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 21, 22, and 23.",
+        "category": "session", "speakerId": "prof-liam-byrne"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:55", "title": "Lunch",
-     "location": "Royal College of Physicians of Edinburgh", "description": "Midday lunch break.", "category": "meal"},
+    "location": "The Royal College of Physicians of Edinburgh", "description": "Midday lunch break.", "category": "meal"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "13:15", "title": "Guest Speaker",
-     "location": "Royal College of Physicians of Edinburgh",
-     "description": "Speaker presentation (Paul Beaver TBC).", "category": "session"},
+    "location": "The Royal College of Physicians of Edinburgh",
+        "description": "Speaker presentation (Paul Beaver TBC).", "category": "session", "speakerId": "paul-beaver"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "19:00", "end_time": "23:00",
-     "title": "Symposium Banquet", "location": "Royal College of Physicians of Edinburgh",
+    "title": "Symposium Banquet", "location": "The Royal College of Physicians of Edinburgh",
      "description": "Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from Marriott.",
      "category": "social"},
 
     # Thu 30 July
-    {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
-     "title": "Technical Boat Tour", "location": "Forth Boat Tours",
-        "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
-        "coachTime": "08:45",
-        "transportDetails": "08:45 – Coach leaves hotel",
-     "category": "tour"},
+     {"date": "2026-07-30", "day_label": "Thu 30 July", "time": "10:00", "end_time": "15:00",
+      "title": "Technical Boat Tour", "location": "Forth Boat Tours",
+          "description": "Private charter boat trip to conclude the symposium. Dedicated coach transport from city centre.",
+          "coachTime": "08:45",
+          "transportDetails": "08:45 – Coach leaves hotel",
+          "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D",
+      "category": "tour"},
 ]
+
+
+SEED_SPEAKERS = [
+    {
+        "id": "capt-james-smith",
+        "name": "James Smith",
+        "title": "Capt.",
+        "company": "Royal Air Force",
+        "imageUrl": "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Captain James Smith is a senior experimental test pilot with more than two decades of service across rotary and fixed-wing flight test programs. He began his operational career on maritime patrol aircraft before transitioning into developmental testing, where he focused on mission systems integration and envelope expansion for high-workload sorties. Across multiple collaborative trials, he has led test planning teams that brought together military operators, airworthiness engineers, and software specialists to de-risk capability insertions under compressed delivery timelines. His published symposium work frequently explores practical methods for balancing evidence-based risk decisions with the realities of squadron tempo and limited instrumentation windows. James is known for his disciplined approach to cockpit data capture, emphasizing repeatable briefing structures, tight card design, and post-flight reconstruction that can be understood by mixed technical audiences. Beyond cockpit duties, he has mentored early-career pilots through transition pathways into formal test organizations, with particular attention to communication habits and technical writing quality. He has represented his unit in multinational exchanges focused on mission autonomy, degraded-navigation resilience, and pilot decision support. At this symposium, he is presenting lessons learned from recent integrated trials and offering recommendations for improving the handoff between design teams and front-line operators. His perspective reflects both operational urgency and long-horizon safety stewardship, and he remains committed to raising standards in collaborative flight test execution across the wider community.",
+    },
+    {
+        "id": "dr-amina-khan",
+        "name": "Amina Khan",
+        "title": "Dr.",
+        "company": "QinetiQ",
+        "imageUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Dr. Amina Khan is a flight sciences specialist and systems evaluation lead at QinetiQ, where she directs multidisciplinary teams working at the boundary between aerodynamic performance, control law behavior, and mission-level effectiveness. She earned her doctorate in aerospace engineering with research centered on pilot-vehicle interaction during high-gain maneuvering, and she has since contributed to both military and civil test campaigns involving advanced augmentation and fault-tolerant control. Amina is recognized for translating dense analytical outputs into briefing material that pilots and program leaders can quickly apply during dynamic campaign planning. Her recent projects have included model-assisted envelope build-up, comparative handling assessments across software baselines, and rapid evidence packages for certification-adjacent reviews. She is a frequent contributor to internal standards on data integrity, telemetry confidence, and test repeatability under weather-constrained schedules. Colleagues value her ability to align specialist perspectives from simulation, instrumentation, and operations without losing focus on test intent. In mentoring roles, she has developed practical curricula for new flight test engineers that emphasize question framing, traceable assumptions, and actionable debrief synthesis. At this year’s symposium, Amina is sharing techniques for accelerating insight generation during technical session campaigns while preserving analytical rigor and safety margins. Her work demonstrates that disciplined preparation, transparent uncertainty handling, and collaborative debrief culture can materially improve both campaign pace and decision quality. She remains committed to strengthening evidence-led practice across the global test pilot and engineer community.",
+    },
+    {
+        "id": "prof-liam-byrne",
+        "name": "Liam Byrne",
+        "title": "Prof.",
+        "company": "University of Glasgow",
+        "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Professor Liam Byrne is Chair of Applied Flight Systems at the University of Glasgow and an advisor to multiple joint-industry programs focused on resilient airborne mission architectures. His academic and consulting work bridges system safety, human factors, and verification strategy for rapidly evolving avionics stacks. Over the last fifteen years, he has partnered with test organizations to design evidence frameworks that connect cockpit observations with traceable engineering claims, allowing teams to make faster yet defensible decisions during campaign execution. Liam has authored widely used guidance on scenario-based test design, emphasizing representative operational contexts rather than narrow requirement demonstrations alone. He has served on review boards for modernization initiatives that integrate new autonomy features into legacy airframes, helping teams identify latent coupling risks before flight. In classroom and executive settings, he is known for making complex assurance concepts practical, with a strong focus on communication quality between pilots, analysts, and program leadership. His recent publications discuss methods for reducing re-test churn through sharper hypothesis definition and better instrumented debrief workflows. At the symposium, Liam is presenting perspectives from technical session five on evidence confidence, argument quality, and sustained learning across campaign phases. He advocates for test cultures that reward curiosity, candor, and disciplined dissent, particularly when schedule pressure is high. His contributions continue to influence how organizations structure cross-functional test collaboration, train emerging specialists, and deliver meaningful capability improvements with safety at the core.",
+    },
+    {
+        "id": "paul-beaver",
+        "name": "Paul Beaver",
+        "title": "Mr.",
+        "company": "Aviation Historian & Broadcaster",
+        "imageUrl": "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=facearea&w=240&h=240&q=80",
+        "bioText": "Paul Beaver is an aviation historian, commentator, and author whose work has helped connect specialist flight test discourse with wider public understanding of aerospace innovation. Over a long career spanning journalism, documentary collaboration, and technical event hosting, he has built a reputation for contextualizing modern program choices against historical lessons from landmark development campaigns. Paul has interviewed generations of pilots, engineers, and maintainers, curating first-hand accounts that illuminate why successful test cultures depend on both technical rigor and candid human communication. His speaking engagements frequently explore how institutional memory can strengthen contemporary decision-making, particularly in periods of rapid capability transition. He has contributed to museum and heritage initiatives that preserve records of experimental programs while translating complex artifacts into accessible narratives for broader audiences. At professional symposia, Paul is known for bridging communities: encouraging engineers to surface assumptions clearly, helping operators articulate mission realities, and challenging leaders to preserve learning pathways beyond individual projects. His current work highlights the value of narrative discipline in post-flight analysis, where the way findings are framed can influence whether teams act decisively or defer critical changes. During this event, he offers a keynote perspective on continuity, leadership, and the enduring principles that underpin safe innovation in flight test. His message emphasizes that technological progress is strongest when technical evidence, operational insight, and historical awareness are considered together. Through writing and public engagement, Paul continues to champion informed dialogue across the international aerospace community.",
+    },
+]
+
+
+TECHNICAL_SESSION_PAPERS = {
+    "Technical Session 1": "Papers 1 and 2",
+    "Technical Session 1 (Cont.)": "Papers 3, 4, and 5",
+    "Technical Session 2": "Papers 6 and 7",
+    "Technical Session 2 (Cont.)": "Papers 8 and 9",
+    "Technical Session 3": "Papers 10 and 11",
+    "Technical Session 3 (Cont.)": "Papers 12, 13, and 14",
+    "Technical Session 4": "Papers 15 and 16",
+    "Technical Session 4 (Cont.)": "Papers 17 and 18",
+    "Technical Session 5": "Papers 19 and 20",
+    "Technical Session 5 (Cont.)": "Papers 21, 22, and 23",
+    "Guest Speaker": "Guest Speaker Presentation",
+}
+
+
+def speaker_seed_by_id(speaker_id: str) -> Optional[dict]:
+    for speaker in SEED_SPEAKERS:
+        if speaker.get("id") == speaker_id:
+            return speaker
+    return None
+
+
+def build_session_bio(speaker: dict, paper_title: str) -> dict:
+    return SessionSpeakerBio(
+        paperTitle=paper_title,
+        name=speaker.get("name", ""),
+        title=speaker.get("title", ""),
+        company=speaker.get("company", ""),
+        bioText=speaker.get("bioText", ""),
+        imageUrl=speaker.get("imageUrl", ""),
+    ).model_dump()
 
 
 async def seed_admins():
@@ -452,7 +674,7 @@ async def seed_admins():
     for u_env, p_env, n_env in configs:
         username = (os.getenv(u_env) or "").strip().lower()
         password = os.getenv(p_env)
-        name = os.getenv(n_env, username or "")
+        name = (os.getenv(n_env) or "").strip() or username_to_display_name(username)
         if not username or not password:
             continue
         # Self-healing upsert: keep the admin's password_hash and name in sync
@@ -483,11 +705,59 @@ async def seed_schedule():
     )
     count = await schedule_col.count_documents({})
     if count > 0:
+        speaker_map = {
+            "Technical Session 1": "capt-james-smith",
+            "Technical Session 1 (Cont.)": "capt-james-smith",
+            "Technical Session 2": "dr-amina-khan",
+            "Technical Session 2 (Cont.)": "dr-amina-khan",
+            "Technical Session 3": "capt-james-smith",
+            "Technical Session 3 (Cont.)": "capt-james-smith",
+            "Technical Session 4": "dr-amina-khan",
+            "Technical Session 4 (Cont.)": "dr-amina-khan",
+            "Technical Session 5": "prof-liam-byrne",
+            "Technical Session 5 (Cont.)": "prof-liam-byrne",
+            "Guest Speaker": "paul-beaver",
+        }
+        for title, speaker_id in speaker_map.items():
+            await schedule_col.update_many({"title": title, "speakerId": {"$exists": False}}, {"$set": {"speakerId": speaker_id}})
+            speaker_doc = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+            if not speaker_doc:
+                continue
+            paper_title = TECHNICAL_SESSION_PAPERS.get(title, title)
+            await schedule_col.update_many(
+                {
+                    "title": title,
+                    "$or": [
+                        {"speakerBios": {"$exists": False}},
+                        {"speakerBios": []},
+                    ],
+                },
+                {"$set": {"speakerBios": [build_session_bio(speaker_doc, paper_title)]}},
+            )
         return
     docs = []
+    speaker_map = {
+        "Technical Session 1": "capt-james-smith",
+        "Technical Session 1 (Cont.)": "capt-james-smith",
+        "Technical Session 2": "dr-amina-khan",
+        "Technical Session 2 (Cont.)": "dr-amina-khan",
+        "Technical Session 3": "capt-james-smith",
+        "Technical Session 3 (Cont.)": "capt-james-smith",
+        "Technical Session 4": "dr-amina-khan",
+        "Technical Session 4 (Cont.)": "dr-amina-khan",
+        "Technical Session 5": "prof-liam-byrne",
+        "Technical Session 5 (Cont.)": "prof-liam-byrne",
+        "Guest Speaker": "paul-beaver",
+    }
     for item in SEED_SCHEDULE:
         d = dict(item)
         d["id"] = str(uuid.uuid4())
+        title = d.get("title", "")
+        speaker_id = speaker_map.get(title)
+        if speaker_id and not d.get("speakerBios"):
+            speaker = speaker_seed_by_id(speaker_id)
+            if speaker:
+                d["speakerBios"] = [build_session_bio(speaker, TECHNICAL_SESSION_PAPERS.get(title, title))]
         docs.append(d)
     if docs:
         await schedule_col.insert_many(docs)
@@ -508,9 +778,19 @@ async def seed_messages():
     await messages_col.insert_one(welcome)
 
 
+async def seed_speakers():
+    for speaker in SEED_SPEAKERS:
+        await speakers_col.update_one(
+            {"id": speaker["id"]},
+            {"$set": speaker},
+            upsert=True,
+        )
+
+
 @app.on_event("startup")
 async def on_startup():
     await seed_admins()
+    await seed_speakers()
     await seed_schedule()
     await seed_messages()
 
@@ -530,25 +810,34 @@ async def login(data: LoginIn):
         "sub": admin["username"], "username": admin["username"], "role": "admin"
     })
     return TokenOut(
-        access_token=token, username=admin["username"], name=admin.get("name", admin["username"])
+        access_token=token, username=admin["username"], name=admin_display_name(admin)
     )
 
 
 @api.get("/auth/me", response_model=AdminOut)
 async def me(admin=Depends(get_current_admin)):
-    return AdminOut(username=admin["username"], name=admin.get("name", admin["username"]))
+    return AdminOut(username=admin["username"], name=admin_display_name(admin))
 
 
 # ---------- Admin Management ----------
+ADMIN_MANAGER_NAMES = {"terry parker", "dave mackay"}
+
+
+def can_manage_admins(admin: dict) -> bool:
+    return (admin_display_name(admin) or "").strip().lower() in ADMIN_MANAGER_NAMES
+
+
 @api.get("/admins", response_model=List[AdminOut])
 async def list_admins(admin=Depends(get_current_admin)):
     docs = await admins_col.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
     docs.sort(key=lambda d: d.get("created_at", ""))
-    return [AdminOut(username=d["username"], name=d.get("name", d["username"])) for d in docs]
+    return [AdminOut(username=d["username"], name=admin_display_name(d)) for d in docs]
 
 
 @api.post("/admins", response_model=AdminOut, status_code=201)
 async def create_admin(data: AdminCreate, admin=Depends(get_current_admin)):
+    if not can_manage_admins(admin):
+        raise HTTPException(status_code=403, detail="Not authorized to manage committee members")
     username = data.username.strip().lower()
     name = data.name.strip()
     password = data.password
@@ -573,6 +862,8 @@ async def create_admin(data: AdminCreate, admin=Depends(get_current_admin)):
 
 @api.delete("/admins/{username}")
 async def delete_admin(username: str, admin=Depends(get_current_admin)):
+    if not can_manage_admins(admin):
+        raise HTTPException(status_code=403, detail="Not authorized to manage committee members")
     target = username.strip().lower()
     if target == admin["username"]:
         raise HTTPException(status_code=400, detail="You can't remove your own account")
@@ -591,7 +882,7 @@ async def list_schedule():
     docs = await schedule_col.find({}, {"_id": 0}).to_list(1000)
     # sort by date then time
     docs.sort(key=lambda d: (d.get("date", ""), d.get("time", "")))
-    return docs
+    return [normalize_session_maps_url(doc) for doc in docs]
 
 
 @api.get("/schedule/{session_id}", response_model=SessionItem)
@@ -599,14 +890,14 @@ async def get_session(session_id: str):
     doc = await schedule_col.find_one({"id": session_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail="Not found")
-    return doc
+    return normalize_session_maps_url(doc)
 
 
 @api.post("/schedule", response_model=SessionItem)
 async def create_session(data: SessionCreate, admin=Depends(get_current_admin)):
     item = SessionItem(**data.dict())
     await schedule_col.insert_one(item.dict())
-    return item
+    return normalize_session_maps_url(item.dict())
 
 
 @api.put("/schedule/{session_id}", response_model=SessionItem)
@@ -618,7 +909,7 @@ async def update_session(session_id: str, data: SessionUpdate, admin=Depends(get
     if update_data:
         await schedule_col.update_one({"id": session_id}, {"$set": update_data})
     updated = await schedule_col.find_one({"id": session_id}, {"_id": 0})
-    return updated
+    return normalize_session_maps_url(updated)
 
 
 @api.delete("/schedule/{session_id}")
@@ -629,6 +920,34 @@ async def delete_session(session_id: str, admin=Depends(get_current_admin)):
     # cascade — drop the notes attached to this event
     await event_notes_col.delete_many({"event_id": session_id})
     return {"deleted": True}
+
+
+# ---------- Speakers ----------
+@api.get("/speakers", response_model=List[SpeakerItem])
+async def list_speakers():
+    docs = await speakers_col.find({}, {"_id": 0}).to_list(1000)
+    docs.sort(key=lambda d: (d.get("name", ""), d.get("title", "")))
+    return docs
+
+
+@api.get("/speakers/{speaker_id}", response_model=SpeakerItem)
+async def get_speaker(speaker_id: str):
+    doc = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Speaker not found")
+    return doc
+
+
+@api.put("/speakers/{speaker_id}", response_model=SpeakerItem)
+async def update_speaker(speaker_id: str, data: SpeakerUpdate, admin=Depends(get_current_admin)):
+    existing = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Speaker not found")
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if update_data:
+        await speakers_col.update_one({"id": speaker_id}, {"$set": update_data})
+    updated = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    return updated
 
 
 # ---------- Per-Event Notes ----------
@@ -649,7 +968,7 @@ async def create_event_note(
     note = EventNote(
         event_id=session_id,
         text=data.text,
-        author=admin.get("name", admin["username"]),
+        author=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await event_notes_col.insert_one(note.dict())
@@ -964,7 +1283,7 @@ async def send_admin_audit_email(subject: str, body: str):
 
 
 def build_admin_audit_body(action: str, item_type: str, admin: dict, details: List[str]) -> str:
-    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    admin_name = admin_display_name(admin)
     timestamp = datetime.now(timezone.utc).isoformat()
     return "\n".join([
         f"Action: {action}",
@@ -1067,7 +1386,7 @@ async def reply_contact(cid: str, data: ContactReplyCreate, admin=Depends(get_cu
     item = normalize_contact_thread(item)
     subject = (data.subject or "").strip() or f"Re: {item['subject']}"
     created_at = datetime.now(timezone.utc).isoformat()
-    admin_name = admin.get("name") or admin.get("username") or "SETP admin"
+    admin_name = admin_display_name(admin)
     reply_message = build_contact_thread_message(
         "admin",
         admin_name,
@@ -1163,6 +1482,164 @@ async def permanently_delete_contact(cid: str, admin=Depends(get_current_admin))
     return {"deleted": True}
 
 
+async def hydrate_question_items(docs: List[dict]) -> List[dict]:
+    docs = [normalize_question_record(d) for d in docs]
+    docs.sort(key=lambda d: d.get("updated_at", d.get("created_at", "")), reverse=True)
+
+    event_ids = [d["event_id"] for d in docs if d.get("event_id")]
+    titles: dict = {}
+    if event_ids:
+        async for ev in schedule_col.find(
+            {"id": {"$in": list(set(event_ids))}}, {"_id": 0, "id": 1, "title": 1}
+        ):
+            titles[ev["id"]] = ev["title"]
+    for d in docs:
+        d["event_title"] = titles.get(d.get("event_id")) if d.get("event_id") else None
+    return docs
+
+
+@api.post("/questions")
+async def create_question(data: QuestionCreate):
+    name = data.name.strip()
+    question_text = data.question.strip()
+    if not name or not question_text:
+        raise HTTPException(status_code=400, detail="name and question are required")
+
+    event_id = (data.event_id or "").strip() or None
+    if event_id:
+        ev = await schedule_col.find_one({"id": event_id}, {"_id": 0, "id": 1})
+        if not ev:
+            event_id = None
+
+    created_at = datetime.now(timezone.utc).isoformat()
+    item = {
+        "id": str(uuid.uuid4()),
+        "name": name,
+        "email": str(data.email) if data.email else "",
+        "question": question_text,
+        "created_at": created_at,
+        "updated_at": created_at,
+        "reviewed": False,
+        "reviewed_at": None,
+        "reviewed_by": None,
+        "event_id": event_id,
+    }
+    await questions_col.insert_one(item)
+    await send_question_email(item)
+    return {"id": item["id"], "ok": True}
+
+
+async def send_question_email(item: dict):
+    if not RESEND_API_KEY:
+        logging.warning("RESEND_API_KEY is not configured; skipping question email send.")
+        return
+
+    payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [RESEND_CONTACT_RECIPIENT],
+        "subject": f"[SETP ask the speaker] {item.get('event_title') or item.get('event_id') or 'General'}",
+        "text": (
+            f"Name: {item.get('name', '(unknown)')}\n"
+            f"Email: {item.get('email') or '(not provided)'}\n"
+            f"Event ID: {item.get('event_id') or '(not provided)'}\n"
+            f"Received: {item.get('created_at')}\n\n"
+            f"Question:\n{item.get('question', '')}"
+        ),
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                RESEND_API_URL,
+                headers={
+                    "Authorization": f"Bearer {RESEND_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json=payload,
+                timeout=15,
+            )
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        details = exc.response.text if exc.response is not None else str(exc)
+        logging.error("Resend rejected question email payload: %s", details)
+    except Exception as exc:
+        logging.error("Failed to send question notification email via Resend: %s", exc)
+
+
+@api.get("/questions", response_model=List[QuestionItem])
+async def list_questions(admin=Depends(get_current_admin)):
+    docs = await questions_col.find({"deleted": {"$ne": True}}, {"_id": 0}).to_list(500)
+    return await hydrate_question_items(docs)
+
+
+@api.get("/questions/deleted", response_model=List[QuestionItem])
+async def list_deleted_questions(admin=Depends(get_current_admin)):
+    docs = await questions_col.find({"deleted": True}, {"_id": 0}).to_list(500)
+    return await hydrate_question_items(docs)
+
+
+@api.patch("/questions/{qid}/review")
+async def mark_question_reviewed(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    reviewed_at = datetime.now(timezone.utc).isoformat()
+    reviewed_by = admin_display_name(admin)
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": {"$ne": True}},
+        {"$set": {"reviewed": True, "reviewed_at": reviewed_at, "reviewed_by": reviewed_by, "updated_at": reviewed_at}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/questions/{qid}")
+async def delete_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": {"$ne": True}}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    deleted_at = datetime.now(timezone.utc).isoformat()
+    deleted_by = admin.get("username") or admin.get("name") or "admin"
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": {"$ne": True}},
+        {"$set": {"deleted": True, "deleted_at": deleted_at, "deleted_by": deleted_by, "updated_at": deleted_at, "reviewed": True, "reviewed_at": existing.get("reviewed_at") or deleted_at, "reviewed_by": existing.get("reviewed_by") or deleted_by}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@api.post("/questions/{qid}/restore")
+async def restore_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    restored_at = datetime.now(timezone.utc).isoformat()
+    res = await questions_col.update_one(
+        {"id": qid, "deleted": True},
+        {"$set": {"deleted": False, "deleted_at": None, "deleted_by": None, "updated_at": restored_at}},
+    )
+    if res.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"ok": True}
+
+
+@api.delete("/questions/{qid}/permanent")
+async def permanently_delete_question(qid: str, admin=Depends(get_current_admin)):
+    existing = await questions_col.find_one({"id": qid, "deleted": True}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    res = await questions_col.delete_one({"id": qid, "deleted": True})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
 # ---------- Live Messages ----------
 @api.get("/messages", response_model=List[MessageItem])
 async def list_messages():
@@ -1177,7 +1654,7 @@ async def create_message(data: MessageCreate, admin=Depends(get_current_admin)):
         text=data.text,
         title=data.title or "",
         priority=data.priority,
-        author=admin.get("name", admin["username"]),
+        author=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await messages_col.insert_one(item.dict())
@@ -1286,7 +1763,7 @@ async def create_prototype_idea(data: PrototypeIdeaCreate, admin=Depends(get_cur
         proposed_screen=(data.proposed_screen or "").strip(),
         mock_link=(data.mock_link or "").strip(),
         status="draft",
-        created_by=admin.get("name", admin["username"]),
+        created_by=admin_display_name(admin),
         created_at=datetime.now(timezone.utc).isoformat(),
     )
     await prototype_ideas_col.insert_one(item.dict())
@@ -1305,7 +1782,7 @@ async def publish_prototype_idea(idea_id: str, admin=Depends(get_current_admin))
         {"$set": {
             "status": "published",
             "published_at": now,
-            "published_by": admin.get("name", admin["username"]),
+            "published_by": admin_display_name(admin),
         }},
     )
     updated = await prototype_ideas_col.find_one({"id": idea_id}, {"_id": 0})
@@ -1376,17 +1853,20 @@ async def city_guide():
              "notes": "Symposium HQ. Close to Haymarket station and tram stop.",
              "maps_url": "https://maps.app.goo.gl/J6ubZSzDL6xS7ej6A"},
             {"name": "Apex Grassmarket Hotel", "address": "31-35 Grassmarket, Edinburgh EH1 2HS",
-             "notes": "City-centre hotel beneath Edinburgh Castle on the historic Grassmarket. 5 min walk to the Royal Mile, 10 min to the Royal College of Physicians of Edinburgh.",
+             "notes": "City-centre hotel beneath Edinburgh Castle on the historic Grassmarket. 5 min walk to the Royal Mile, 10 min to The Royal College of Physicians of Edinburgh.",
              "maps_url": "https://www.google.com/maps/search/Apex+Grassmarket+Hotel+Edinburgh"},
             {"name": "St Paul's & St George's Church (Ps&Gs)", "address": "10 York Pl, Edinburgh EH1 3EP",
              "notes": "Mon & Tue technical sessions. City centre — tram to 'York Place'.",
              "maps_url": "https://www.google.com/maps/search/St+Pauls+and+St+Georges+Edinburgh"},
-            {"name": "Royal College of Physicians of Edinburgh", "address": "9 Queen Street, Edinburgh EH2 1JQ",
-             "notes": "Wed sessions & closing banquet. 10-min walk from Royal Mile.",
-             "maps_url": "https://www.google.com/maps/search/Royal+College+of+Physicians+of+Edinburgh"},
             {"name": "Royal Yacht Britannia", "address": "Ocean Terminal, Leith, Edinburgh EH6 6JJ",
              "notes": "Tue evening reception. Transport provided from Marriott.",
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},
+            {"name": "The Royal College of Physicians of Edinburgh", "address": "9 Queen Street, Edinburgh EH2 1JQ",
+             "notes": "Wed sessions & closing banquet. 10-min walk from Royal Mile.",
+             "maps_url": "https://www.google.com/maps/search/?api=1&query=The+Royal+College+of+Physicians+of+Edinburgh"},
+            {"name": "Forth Boat Tours", "address": "Hawes Pier, South Queensferry EH30 9SQ",
+             "notes": "Thu technical boat tour departure point in South Queensferry.",
+             "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"},
         ],
     }
 

@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, AdminInfo } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -15,6 +16,7 @@ export default function AdminsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { auth } = useAuth();
+  const canManageAdmins = ["terry parker", "dave mackay"].includes((auth.name || "").trim().toLowerCase());
   const [items, setItems] = useState<AdminInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -46,6 +48,10 @@ export default function AdminsScreen() {
   }, [auth.username, auth.loading, load, router]);
 
   const submit = async () => {
+    if (!canManageAdmins) {
+      setError("Only Terry Parker and Dave Mackay can add committee members.");
+      return;
+    }
     setError(null);
     const u = username.trim().toLowerCase();
     const n = name.trim();
@@ -70,6 +76,9 @@ export default function AdminsScreen() {
   };
 
   const remove = async (u: AdminInfo) => {
+    if (!canManageAdmins) {
+      return;
+    }
     if (u.username === auth.username) return;
     try {
       await api.deleteAdmin(u.username);
@@ -97,7 +106,7 @@ export default function AdminsScreen() {
       </View>
 
       <Text style={styles.helpText}>
-        Anyone listed here can sign in and post live messages. The minimum is one admin.
+        Anyone listed here can sign in and post live messages. Only Terry Parker and Dave Mackay can add or remove committee members.
       </Text>
 
       {loading ? (
@@ -106,7 +115,7 @@ export default function AdminsScreen() {
         <FlatList
           data={items}
           keyExtractor={(a) => a.username}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 220 }}
           renderItem={({ item }) => {
             const isSelf = item.username === auth.username;
             return (
@@ -127,7 +136,7 @@ export default function AdminsScreen() {
                   </View>
                   <Text style={styles.cardUser}>@{item.username}</Text>
                 </View>
-                {!isSelf ? (
+                {canManageAdmins && !isSelf ? (
                   <Pressable
                     onPress={() => remove(item)}
                     hitSlop={8}
@@ -143,14 +152,23 @@ export default function AdminsScreen() {
         />
       )}
 
-      <Pressable
-        onPress={() => setComposeOpen(true)}
-        style={[styles.fab, { bottom: insets.bottom + 24 }]}
-        testID="admin-add-fab"
-      >
-        <Ionicons name="person-add" size={20} color="#1A2841" />
-        <Text style={styles.fabText}>Add committee member</Text>
-      </Pressable>
+      {canManageAdmins ? (
+        <Pressable
+          onPress={() => setComposeOpen(true)}
+          style={[styles.fab, { bottom: insets.bottom + 88 }]}
+          testID="admin-add-fab"
+        >
+          <Ionicons name="person-add" size={20} color="#1A2841" />
+          <Text style={styles.fabText}>Add committee member</Text>
+        </Pressable>
+      ) : (
+        <View style={[styles.readOnlyCard, shadow.card]} testID="admin-read-only-note">
+          <Ionicons name="lock-closed-outline" size={18} color={colors.onSurfaceMuted} />
+          <Text style={styles.readOnlyText}>Read-only access</Text>
+        </View>
+      )}
+
+      <AdminFooterNav />
 
       {/* Compose modal */}
       <Modal
@@ -294,6 +312,20 @@ const styles = StyleSheet.create({
     ...shadow.raised,
   },
   fabText: { color: "#1A2841", fontWeight: "800", fontSize: 14 },
+  readOnlyCard: {
+    position: "absolute",
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 24,
+    height: 50,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  readOnlyText: { color: colors.onSurfaceMuted, fontWeight: "700", fontSize: 14 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
   modalSheet: { backgroundColor: colors.surfaceSecondary, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: spacing.lg },

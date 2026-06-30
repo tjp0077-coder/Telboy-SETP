@@ -16,7 +16,7 @@ BASE_URL = "https://github-sync-app-2.preview.emergentagent.com/api"
 ADMIN1_USERNAME = "dave.mackay"
 ADMIN1_PASSWORD = "Chairman2026!"
 
-ADMIN2_USERNAME = "terry.parker"
+ADMIN2_USERNAME = "Terry Parker"
 ADMIN2_PASSWORD = "TerryFlies2026!"
 
 # Color codes for output

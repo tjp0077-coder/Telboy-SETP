@@ -135,7 +135,7 @@ export default function ContactScreen() {
           testID="contact-name"
         />
 
-        <Text style={styles.label}>Email (optional)</Text>
+        <Text style={styles.label}>Email (if you wish to have a response)</Text>
         <TextInput
           style={styles.input}
           placeholder="jane@example.com"

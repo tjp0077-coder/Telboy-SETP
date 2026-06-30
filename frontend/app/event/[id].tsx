@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
   View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  TextInput, KeyboardAvoidingView, Platform, Alert, Modal,
+  TextInput, KeyboardAvoidingView, Platform, Alert, Modal, Linking,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -34,6 +34,12 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 const CATEGORIES = ["session", "break", "meal", "social", "tour"];
+
+const buildMapsSearchUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+const isTechnicalTalk = (event: SessionItem | null) =>
+  !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -164,6 +170,22 @@ export default function EventDetail() {
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
+  const askSpeaker = isTechnicalTalk(event);
+  const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
+
+  const openLocationMap = async () => {
+    const url = event.maps_url || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to open map", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Please try again in a few moments.");
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -221,10 +243,32 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            <View style={styles.metaRow}>
+            <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{event.location}</Text>
-            </View>
+            </Pressable>
+
+            {askSpeaker && hasSpeakerBios ? (
+              <Pressable
+                onPress={() => router.push(`/speaker-bios/${event.id}`)}
+                style={styles.speakerBtn}
+                testID="event-speaker-bios"
+              >
+                <Ionicons name="people-outline" size={16} color={colors.brand} />
+                <Text style={styles.speakerBtnText}>Speaker Bio's</Text>
+              </Pressable>
+            ) : null}
+
+            {askSpeaker ? (
+              <Pressable
+                onPress={() => router.push({ pathname: "/questions", params: { event_id: event.id, event_title: event.title } })}
+                style={styles.askBtn}
+                testID="event-ask-speaker"
+              >
+                <Ionicons name="mic-outline" size={16} color={colors.success} />
+                <Text style={styles.askBtnText}>Ask the speaker</Text>
+              </Pressable>
+            ) : null}
 
             {event.description ? (
               <>
@@ -456,6 +500,30 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.sm },
   metaText: { fontSize: 14, color: colors.onSurfaceMuted },
   coachMetaText: { fontSize: 14, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
+  askBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: "#EAF5EE",
+  },
+  askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
+  speakerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: spacing.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    backgroundColor: "#E8ECF2",
+  },
+  speakerBtnText: { fontSize: 12, fontWeight: "800", color: colors.brand },
 
   sectionTitle: {
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: colors.onSurfaceMuted,

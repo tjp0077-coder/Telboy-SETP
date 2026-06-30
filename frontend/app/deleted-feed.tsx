@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api, FeedItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 
 const PRIORITY_STYLE: Record<string, { bg: string; tint: string; label: string }> = {
@@ -99,7 +100,7 @@ export default function DeletedFeedScreen() {
         <FlatList
           data={items}
           keyExtractor={(item) => `${item.kind}-${item.id}`}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 120 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -143,6 +144,8 @@ export default function DeletedFeedScreen() {
                       <Text style={styles.actionGhostText}>Permanent delete</Text>
                     </Pressable>
                   </View>
+
+                    <AdminFooterNav />
                 </View>
               );
             }

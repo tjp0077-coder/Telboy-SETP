@@ -32,6 +32,12 @@ const CATEGORY_COLOR: Record<string, string> = {
   tour: colors.success,
 };
 
+const buildMapsSearchUrl = (query: string) =>
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+const isTechnicalTalk = (item: SessionItem) =>
+  item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
+
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -75,6 +81,20 @@ export default function ScheduleListScreen() {
       await Linking.openURL(LANDING_FEE_LINK);
     } catch {
       Alert.alert("Unable to open payment link", "Please try again in a few moments.");
+    }
+  }, []);
+
+  const openLocationMap = useCallback(async (location: string, title?: string, mapsUrl?: string | null) => {
+    const url = mapsUrl || buildMapsSearchUrl(`${location}${title ? ` ${title}` : ""}`.trim());
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to open map", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Please try again in a few moments.");
     }
   }, []);
 
@@ -165,6 +185,8 @@ export default function ScheduleListScreen() {
           const fav = favorites.has(item.id);
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
+          const askSpeaker = isTechnicalTalk(item);
+          const hasSpeakerBios = (item.speakerBios || []).length > 0 || !!item.speakerId;
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
             <Pressable
@@ -181,10 +203,18 @@ export default function ScheduleListScreen() {
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <View style={styles.cardMeta}>
+                <Pressable
+                  onPress={(e) => {
+                    e.stopPropagation?.();
+                      openLocationMap(item.location, item.title, item.maps_url);
+                  }}
+                  hitSlop={8}
+                  style={styles.cardMeta}
+                  testID={`session-map-${item.id}`}
+                >
                   <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
-                </View>
+                </Pressable>
                 {coachMeta ? (
                   <View style={styles.cardMeta}>
                     <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
@@ -193,6 +223,34 @@ export default function ScheduleListScreen() {
                 ) : null}
                 {item.description ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
+                ) : null}
+                {askSpeaker && hasSpeakerBios ? (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      router.push(`/speaker-bios/${item.id}`);
+                    }}
+                    style={styles.speakerBtn}
+                    hitSlop={8}
+                    testID={`speaker-bio-link-${item.id}`}
+                  >
+                    <Ionicons name="people-outline" size={14} color={colors.brand} />
+                    <Text style={styles.speakerBtnText}>Speaker Bio's</Text>
+                  </Pressable>
+                ) : null}
+                {askSpeaker ? (
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      router.push({ pathname: "/questions", params: { event_id: item.id, event_title: item.title } });
+                    }}
+                    style={styles.askBtn}
+                    hitSlop={8}
+                    testID={`ask-speaker-${item.id}`}
+                  >
+                    <Ionicons name="mic-outline" size={14} color={colors.success} />
+                    <Text style={styles.askBtnText}>Ask the speaker</Text>
+                  </Pressable>
                 ) : null}
               </View>
               <Pressable
@@ -249,6 +307,30 @@ const styles = StyleSheet.create({
   cardMetaText: { fontSize: 12, color: colors.onSurfaceMuted },
   coachMetaText: { fontSize: 12, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
   cardDesc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 17 },
+  askBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: "#EAF5EE",
+  },
+  askBtnText: { fontSize: 12, fontWeight: "800", color: colors.success },
+  speakerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    marginTop: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.pill,
+    backgroundColor: "#E8ECF2",
+  },
+  speakerBtnText: { fontSize: 12, fontWeight: "800", color: colors.brand },
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: colors.onSurfaceMuted },
