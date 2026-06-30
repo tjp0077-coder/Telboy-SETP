@@ -33,7 +33,7 @@ export default function RootLayout() {
           <FavoritesProvider>
             <UnreadProvider>
               <StatusBar style="light" />
-              <Stack screenOptions={{ headerShown: false }}>
+              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "blue" } }}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="login" options={{ presentation: "modal" }} />
                 <Stack.Screen name="event/[id]" />
