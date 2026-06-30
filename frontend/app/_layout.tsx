@@ -27,7 +27,7 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#1A2841" }}>
       <SafeAreaProvider>
         <AuthProvider>
           <FavoritesProvider>
