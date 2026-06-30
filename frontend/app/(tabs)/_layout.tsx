@@ -12,7 +12,7 @@ function CustomTabBar(props) {
   return (
     <SafeAreaView
       edges={["bottom"]}
-      style={{ backgroundColor: "#0F1A2E" }}
+      style={{ backgroundColor: "red" }}
     >
       <BottomTabBar
         {...props}
