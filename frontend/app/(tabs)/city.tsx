@@ -5,6 +5,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/api";
 import { colors, spacing, radius, shadow } from "@/src/theme";
@@ -32,6 +33,7 @@ const TRANSPORT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 
 export default function CityGuideScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -56,7 +58,7 @@ export default function CityGuideScreen() {
       <ScreenBg />
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={{ paddingBottom: 120 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + spacing.lg }}
         showsVerticalScrollIndicator={false}
       >
       {/* Hero */}

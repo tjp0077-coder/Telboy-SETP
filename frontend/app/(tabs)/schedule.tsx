@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, Pressable, ActivityIndicator,
-  RefreshControl, FlatList, Dimensions, Platform, Linking, Alert,
+  RefreshControl, FlatList, Dimensions, Linking, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api, SessionItem } from "@/src/api";
@@ -40,6 +41,7 @@ const isTechnicalTalk = (item: SessionItem) =>
 
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const [items, setItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -108,7 +110,6 @@ export default function ScheduleListScreen() {
 
   const winH = Dimensions.get("window").height;
   const winW = Dimensions.get("window").width;
-  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
   const heroHeight = Math.min((winW - spacing.lg * 2) / 2, winH * 0.28);
 
   return (
@@ -118,7 +119,7 @@ export default function ScheduleListScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: tabBarHeight + 24 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: tabBarHeight + spacing.lg }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

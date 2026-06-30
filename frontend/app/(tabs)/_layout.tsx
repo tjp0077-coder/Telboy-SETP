@@ -1,67 +1,45 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
+import { Platform, StyleSheet } from "react-native";
 import { useUnread } from "@/src/UnreadContext";
-import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
-/**
- * CustomTabBar — simple wrapper, safe area handled by outer SafeAreaView at layout level
- */
-function CustomTabBar(props) {
+export default function TabLayout() {
+  const { unreadCount } = useUnread();
+
   return (
-    <BottomTabBar
-      {...props}
-      safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }}
-      style={[
-        props.style,
-        {
+    <Tabs
+      sceneContainerStyle={{ backgroundColor: "#1A2841" }}
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false,
+        tabBarActiveTintColor: "#999999",
+        tabBarInactiveTintColor: "#666666",
+        tabBarStyle: {
           backgroundColor: "#0F1A2E",
           borderTopColor: "rgba(245,240,230,0.1)",
           borderTopWidth: StyleSheet.hairlineWidth,
           paddingTop: 8,
-          paddingBottom: 0,
           paddingHorizontal: 0,
           margin: 0,
-          height: 60,
+          ...Platform.select({
+            web: {
+              height: "calc(60px + env(safe-area-inset-bottom, 0px))",
+              paddingBottom: "env(safe-area-inset-bottom, 0px)",
+            },
+            default: {
+              height: 60,
+              paddingBottom: 0,
+            },
+          }),
         },
-      ]}
-    />
-  );
-}
-
-export default function TabLayout() {
-  const insets = useSafeAreaInsets();
-  const { unreadCount } = useUnread();
-  const bottomSafeArea = Math.max(insets.bottom, 10);
-  const tabBarHeight = 60 + bottomSafeArea; // Tab height + safe area
-
-  return (
-    <SafeAreaView
-      edges={["bottom"]}
-      style={{ flex: 1, backgroundColor: "#0F1A2E", margin: 0, padding: 0 }}
+        tabBarItemStyle: {
+          paddingVertical: 0,
+        },
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
+      }}
     >
-      <Tabs
-        sceneContainerStyle={{ backgroundColor: "#1A2841" }}
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-          tabBarActiveTintColor: "#999999",
-          tabBarInactiveTintColor: "#666666",
-          tabBar: (props) => <CustomTabBar {...props} />,
-          contentStyle: {
-            paddingBottom: tabBarHeight,
-            backgroundColor: "#1A2841",
-            marginBottom: 0,
-          },
-          tabBarItemStyle: {
-            paddingVertical: 0,
-          },
-          tabBarIconStyle: {
-            marginBottom: 0,
-          },
-        }}
-      >
       <Tabs.Screen
         name="index"
         options={{
@@ -111,8 +89,7 @@ export default function TabLayout() {
           tabBarTestID: "tab-profile",
           tabBarIcon: ({ color }) => <Ionicons name="person-circle" size={28} color={color} />,
         }}
-        />
-      </Tabs>
-    </SafeAreaView>
+      />
+    </Tabs>
   );
 }
