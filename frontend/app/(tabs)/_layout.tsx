@@ -1,25 +1,19 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Platform, StyleSheet, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { useUnread } from "@/src/UnreadContext";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
 /**
- * CustomTabBar — disables BottomTabBar's internal safe area handling and fills it ourselves
+ * CustomTabBar — uses SafeAreaView edges={['bottom']} to force dark background into safe area
  */
 function CustomTabBar(props) {
-  const insets = useSafeAreaInsets();
-
   return (
-    <View
-      style={{
-        backgroundColor: "#0F1A2E",
-        width: "100%",
-        flexDirection: "column",
-      }}
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{ backgroundColor: "#0F1A2E" }}
     >
-      {/* Pass safeAreaInsets bottom:0 to prevent BottomTabBar adding its own padding */}
       <BottomTabBar
         {...props}
         safeAreaInsets={{ bottom: 0 }}
@@ -38,15 +32,7 @@ function CustomTabBar(props) {
           },
         ]}
       />
-      {/* We own the safe area — guaranteed dark fill to home indicator */}
-      <View
-        style={{
-          backgroundColor: "#0F1A2E",
-          width: "100%",
-          height: insets.bottom,
-        }}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
