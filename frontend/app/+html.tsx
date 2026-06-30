@@ -77,7 +77,6 @@ export default function Root({ children }: PropsWithChildren) {
                 flex-direction: column;
                 padding-top: var(--sat);
                 padding-right: var(--sar);
-                padding-bottom: var(--sab);
                 padding-left: var(--sal);
               }
               body > div:first-child {
