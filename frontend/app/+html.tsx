@@ -83,16 +83,6 @@ export default function Root({ children }: PropsWithChildren) {
                 height: 100dvh !important;
                 background-color: #1A2841 !important;
               }
-              [role="tablist"] {
-                position: fixed !important;
-                bottom: 0 !important;
-                left: 0 !important;
-                right: 0 !important;
-                background-color: #0F1A2E !important;
-                z-index: 999 !important;
-              }
-              [role="tablist"] [role="tab"] * { overflow: visible !important; }
-              [role="heading"], [role="heading"] * { overflow: visible !important; }
             `,
           }}
         />
