@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, Pressable, ActivityIndicator,
-  RefreshControl, FlatList, Dimensions, Platform, Linking, Alert,
+  RefreshControl, FlatList, Dimensions, Linking, Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api, SessionItem } from "@/src/api";
@@ -16,6 +17,7 @@ const HERO = require("@/assets/images/brand/hero.jpg");
 const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
+const COMMITTEE_CARD_DATE = "2026-07-26";
 
 const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   session: "document-text",
@@ -32,14 +34,12 @@ const CATEGORY_COLOR: Record<string, string> = {
   tour: colors.success,
 };
 
-const buildMapsSearchUrl = (query: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-
 const isTechnicalTalk = (item: SessionItem) =>
   item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
 
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const [items, setItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,20 +84,6 @@ export default function ScheduleListScreen() {
     }
   }, []);
 
-  const openLocationMap = useCallback(async (location: string, title?: string, mapsUrl?: string | null) => {
-    const url = mapsUrl || buildMapsSearchUrl(`${location}${title ? ` ${title}` : ""}`.trim());
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        Alert.alert("Unable to open map", "Please try again in a few moments.");
-        return;
-      }
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Unable to open map", "Please try again in a few moments.");
-    }
-  }, []);
-
   if (loading) {
     return (
       <View style={[styles.center, { backgroundColor: colors.surface }]}>
@@ -108,7 +94,6 @@ export default function ScheduleListScreen() {
 
   const winH = Dimensions.get("window").height;
   const winW = Dimensions.get("window").width;
-  const tabBarHeight = 72 + Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
   const heroHeight = Math.min((winW - spacing.lg * 2) / 2, winH * 0.28);
 
   return (
@@ -118,7 +103,7 @@ export default function ScheduleListScreen() {
       <FlatList
         data={filtered}
         keyExtractor={(it) => it.id}
-        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: tabBarHeight + 24 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: tabBarHeight + spacing.lg }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -161,25 +146,35 @@ export default function ScheduleListScreen() {
           </View>
         }
         ListFooterComponent={
-          activeDate === LANDING_FEE_DATE ? (
-            <View style={styles.paymentWrap} testID="landing-fee-card">
-              <Pressable
-                onPress={openLandingFeePayment}
-                style={[styles.paymentHeader, shadow.card]}
-                testID="pay-landing-fee-image"
-              >
-                <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
-              </Pressable>
+          <>
+            {activeDate === COMMITTEE_CARD_DATE ? (
+              <View style={[styles.committeeCard, styles.committeeCardFill]} testID="meet-committee-card">
+                <View style={styles.committeeTitleRow}>
+                  <Text style={styles.committeeTitle}>Meet the Committee</Text>
+                  <Text style={styles.committeeTbc}>TBC ...</Text>
+                </View>
+              </View>
+            ) : null}
+            {activeDate === LANDING_FEE_DATE ? (
+              <View style={styles.paymentWrap} testID="landing-fee-card">
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentHeader, shadow.card]}
+                  testID="pay-landing-fee-image"
+                >
+                  <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
+                </Pressable>
 
-              <Pressable
-                onPress={openLandingFeePayment}
-                style={[styles.paymentBtn, shadow.card]}
-                testID="pay-landing-fee-single"
-              >
-                <Text style={styles.paymentBtnTitle}>Pay Historic Scotland £8.50 landing fee</Text>
-              </Pressable>
-            </View>
-          ) : null
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentBtn, shadow.card]}
+                  testID="pay-landing-fee-single"
+                >
+                  <Text style={styles.paymentBtnTitle}>Pay Historic Scotland £8.50 landing fee</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </>
         }
         renderItem={({ item }) => {
           const fav = favorites.has(item.id);
@@ -203,18 +198,10 @@ export default function ScheduleListScreen() {
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                      openLocationMap(item.location, item.title, item.maps_url);
-                  }}
-                  hitSlop={8}
-                  style={styles.cardMeta}
-                  testID={`session-map-${item.id}`}
-                >
+                <View style={styles.cardMeta}>
                   <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
-                </Pressable>
+                </View>
                 {coachMeta ? (
                   <View style={styles.cardMeta}>
                     <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
@@ -338,6 +325,37 @@ const styles = StyleSheet.create({
   paymentWrap: {
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  committeeCard: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: "rgba(15,26,46,0.35)",
+  },
+  committeeCardFill: {
+    minHeight: 360,
+  },
+  committeeTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  committeeTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "Georgia",
+  },
+  committeeTbc: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.9,
+    fontFamily: "Georgia",
   },
   paymentHeader: {
     backgroundColor: colors.surfaceSecondary,

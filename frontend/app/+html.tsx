@@ -18,7 +18,7 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta
           name="viewport"
-          content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+          content="width=device-width, initial-scale=1, viewport-fit=cover"
         />
 
         {/* ── PWA metadata ─────────────────────────────────────────── */}
@@ -53,10 +53,58 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body, #root { background-color: #1A2841; }
-              body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
-              [role="tablist"] [role="tab"] * { overflow: visible !important; }
-              [role="heading"], [role="heading"] * { overflow: visible !important; }
+              html, body {
+                margin: 0;
+                padding: 0;
+                background-color: #0F1A2E;
+                width: 100%;
+                height: 100%;
+                height: 100dvh;
+                overflow: hidden;
+                -webkit-tap-highlight-color: transparent;
+              }
+              #root {
+                background-color: #0F1A2E;
+                width: 100%;
+                height: 100%;
+                height: 100dvh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+              }
+              #app {
+                background-color: #0F1A2E;
+                width: 100%;
+                height: 100%;
+                height: 100dvh;
+              }
+              body > div:first-child {
+                position: fixed !important;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 100% !important;
+                height: 100% !important;
+                height: 100dvh !important;
+                background-color: #0F1A2E !important;
+              }
+            `,
+          }}
+        />
+
+        {/* ── iOS PWA: early script to disable scroll restoration ─────── */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                if ('scrollRestoration' in history) {
+                  history.scrollRestoration = 'manual';
+                }
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+              })();
             `,
           }}
         />
@@ -86,15 +134,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body
-        style={{
-          margin: 0,
-          height: "100%",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "#0F1A2E" }}>
         {children}
       </body>
     </html>

@@ -4,6 +4,7 @@ import {
   RefreshControl, TextInput, KeyboardAvoidingView, Platform, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { api, FeedItem } from "@/src/api";
@@ -22,6 +23,7 @@ type Filter = "all" | "announcements" | "events";
 
 export default function MessagesScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const { auth } = useAuth();
   const { markAllRead, refresh: refreshUnread } = useUnread();
@@ -164,7 +166,7 @@ export default function MessagesScreen() {
         <FlatList
           data={filtered}
           keyExtractor={(m) => `${m.kind}-${m.id}`}
-          contentContainerStyle={{ padding: spacing.lg, paddingBottom: 140 }}
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: tabBarHeight + spacing.xl }}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -264,7 +266,7 @@ export default function MessagesScreen() {
       {auth.username ? (
         <Pressable
           onPress={() => setComposeOpen(true)}
-          style={[styles.fab, { bottom: insets.bottom + 90 }]}
+          style={[styles.fab, { bottom: tabBarHeight + spacing.md }]}
           testID="messages-compose-fab"
         >
           <Ionicons name="create" size={24} color="#fff" />

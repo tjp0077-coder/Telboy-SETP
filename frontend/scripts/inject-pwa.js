@@ -21,6 +21,7 @@ const INDEX = path.join(DIST, "index.html");
 const MARKER = "<!-- pwa:injected -->";
 
 const HEAD_BLOCK = `${MARKER}
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="Official delegate companion app for the SETP European Symposium, Edinburgh — schedule, comms, city guide." />
     <meta name="theme-color" content="#1A2841" />
     <link rel="manifest" href="/manifest.webmanifest" />
@@ -31,6 +32,19 @@ const HEAD_BLOCK = `${MARKER}
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="icon" href="/icons/icon-512.png" type="image/png" sizes="512x512" />
+    <style>
+      html, body, #root, #app {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        background-color: #0F1A2E;
+      }
+      body > div:first-child {
+        background-color: #0F1A2E !important;
+      }
+    </style>
     <script>
       (function () {
         if (!('serviceWorker' in navigator)) return;

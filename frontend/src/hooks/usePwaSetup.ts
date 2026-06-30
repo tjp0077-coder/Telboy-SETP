@@ -76,6 +76,39 @@ export function usePwaSetup() {
         "width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover";
     }
 
+    // ── iOS PWA scroll-reset fix ─────────────────────────────────────
+    // iOS Safari restores document.scrollTop even on a position:fixed body,
+    // which shifts the fixed root layer upward on back navigation. Fix:
+    //   1. Disable scroll restoration so the browser never saves/restores it.
+    //   2. Hard-reset all scroll anchors on every navigation event.
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
+    const resetScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    resetScroll();
+
+    window.addEventListener("pageshow", resetScroll);
+    window.addEventListener("hashchange", resetScroll);
+
+    // On visibility change (tab re-focus, app re-open), recalc safe-area vars.
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        resetScroll();
+        // iOS: re-query safe-area insets in case they changed.
+        const root = document.documentElement;
+        root.style.setProperty("--sat", `env(safe-area-inset-top, 0px)`);
+        root.style.setProperty("--sar", `env(safe-area-inset-right, 0px)`);
+        root.style.setProperty("--sab", `env(safe-area-inset-bottom, 0px)`);
+        root.style.setProperty("--sal", `env(safe-area-inset-left, 0px)`);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     // Service worker registration (only on secure origins or localhost)
     const isSecure =
       window.location.protocol === "https:" ||
@@ -91,5 +124,11 @@ export function usePwaSetup() {
           console.warn("[SETP-PWA] SW registration failed:", err);
         });
     }
+
+    return () => {
+      window.removeEventListener("pageshow", resetScroll);
+      window.removeEventListener("hashchange", resetScroll);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, []);
 }

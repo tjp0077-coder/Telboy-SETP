@@ -4,6 +4,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api, SessionItem } from "@/src/api";
@@ -14,6 +15,7 @@ import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const router = useRouter();
   const { auth, logout } = useAuth();
   const { favorites, toggle } = useFavorites();
@@ -35,7 +37,7 @@ export default function ProfileScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]} testID="profile-screen">
       <ScreenBg />
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + spacing.xl }}
         showsVerticalScrollIndicator={false}
       >
       <View style={styles.headerWrap}>
