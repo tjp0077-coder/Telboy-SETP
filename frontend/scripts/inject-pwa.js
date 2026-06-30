@@ -32,6 +32,19 @@ const HEAD_BLOCK = `${MARKER}
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="icon" href="/icons/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="icon" href="/icons/icon-512.png" type="image/png" sizes="512x512" />
+    <style>
+      html, body, #root, #app {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
+        background-color: #0F1A2E;
+      }
+      body > div:first-child {
+        background-color: #0F1A2E !important;
+      }
+    </style>
     <script>
       (function () {
         if (!('serviceWorker' in navigator)) return;

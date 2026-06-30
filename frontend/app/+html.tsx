@@ -56,7 +56,7 @@ export default function Root({ children }: PropsWithChildren) {
               html, body {
                 margin: 0;
                 padding: 0;
-                background-color: #1A2841;
+                background-color: #0F1A2E;
                 width: 100%;
                 height: 100%;
                 height: 100dvh;
@@ -64,13 +64,19 @@ export default function Root({ children }: PropsWithChildren) {
                 -webkit-tap-highlight-color: transparent;
               }
               #root {
-                background-color: #1A2841;
+                background-color: #0F1A2E;
                 width: 100%;
                 height: 100%;
                 height: 100dvh;
                 overflow: hidden;
                 display: flex;
                 flex-direction: column;
+              }
+              #app {
+                background-color: #0F1A2E;
+                width: 100%;
+                height: 100%;
+                height: 100dvh;
               }
               body > div:first-child {
                 position: fixed !important;
@@ -81,7 +87,7 @@ export default function Root({ children }: PropsWithChildren) {
                 width: 100% !important;
                 height: 100% !important;
                 height: 100dvh !important;
-                background-color: #1A2841 !important;
+                background-color: #0F1A2E !important;
               }
             `,
           }}
@@ -128,7 +134,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "#1A2841" }}>
+      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "#0F1A2E" }}>
         {children}
       </body>
     </html>
