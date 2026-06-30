@@ -368,7 +368,7 @@ const styles = StyleSheet.create({
     width: 44, height: 44, borderRadius: 22, backgroundColor: "#E8ECF2",
     alignItems: "center", justifyContent: "center", marginBottom: spacing.md,
   },
-  introTitle: { fontSize: 22, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 28 },
+  introTitle: { fontSize: 22, fontWeight: "700", color: "#fff", fontFamily: "Georgia", lineHeight: 28 },
   introText: { fontSize: 13, color: "#fff", marginTop: spacing.xs, lineHeight: 18 },
 
   selectedTalk: {
