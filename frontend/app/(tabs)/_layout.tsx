@@ -6,50 +6,46 @@ import { useUnread } from "@/src/UnreadContext";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
 /**
- * CustomTabBar — wraps the default BottomTabBar and applies safe area inset padding directly
+ * CustomTabBar — wraps the default BottomTabBar and fills safe area with dark background
  */
 function CustomTabBar(props) {
   const insets = useSafeAreaInsets();
   console.log("Safe area bottom inset:", insets.bottom);
   
   return (
-    <>
-      <View 
+    <View 
+      style={{
+        backgroundColor: "#0F1A2E",
+        width: "100%",
+      }}
+    >
+      {/* Tab bar icons and labels */}
+      <BottomTabBar
+        {...props}
+        style={[
+          props.style,
+          {
+            backgroundColor: "#0F1A2E",
+            borderTopColor: "rgba(245,240,230,0.1)",
+            borderTopWidth: StyleSheet.hairlineWidth,
+            paddingTop: 8,
+            paddingBottom: 8,
+            paddingHorizontal: 0,
+            marginBottom: 0,
+            marginHorizontal: 0,
+            height: 60,
+          },
+        ]}
+      />
+      {/* Safe area filler — solid dark bar extends to home indicator */}
+      <View
         style={{
           backgroundColor: "#0F1A2E",
           width: "100%",
-          overflow: "hidden",
+          height: insets.bottom,
         }}
-      >
-        <BottomTabBar
-          {...props}
-          style={[
-            props.style,
-            {
-              backgroundColor: "#0F1A2E",
-              borderTopColor: "rgba(245,240,230,0.1)",
-              borderTopWidth: StyleSheet.hairlineWidth,
-              paddingTop: 8,
-              paddingBottom: 8,
-              paddingHorizontal: 0,
-              marginBottom: 0,
-              marginHorizontal: 0,
-              height: 60,
-            },
-          ]}
-        />
-      </View>
-      {/* Explicit safe area fill */}
-      {insets.bottom > 0 && (
-        <View
-          style={{
-            backgroundColor: "#0F1A2E",
-            width: "100%",
-            height: insets.bottom,
-          }}
-        />
-      )}
-    </>
+      />
+    </View>
   );
 }
 
@@ -70,6 +66,7 @@ export default function TabLayout() {
         contentStyle: {
           paddingBottom: tabBarHeight,
           backgroundColor: "#1A2841",
+          marginBottom: 0,
         },
         tabBarItemStyle: {
           paddingVertical: 0,
