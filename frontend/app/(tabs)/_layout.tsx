@@ -6,22 +6,23 @@ import { useUnread } from "@/src/UnreadContext";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
 /**
- * CustomTabBar — wraps the default BottomTabBar and fills safe area with dark background
+ * CustomTabBar — disables BottomTabBar's internal safe area handling and fills it ourselves
  */
 function CustomTabBar(props) {
   const insets = useSafeAreaInsets();
-  console.log("Safe area bottom inset:", insets.bottom);
-  
+
   return (
-    <View 
+    <View
       style={{
         backgroundColor: "#0F1A2E",
         width: "100%",
+        flexDirection: "column",
       }}
     >
-      {/* Tab bar icons and labels */}
+      {/* Pass safeAreaInsets bottom:0 to prevent BottomTabBar adding its own padding */}
       <BottomTabBar
         {...props}
+        safeAreaInsets={{ bottom: 0 }}
         style={[
           props.style,
           {
@@ -37,7 +38,7 @@ function CustomTabBar(props) {
           },
         ]}
       />
-      {/* Safe area filler — solid dark bar extends to home indicator */}
+      {/* We own the safe area — guaranteed dark fill to home indicator */}
       <View
         style={{
           backgroundColor: "#0F1A2E",
