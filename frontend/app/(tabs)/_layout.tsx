@@ -6,33 +6,28 @@ import { useUnread } from "@/src/UnreadContext";
 import { BottomTabBar } from "@react-navigation/bottom-tabs";
 
 /**
- * CustomTabBar — uses SafeAreaView edges={['bottom']} to force dark background into safe area
+ * CustomTabBar — simple wrapper, safe area handled by outer SafeAreaView at layout level
  */
 function CustomTabBar(props) {
   return (
-    <SafeAreaView
-      edges={["bottom"]}
-      style={{ backgroundColor: "red" }}
-    >
-      <BottomTabBar
-        {...props}
-        safeAreaInsets={{ bottom: 0 }}
-        style={[
-          props.style,
-          {
-            backgroundColor: "#0F1A2E",
-            borderTopColor: "rgba(245,240,230,0.1)",
-            borderTopWidth: StyleSheet.hairlineWidth,
-            paddingTop: 8,
-            paddingBottom: 8,
-            paddingHorizontal: 0,
-            marginBottom: 0,
-            marginHorizontal: 0,
-            height: 60,
-          },
-        ]}
-      />
-    </SafeAreaView>
+    <BottomTabBar
+      {...props}
+      safeAreaInsets={{ bottom: 0 }}
+      style={[
+        props.style,
+        {
+          backgroundColor: "#0F1A2E",
+          borderTopColor: "rgba(245,240,230,0.1)",
+          borderTopWidth: StyleSheet.hairlineWidth,
+          paddingTop: 8,
+          paddingBottom: 8,
+          paddingHorizontal: 0,
+          marginBottom: 0,
+          marginHorizontal: 0,
+          height: 60,
+        },
+      ]}
+    />
   );
 }
 
@@ -43,26 +38,30 @@ export default function TabLayout() {
   const tabBarHeight = 60 + bottomSafeArea; // Tab height + safe area
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarActiveTintColor: "#999999",
-        tabBarInactiveTintColor: "#666666",
-        tabBar: (props) => <CustomTabBar {...props} />,
-        contentStyle: {
-          paddingBottom: tabBarHeight,
-          backgroundColor: "#1A2841",
-          marginBottom: 0,
-        },
-        tabBarItemStyle: {
-          paddingVertical: 0,
-        },
-        tabBarIconStyle: {
-          marginBottom: 0,
-        },
-      }}
+    <SafeAreaView
+      edges={["bottom"]}
+      style={{ flex: 1, backgroundColor: "#0F1A2E" }}
     >
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+          tabBarActiveTintColor: "#999999",
+          tabBarInactiveTintColor: "#666666",
+          tabBar: (props) => <CustomTabBar {...props} />,
+          contentStyle: {
+            paddingBottom: tabBarHeight,
+            backgroundColor: "#1A2841",
+            marginBottom: 0,
+          },
+          tabBarItemStyle: {
+            paddingVertical: 0,
+          },
+          tabBarIconStyle: {
+            marginBottom: 0,
+          },
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{
@@ -112,7 +111,8 @@ export default function TabLayout() {
           tabBarTestID: "tab-profile",
           tabBarIcon: ({ color }) => <Ionicons name="person-circle" size={28} color={color} />,
         }}
-      />
-    </Tabs>
+        />
+      </Tabs>
+    </SafeAreaView>
   );
 }
