@@ -163,7 +163,9 @@ export default function Root({ children }: PropsWithChildren) {
       <body
         style={{
           margin: 0,
+          padding: 0,
           height: "100%",
+          backgroundColor: "#1A2841",
           overflow: "hidden",
           display: "flex",
           flexDirection: "column",
