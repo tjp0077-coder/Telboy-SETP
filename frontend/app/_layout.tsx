@@ -27,13 +27,13 @@ export default function RootLayout() {
   if (!loaded && !error) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "orange" }}>
-      <SafeAreaProvider style={{ flex: 1, backgroundColor: "magenta" }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: "#1A2841" }}>
+      <SafeAreaProvider>
         <AuthProvider>
           <FavoritesProvider>
             <UnreadProvider>
               <StatusBar style="light" />
-              <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "blue" } }}>
+              <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="(tabs)" />
                 <Stack.Screen name="login" options={{ presentation: "modal" }} />
                 <Stack.Screen name="event/[id]" />

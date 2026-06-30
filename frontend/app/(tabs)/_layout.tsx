@@ -39,10 +39,10 @@ export default function TabLayout() {
   return (
     <SafeAreaView
       edges={["bottom"]}
-      style={{ flex: 1, backgroundColor: "purple", margin: 0, padding: 0 }}
+      style={{ flex: 1, backgroundColor: "#0F1A2E", margin: 0, padding: 0 }}
     >
       <Tabs
-        sceneContainerStyle={{ backgroundColor: "hotpink" }}
+        sceneContainerStyle={{ backgroundColor: "#1A2841" }}
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
