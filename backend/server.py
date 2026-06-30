@@ -498,7 +498,7 @@ def normalize_question_record(doc: dict) -> dict:
 SEED_SCHEDULE = [
     # Sun 26 July - Registration day
     {"date": "2026-07-26", "day_label": "Sun 26 July", "time": "16:00", "end_time": "20:00",
-     "title": "Registration & Welcome Reception", "location": "Edinburgh Marriott Hotel",
+     "title": "Registration & Welcome Reception", "location": "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6",
      "description": "Collect delegate badges, welcome packs, and meet fellow attendees over drinks and canapés.",
      "category": "social"},
 
@@ -514,7 +514,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning networking and refreshments.", "category": "break"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:00", "title": "Partner's Tour",
-     "location": "Departs Marriott",
+     "location": "Departs https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6",
      "description": "Tour to Rosslyn Castle, The Kelpies, and Linlithgow Palace. Returns by 16:00.",
      "category": "tour"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:15", "title": "Technical Session 1 (Cont.)",
@@ -546,7 +546,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "09:55", "title": "Coffee Break",
      "location": "Ps&Gs", "description": "Morning refreshments.", "category": "break"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
-     "location": "Departs Marriott",
+     "location": "Departs https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6",
      "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
      "category": "tour"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
@@ -565,7 +565,7 @@ SEED_SCHEDULE = [
      "location": "Ps&Gs", "description": "End of day 2 technical sessions.", "category": "session"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "19:00", "end_time": "22:00",
      "title": "Royal Yacht Britannia Reception", "location": "Royal Yacht Britannia",
-     "description": "Reception sponsored by QinetiQ. Transport provided from Marriott.",
+     "description": "Reception sponsored by QinetiQ. Transport provided from https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6.",
      "coachTime": "18:30",
      "transportDetails": "6:30 pm - Coach leaves hotel",
      "category": "social"},
@@ -591,7 +591,7 @@ SEED_SCHEDULE = [
         "description": "Speaker presentation (Paul Beaver TBC).", "category": "session", "speakerId": "paul-beaver"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "19:00", "end_time": "23:00",
     "title": "Symposium Banquet", "location": "The Royal College of Physicians of Edinburgh",
-     "description": "Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from Marriott.",
+     "description": "Formal closing banquet with guest speaker Will Whitehorn. 10-minute walk or taxi from https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6.",
      "category": "social"},
 
     # Thu 30 July
@@ -779,7 +779,7 @@ async def seed_messages():
     welcome = {
         "id": str(uuid.uuid4()),
         "title": "Welcome to Edinburgh!",
-        "text": "Welcome to the SETP Test Pilot Symposium 2026. Registration opens Friday 25 July at the Marriott from 16:00. Safe travels!",
+        "text": "Welcome to the SETP Test Pilot Symposium 2026. Registration opens Friday 25 July at https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6 from 16:00. Safe travels!",
         "priority": "important",
         "author": "Dave Mackay",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -1827,7 +1827,7 @@ async def city_guide():
         "transport": [
             {"name": "Edinburgh Trams", "icon": "tram",
              "description": "Single line from Airport → York Place (city centre). Single ticket £1.80. Buy at platform machines or contactless tap (cap £4.80/day).",
-             "tip": "Tram from Edinburgh Airport to Marriott (Edinburgh Park) is fastest — ~10 min.",
+             "tip": "Tram from Edinburgh Airport to https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6 (Edinburgh Park) is fastest — ~10 min.",
              "url": "https://edinburghtrams.com"},
             {"name": "Lothian Buses", "icon": "bus",
              "description": "Extensive network. Single £1.80 (contactless capped at £4.80/day). Exact change cash. Download the 'Lothian Buses' app for live times.",
@@ -1840,7 +1840,7 @@ async def city_guide():
              "description": "Both operate in Edinburgh. Often cheaper than black cabs for short trips.",
              "tip": "Wait times at the airport can be 5–10 min — confirm pickup point."},
             {"name": "Walking", "icon": "walk",
-             "description": "Central Edinburgh is compact. Marriott → Royal Mile ≈ 25 min walk or 10 min taxi.",
+             "description": "Central Edinburgh is compact. https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6 → Royal Mile ≈ 25 min walk or 10 min taxi.",
              "tip": "Cobblestones! Wear comfortable shoes — the Royal Mile is steep in places."},
             {"name": "ScotRail", "icon": "train",
              "description": "Trains from Waverley & Haymarket stations to Glasgow, St Andrews, Highlands.",
@@ -1858,7 +1858,7 @@ async def city_guide():
             {"phrase": "Lift", "meaning": "Elevator"},
         ],
         "venues": [
-            {"name": "Courtyard by Marriott, Edinburgh", "address": "1 Morrison Link, Edinburgh EH3 8DN",
+            {"name": "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6", "address": "1 Morrison Link, Edinburgh EH3 8DN",
              "notes": "Symposium HQ. Close to Haymarket station and tram stop.",
              "maps_url": "https://maps.app.goo.gl/5adde7ReZEmffHd17"},
             {"name": "Apex Grassmarket Hotel", "address": "31-35 Grassmarket, Edinburgh EH1 2HS",
@@ -1868,7 +1868,7 @@ async def city_guide():
              "notes": "Mon & Tue technical sessions. City centre — tram to 'York Place'.",
              "maps_url": PSGS_MAPS_URL},
             {"name": "Royal Yacht Britannia", "address": "Ocean Terminal, Leith, Edinburgh EH6 6JJ",
-             "notes": "Tue evening reception. Transport provided from Marriott.",
+             "notes": "Tue evening reception. Transport provided from https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6.",
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},
             {"name": "The Royal College of Physicians of Edinburgh", "address": "9 Queen Street, Edinburgh EH2 1JQ",
              "notes": "Wed sessions & closing banquet. 10-min walk from Royal Mile.",
