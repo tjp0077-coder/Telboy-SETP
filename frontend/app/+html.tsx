@@ -60,19 +60,31 @@ export default function Root({ children }: PropsWithChildren) {
                 --sal: env(safe-area-inset-left, 0px);
               }
               html, body {
+                margin: 0;
+                padding: 0;
                 background-color: #1A2841;
                 height: 100%;
                 height: 100dvh;
-                overscroll-behavior: none;
+                overflow: hidden;
                 -webkit-tap-highlight-color: transparent;
               }
-              #root { background-color: #1A2841; }
+              #root {
+                background-color: #1A2841;
+                height: 100%;
+                height: 100dvh;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+                padding-top: var(--sat);
+                padding-right: var(--sar);
+                padding-bottom: var(--sab);
+                padding-left: var(--sal);
+              }
               body > div:first-child {
                 position: fixed !important;
                 top: 0; left: 0; right: 0; bottom: 0;
                 height: 100% !important;
                 height: 100dvh !important;
-                overscroll-behavior: none;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
@@ -80,56 +92,17 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
 
-        {/* ── Layout-stability: iOS scroll-reset + bfcache fix ─────── */}
+        {/* ── iOS PWA: early script to disable scroll restoration ─────── */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function () {
-                // ── 1. Disable browser scroll-position restoration immediately.
-                // iOS Safari restores document.scrollTop even on a position:fixed
-                // body, physically offsetting the fixed layer upward on back nav.
                 if ('scrollRestoration' in history) {
                   history.scrollRestoration = 'manual';
                 }
-
-                // ── 2. Hard-reset every scroll anchor to zero.
-                function resetScroll() {
-                  window.scrollTo(0, 0);
-                  document.documentElement.scrollTop = 0;
-                  document.body.scrollTop = 0;
-                }
-                resetScroll();
-
-                // ── 3. pageshow fires on bfcache restore (back button on iOS).
-                window.addEventListener('pageshow', function (e) {
-                  resetScroll();
-                  if (e.persisted) {
-                    // Extra reflow to unstick any cached paint position.
-                    var el = document.body;
-                    el.style.display = 'none';
-                    void el.offsetHeight;
-                    el.style.display = '';
-                    resetScroll();
-                  }
-                });
-
-                // ── 4. Also reset on hash/SPA route changes and tab re-focus.
-                window.addEventListener('hashchange', resetScroll);
-                document.addEventListener('visibilitychange', function () {
-                  if (document.visibilityState === 'visible') resetScroll();
-                });
-
-                // ── 5. Track visual-viewport height as --vvh.
-                // 100dvh alone is not stable across iOS navigations.
-                function setVvh() {
-                  var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-                  document.documentElement.style.setProperty('--vvh', h + 'px');
-                }
-                setVvh();
-                if (window.visualViewport) {
-                  window.visualViewport.addEventListener('resize', setVvh);
-                }
-                window.addEventListener('resize', setVvh);
+                window.scrollTo(0, 0);
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
               })();
             `,
           }}
@@ -160,17 +133,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body
-        style={{
-          margin: 0,
-          padding: 0,
-          height: "100%",
-          backgroundColor: "#1A2841",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "#1A2841" }}>
         {children}
       </body>
     </html>

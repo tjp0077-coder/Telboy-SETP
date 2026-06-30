@@ -92,34 +92,20 @@ export function usePwaSetup() {
     };
     resetScroll();
 
-    const setVvh = () => {
-      const h = window.visualViewport
-        ? window.visualViewport.height
-        : window.innerHeight;
-      document.documentElement.style.setProperty("--vvh", `${h}px`);
-    };
-    setVvh();
-    if (window.visualViewport) {
-      window.visualViewport.addEventListener("resize", setVvh);
-    }
-    window.addEventListener("resize", setVvh);
-
-    // pageshow: bfcache restore (back button) — reset scroll + force reflow.
-    const onPageShow = (e: PageTransitionEvent) => {
-      resetScroll();
-      if (e.persisted) {
-        document.body.style.display = "none";
-        void document.body.offsetHeight;
-        document.body.style.display = "";
-        resetScroll();
-      }
-    };
-    window.addEventListener("pageshow", onPageShow);
-
-    // Hash changes = SPA route changes; visibilitychange = app re-focus.
+    window.addEventListener("pageshow", resetScroll);
     window.addEventListener("hashchange", resetScroll);
+
+    // On visibility change (tab re-focus, app re-open), recalc safe-area vars.
     const onVisibility = () => {
-      if (document.visibilityState === "visible") resetScroll();
+      if (document.visibilityState === "visible") {
+        resetScroll();
+        // iOS: re-query safe-area insets in case they changed.
+        const root = document.documentElement;
+        root.style.setProperty("--sat", `env(safe-area-inset-top, 0px)`);
+        root.style.setProperty("--sar", `env(safe-area-inset-right, 0px)`);
+        root.style.setProperty("--sab", `env(safe-area-inset-bottom, 0px)`);
+        root.style.setProperty("--sal", `env(safe-area-inset-left, 0px)`);
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 
@@ -140,11 +126,7 @@ export function usePwaSetup() {
     }
 
     return () => {
-      if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", setVvh);
-      }
-      window.removeEventListener("resize", setVvh);
-      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("pageshow", resetScroll);
       window.removeEventListener("hashchange", resetScroll);
       document.removeEventListener("visibilitychange", onVisibility);
     };
