@@ -1858,7 +1858,7 @@ async def city_guide():
             {"phrase": "Lift", "meaning": "Elevator"},
         ],
         "venues": [
-            {"name": "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6", "address": "1 Morrison Link, Edinburgh EH3 8DN",
+            {"name": "Courtyard by Marriott Edinburgh", "address": "1 – 3 Baxter's Pl, Edinburgh EH1 3AF",
              "notes": "Symposium HQ. Close to Haymarket station and tram stop.",
              "maps_url": "https://maps.app.goo.gl/5adde7ReZEmffHd17"},
             {"name": "Apex Grassmarket Hotel", "address": "31-35 Grassmarket, Edinburgh EH1 2HS",
