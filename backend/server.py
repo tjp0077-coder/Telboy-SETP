@@ -48,6 +48,13 @@ RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip(
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
+PSGS_MAPS_URL = "https://maps.app.goo.gl/5fqn1CRK6T7GwFts7"
+LOCATION_MAPS_URLS = {
+    "forth boat tours": FORTH_BOAT_TOURS_MAPS_URL,
+    "ps&gs": PSGS_MAPS_URL,
+    "st paul's & st george's (ps&gs)": PSGS_MAPS_URL,
+    "st paul's & st george's church (ps&gs)": PSGS_MAPS_URL,
+}
 
 if not RESEND_CONTACT_RECIPIENT:
     raise RuntimeError("RESEND_CONTACT_RECIPIENT must be set.")
@@ -108,9 +115,11 @@ def decode_token(token: str) -> dict:
 def normalize_session_maps_url(session: dict) -> dict:
     if not isinstance(session, dict):
         return session
-    if session.get("title") == "Technical Boat Tour" and session.get("location") == "Forth Boat Tours":
+    location_key = (session.get("location") or "").strip().lower()
+    maps_url = LOCATION_MAPS_URLS.get(location_key)
+    if maps_url and not session.get("maps_url"):
         session = dict(session)
-        session["maps_url"] = session.get("maps_url") or FORTH_BOAT_TOURS_MAPS_URL
+        session["maps_url"] = maps_url
     return session
 
 
@@ -1857,7 +1866,7 @@ async def city_guide():
              "maps_url": "https://www.google.com/maps/search/Apex+Grassmarket+Hotel+Edinburgh"},
             {"name": "St Paul's & St George's Church (Ps&Gs)", "address": "10 York Pl, Edinburgh EH1 3EP",
              "notes": "Mon & Tue technical sessions. City centre — tram to 'York Place'.",
-             "maps_url": "https://www.google.com/maps/search/St+Pauls+and+St+Georges+Edinburgh"},
+             "maps_url": PSGS_MAPS_URL},
             {"name": "Royal Yacht Britannia", "address": "Ocean Terminal, Leith, Edinburgh EH6 6JJ",
              "notes": "Tue evening reception. Transport provided from Marriott.",
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},

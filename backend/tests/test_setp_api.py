@@ -49,6 +49,21 @@ class TestPublic:
         actual = [(i["date"], i["time"]) for i in items]
         assert actual == sorted_keys
 
+    def test_psgs_events_on_27th_and_28th_use_updated_maps_url(self, s):
+        r = s.get(f"{API}/schedule")
+        assert r.status_code == 200
+        items = r.json()
+        psgs_events = [
+            item for item in items
+            if item["date"] in {"2026-07-27", "2026-07-28"}
+            and "ps&gs" in (item.get("location") or "").lower()
+        ]
+        assert psgs_events, "Expected Ps&Gs events on 27th and 28th"
+        assert all(
+            item.get("maps_url") == "https://maps.app.goo.gl/5fqn1CRK6T7GwFts7"
+            for item in psgs_events
+        )
+
     def test_messages_seeded_welcome(self, s):
         r = s.get(f"{API}/messages")
         assert r.status_code == 200
