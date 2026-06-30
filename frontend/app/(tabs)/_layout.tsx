@@ -7,8 +7,8 @@ import { useUnread } from "@/src/UnreadContext";
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
   const { unreadCount } = useUnread();
-  const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
-  const tabHeight = 64 + bottomPad;
+  const bottomSafeArea = Math.max(insets.bottom, 8);
+  const tabHeight = 64 + bottomSafeArea;
 
   return (
     <Tabs
@@ -21,9 +21,9 @@ export default function TabLayout() {
           backgroundColor: "#0F1A2E",
           borderTopColor: "rgba(245,240,230,0.1)",
           borderTopWidth: StyleSheet.hairlineWidth,
-          height: 64,
+          height: tabHeight,
           paddingTop: 10,
-          paddingBottom: 10,
+          paddingBottom: bottomSafeArea,
           paddingLeft: 0,
           paddingRight: 0,
           marginLeft: 0,
@@ -35,7 +35,7 @@ export default function TabLayout() {
           bottom: 0,
         },
         contentStyle: {
-          paddingBottom: tabHeight,
+          paddingBottom: tabHeight + 4,
           backgroundColor: "#1A2841",
         },
         tabBarItemStyle: {

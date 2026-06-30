@@ -90,12 +90,13 @@ export default function Root({ children }: PropsWithChildren) {
                 background-color: #1A2841;
               }
               [role="tablist"] {
-                position: absolute !important;
+                position: fixed !important;
                 bottom: 0 !important;
                 left: 0 !important;
                 right: 0 !important;
                 background-color: #0F1A2E !important;
-                padding-bottom: max(10px, var(--sab)) !important;
+                padding-bottom: env(safe-area-inset-bottom) !important;
+                z-index: 999 !important;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
