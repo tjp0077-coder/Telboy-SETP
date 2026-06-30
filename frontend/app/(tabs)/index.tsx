@@ -101,30 +101,6 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen} testID="home-welcome-screen">
-      {/* DEBUG: Safe area bottom value */}
-      <View
-        style={{
-          position: "absolute",
-          top: 10,
-          left: 10,
-          backgroundColor: "rgba(0, 0, 0, 0.8)",
-          paddingVertical: 4,
-          paddingHorizontal: 8,
-          borderRadius: 4,
-          zIndex: 9999,
-        }}
-      >
-        <Text
-          style={{
-            color: "#FFFF00",
-            fontSize: 12,
-            fontWeight: "600",
-          }}
-        >
-          Safe area bottom: {insets.bottom}px
-        </Text>
-      </View>
-
       {/* Full-bleed background image */}
       <Image
         source={HOME_BG}

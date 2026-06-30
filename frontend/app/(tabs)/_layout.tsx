@@ -13,30 +13,43 @@ function CustomTabBar(props) {
   console.log("Safe area bottom inset:", insets.bottom);
   
   return (
-    <View 
-      style={{
-        backgroundColor: "#0F1A2E",
-        paddingBottom: insets.bottom,
-        width: "100%",
-      }}
-    >
-      <BottomTabBar
-        {...props}
-        style={[
-          props.style,
-          {
+    <>
+      <View 
+        style={{
+          backgroundColor: "#0F1A2E",
+          width: "100%",
+          overflow: "hidden",
+        }}
+      >
+        <BottomTabBar
+          {...props}
+          style={[
+            props.style,
+            {
+              backgroundColor: "#0F1A2E",
+              borderTopColor: "rgba(245,240,230,0.1)",
+              borderTopWidth: StyleSheet.hairlineWidth,
+              paddingTop: 8,
+              paddingBottom: 8,
+              paddingHorizontal: 0,
+              marginBottom: 0,
+              marginHorizontal: 0,
+              height: 60,
+            },
+          ]}
+        />
+      </View>
+      {/* Explicit safe area fill */}
+      {insets.bottom > 0 && (
+        <View
+          style={{
             backgroundColor: "#0F1A2E",
-            borderTopColor: "rgba(245,240,230,0.1)",
-            borderTopWidth: StyleSheet.hairlineWidth,
-            paddingTop: 8,
-            paddingBottom: 0,
-            paddingHorizontal: 0,
-            marginBottom: 0,
-            marginHorizontal: 0,
-          },
-        ]}
-      />
-    </View>
+            width: "100%",
+            height: insets.bottom,
+          }}
+        />
+      )}
+    </>
   );
 }
 
