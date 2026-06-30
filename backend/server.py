@@ -48,6 +48,7 @@ RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip(
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
+RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
 FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
 PSGS_MAPS_URL = "https://maps.app.goo.gl/5fqn1CRK6T7GwFts7"
 LOCATION_MAPS_URLS = {
@@ -57,6 +58,8 @@ LOCATION_MAPS_URLS = {
     "departs marriott": COURTYARD_MARRIOTT_MAPS_URL,
     "https://maps.app.goo.gl/s8mciqdkqxve6yhq6": COURTYARD_MARRIOTT_MAPS_URL,
     "departs https://maps.app.goo.gl/s8mciqdkqxve6yhq6": COURTYARD_MARRIOTT_MAPS_URL,
+    "the royal college of physicians of edinburgh": RCPE_MAPS_URL,
+    "royal college of physicians of edinburgh": RCPE_MAPS_URL,
     "forth boat tours": FORTH_BOAT_TOURS_MAPS_URL,
     "ps&gs": PSGS_MAPS_URL,
     "st paul's & st george's (ps&gs)": PSGS_MAPS_URL,
@@ -1894,7 +1897,7 @@ async def city_guide():
              "maps_url": "https://www.google.com/maps/search/Royal+Yacht+Britannia"},
             {"name": "The Royal College of Physicians of Edinburgh", "address": "9 Queen Street, Edinburgh EH2 1JQ",
              "notes": "Wed sessions & closing banquet. 10-min walk from Royal Mile.",
-             "maps_url": "https://www.google.com/maps/search/?api=1&query=The+Royal+College+of+Physicians+of+Edinburgh"},
+             "maps_url": RCPE_MAPS_URL},
             {"name": "Forth Boat Tours", "address": "Hawes Pier, South Queensferry EH30 9SQ",
              "notes": "Thu technical boat tour departure point in South Queensferry.",
              "maps_url": "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"},
