@@ -33,9 +33,6 @@ const CATEGORY_COLOR: Record<string, string> = {
   tour: colors.success,
 };
 
-const buildMapsSearchUrl = (query: string) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
-
 const isTechnicalTalk = (item: SessionItem) =>
   item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
 
@@ -83,20 +80,6 @@ export default function ScheduleListScreen() {
       await Linking.openURL(LANDING_FEE_LINK);
     } catch {
       Alert.alert("Unable to open payment link", "Please try again in a few moments.");
-    }
-  }, []);
-
-  const openLocationMap = useCallback(async (location: string, title?: string, mapsUrl?: string | null) => {
-    const url = mapsUrl || buildMapsSearchUrl(`${location}${title ? ` ${title}` : ""}`.trim());
-    try {
-      const supported = await Linking.canOpenURL(url);
-      if (!supported) {
-        Alert.alert("Unable to open map", "Please try again in a few moments.");
-        return;
-      }
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Unable to open map", "Please try again in a few moments.");
     }
   }, []);
 
@@ -204,18 +187,10 @@ export default function ScheduleListScreen() {
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.cardTitle}>{item.title}</Text>
-                <Pressable
-                  onPress={(e) => {
-                    e.stopPropagation?.();
-                      openLocationMap(item.location, item.title, item.maps_url);
-                  }}
-                  hitSlop={8}
-                  style={styles.cardMeta}
-                  testID={`session-map-${item.id}`}
-                >
+                <View style={styles.cardMeta}>
                   <Ionicons name="location" size={15} color={colors.onSurfaceMuted} />
                   <Text style={styles.cardMetaText}>{item.location}</Text>
-                </Pressable>
+                </View>
                 {coachMeta ? (
                   <View style={styles.cardMeta}>
                     <Ionicons name="bus" size={15} color={colors.onSurfaceMuted} />
