@@ -56,7 +56,7 @@ export default function Root({ children }: PropsWithChildren) {
               html, body {
                 margin: 0;
                 padding: 0;
-                background-color: #1A2841;
+                background-color: cyan;
                 width: 100%;
                 height: 100%;
                 height: 100dvh;
@@ -81,7 +81,7 @@ export default function Root({ children }: PropsWithChildren) {
                 width: 100% !important;
                 height: 100% !important;
                 height: 100dvh !important;
-                background-color: #1A2841 !important;
+                background-color: lime !important;
               }
             `,
           }}
@@ -128,7 +128,7 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
       </head>
-      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "#1A2841" }}>
+      <body style={{ margin: 0, padding: 0, height: "100%", backgroundColor: "yellow" }}>
         {children}
       </body>
     </html>
