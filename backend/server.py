@@ -1860,7 +1860,7 @@ async def city_guide():
         "venues": [
             {"name": "Courtyard by Marriott, Edinburgh", "address": "1 Morrison Link, Edinburgh EH3 8DN",
              "notes": "Symposium HQ. Close to Haymarket station and tram stop.",
-             "maps_url": "https://maps.app.goo.gl/J6ubZSzDL6xS7ej6A"},
+             "maps_url": "https://maps.app.goo.gl/5adde7ReZEmffHd17"},
             {"name": "Apex Grassmarket Hotel", "address": "31-35 Grassmarket, Edinburgh EH1 2HS",
              "notes": "City-centre hotel beneath Edinburgh Castle on the historic Grassmarket. 5 min walk to the Royal Mile, 10 min to The Royal College of Physicians of Edinburgh.",
              "maps_url": "https://www.google.com/maps/search/Apex+Grassmarket+Hotel+Edinburgh"},
