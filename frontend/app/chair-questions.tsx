@@ -148,13 +148,12 @@ export default function ChairQuestionsScreen() {
       <View style={styles.topBar}>
         <Pressable
           onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/profile")}
-          style={styles.backButton}
           hitSlop={10}
           testID="chair-questions-back"
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={20} color={onSunset.primary} />
+          <Ionicons name="chevron-back" size={26} color={onSunset.primary} />
         </Pressable>
         <Text style={styles.topTitle}>Speaker Questions</Text>
         <View style={{ width: 26 }} />
@@ -363,16 +362,6 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-  },
-  backButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   topTitle: { fontSize: 20, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
 
