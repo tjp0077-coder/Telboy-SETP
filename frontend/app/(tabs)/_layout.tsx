@@ -21,9 +21,9 @@ export default function TabLayout() {
           backgroundColor: "#0F1A2E",
           borderTopColor: "rgba(245,240,230,0.1)",
           borderTopWidth: StyleSheet.hairlineWidth,
-          height: tabHeight,
+          height: 64,
           paddingTop: 10,
-          paddingBottom: bottomPad,
+          paddingBottom: 10,
           paddingLeft: 0,
           paddingRight: 0,
           marginLeft: 0,
@@ -33,6 +33,10 @@ export default function TabLayout() {
           left: 0,
           right: 0,
           bottom: 0,
+        },
+        contentStyle: {
+          paddingBottom: tabHeight,
+          backgroundColor: "#1A2841",
         },
         tabBarItemStyle: {
           paddingVertical: 0,

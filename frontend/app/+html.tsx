@@ -63,6 +63,7 @@ export default function Root({ children }: PropsWithChildren) {
                 margin: 0;
                 padding: 0;
                 background-color: #1A2841;
+                width: 100%;
                 height: 100%;
                 height: 100dvh;
                 overflow: hidden;
@@ -70,6 +71,7 @@ export default function Root({ children }: PropsWithChildren) {
               }
               #root {
                 background-color: #1A2841;
+                width: 100%;
                 height: 100%;
                 height: 100dvh;
                 overflow: hidden;
@@ -82,8 +84,18 @@ export default function Root({ children }: PropsWithChildren) {
               body > div:first-child {
                 position: fixed !important;
                 top: 0; left: 0; right: 0; bottom: 0;
+                width: 100% !important;
                 height: 100% !important;
                 height: 100dvh !important;
+                background-color: #1A2841;
+              }
+              [role="tablist"] {
+                position: absolute !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                background-color: #0F1A2E !important;
+                padding-bottom: max(10px, var(--sab)) !important;
               }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
