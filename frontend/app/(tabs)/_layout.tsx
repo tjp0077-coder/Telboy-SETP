@@ -41,8 +41,8 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarActiveTintColor: "#F2C265",
-        tabBarInactiveTintColor: "rgba(245,240,230,0.78)",
+        tabBarActiveTintColor: "#999999",
+        tabBarInactiveTintColor: "#666666",
         tabBar: (props) => <CustomTabBar {...props} />,
         contentStyle: {
           paddingBottom: tabBarHeight,
