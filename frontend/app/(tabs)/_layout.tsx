@@ -12,6 +12,9 @@ export default function TabLayout() {
   const webSafeInset = isIOSWeb
     ? "env(safe-area-inset-bottom, constant(safe-area-inset-bottom))"
     : "env(safe-area-inset-bottom, 0px)";
+  const webTabBarHeight = isIOSWeb
+    ? `calc(48px + ${webSafeInset})`
+    : `calc(60px + ${webSafeInset})`;
 
   return (
     <View style={styles.root}>
@@ -35,7 +38,7 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: `calc(60px + ${webSafeInset})`,
+                height: webTabBarHeight,
                 paddingBottom: webSafeInset,
               },
               default: {
