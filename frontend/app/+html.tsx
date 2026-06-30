@@ -53,10 +53,71 @@ export default function Root({ children }: PropsWithChildren) {
         <style
           dangerouslySetInnerHTML={{
             __html: `
-              html, body, #root { background-color: #1A2841; }
-              body > div:first-child { position: fixed !important; top: 0; left: 0; right: 0; bottom: 0; }
+              :root {
+                --sat: env(safe-area-inset-top, 0px);
+                --sar: env(safe-area-inset-right, 0px);
+                --sab: env(safe-area-inset-bottom, 0px);
+                --sal: env(safe-area-inset-left, 0px);
+              }
+              html, body {
+                background-color: #1A2841;
+                height: 100%;
+                height: 100dvh;
+                overscroll-behavior: none;
+                -webkit-tap-highlight-color: transparent;
+              }
+              #root { background-color: #1A2841; }
+              body > div:first-child {
+                position: fixed !important;
+                top: 0; left: 0; right: 0; bottom: 0;
+                height: 100% !important;
+                height: 100dvh !important;
+                overscroll-behavior: none;
+              }
               [role="tablist"] [role="tab"] * { overflow: visible !important; }
               [role="heading"], [role="heading"] * { overflow: visible !important; }
+            `,
+          }}
+        />
+
+        {/* ── Layout-stability: safe-area + bfcache back-nav fix ────── */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function () {
+                // Keep --sat CSS var in sync with actual inset so RN components
+                // that use it stay correctly positioned after back navigation.
+                function updateSat() {
+                  var sat = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
+                  document.documentElement.style.setProperty('--sat-px', sat + 'px');
+                }
+                updateSat();
+
+                // pageshow fires when page is restored from bfcache (back button).
+                // Force a reflow so position:fixed root realigns with the viewport.
+                window.addEventListener('pageshow', function (e) {
+                  if (e.persisted) {
+                    var el = document.body;
+                    el.style.display = 'none';
+                    void el.offsetHeight;
+                    el.style.display = '';
+                    updateSat();
+                  }
+                });
+
+                // Keep a --vvh custom property that tracks the visual viewport
+                // height. On iOS the browser chrome can resize it; 100dvh alone
+                // is not always stable across navigations.
+                function setVvh() {
+                  var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                  document.documentElement.style.setProperty('--vvh', h + 'px');
+                }
+                setVvh();
+                if (window.visualViewport) {
+                  window.visualViewport.addEventListener('resize', setVvh);
+                }
+                window.addEventListener('resize', setVvh);
+              })();
             `,
           }}
         />

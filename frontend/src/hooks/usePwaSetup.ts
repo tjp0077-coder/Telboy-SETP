@@ -76,6 +76,33 @@ export function usePwaSetup() {
         "width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover";
     }
 
+    // ── Layout stability: safe-area + bfcache back-nav fix ──────────
+    // Tracks visual-viewport height as a CSS custom property so the
+    // position:fixed root div stays flush with the screen on back nav.
+    const setVvh = () => {
+      const h = window.visualViewport
+        ? window.visualViewport.height
+        : window.innerHeight;
+      document.documentElement.style.setProperty("--vvh", `${h}px`);
+    };
+    setVvh();
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", setVvh);
+    }
+    window.addEventListener("resize", setVvh);
+
+    // pageshow fires when the page is restored from the bfcache (back button).
+    // Force a reflow so the position:fixed root realigns correctly.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        document.body.style.display = "none";
+        void document.body.offsetHeight; // trigger reflow
+        document.body.style.display = "";
+        setVvh();
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+
     // Service worker registration (only on secure origins or localhost)
     const isSecure =
       window.location.protocol === "https:" ||
@@ -91,5 +118,13 @@ export function usePwaSetup() {
           console.warn("[SETP-PWA] SW registration failed:", err);
         });
     }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", setVvh);
+      }
+      window.removeEventListener("resize", setVvh);
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, []);
 }
