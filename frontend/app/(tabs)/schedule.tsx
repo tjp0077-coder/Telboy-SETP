@@ -148,8 +148,11 @@ export default function ScheduleListScreen() {
         ListFooterComponent={
           <>
             {activeDate === COMMITTEE_CARD_DATE ? (
-              <View style={styles.committeeCard} testID="meet-committee-card">
-                <Text style={styles.committeeTitle}>Meet the Committee</Text>
+              <View style={[styles.committeeCard, styles.committeeCardFill]} testID="meet-committee-card">
+                <View style={styles.committeeTitleRow}>
+                  <Text style={styles.committeeTitle}>Meet the Committee</Text>
+                  <Text style={styles.committeeTbc}>TBC ...</Text>
+                </View>
               </View>
             ) : null}
             {activeDate === LANDING_FEE_DATE ? (
@@ -333,10 +336,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     backgroundColor: "rgba(15,26,46,0.35)",
   },
+  committeeCardFill: {
+    minHeight: 360,
+  },
+  committeeTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
   committeeTitle: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
+    fontFamily: "Georgia",
+  },
+  committeeTbc: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.9,
     fontFamily: "Georgia",
   },
   paymentHeader: {
