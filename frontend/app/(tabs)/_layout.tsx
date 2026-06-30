@@ -10,6 +10,7 @@ import { BottomTabBar } from "@react-navigation/bottom-tabs";
  */
 function CustomTabBar(props) {
   const insets = useSafeAreaInsets();
+  console.log("Safe area bottom inset:", insets.bottom);
   
   return (
     <View 
