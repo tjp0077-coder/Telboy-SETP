@@ -76,9 +76,22 @@ export function usePwaSetup() {
         "width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover";
     }
 
-    // ── Layout stability: safe-area + bfcache back-nav fix ──────────
-    // Tracks visual-viewport height as a CSS custom property so the
-    // position:fixed root div stays flush with the screen on back nav.
+    // ── iOS PWA scroll-reset fix ─────────────────────────────────────
+    // iOS Safari restores document.scrollTop even on a position:fixed body,
+    // which shifts the fixed root layer upward on back navigation. Fix:
+    //   1. Disable scroll restoration so the browser never saves/restores it.
+    //   2. Hard-reset all scroll anchors on every navigation event.
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+
+    const resetScroll = () => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    };
+    resetScroll();
+
     const setVvh = () => {
       const h = window.visualViewport
         ? window.visualViewport.height
@@ -91,17 +104,24 @@ export function usePwaSetup() {
     }
     window.addEventListener("resize", setVvh);
 
-    // pageshow fires when the page is restored from the bfcache (back button).
-    // Force a reflow so the position:fixed root realigns correctly.
+    // pageshow: bfcache restore (back button) — reset scroll + force reflow.
     const onPageShow = (e: PageTransitionEvent) => {
+      resetScroll();
       if (e.persisted) {
         document.body.style.display = "none";
-        void document.body.offsetHeight; // trigger reflow
+        void document.body.offsetHeight;
         document.body.style.display = "";
-        setVvh();
+        resetScroll();
       }
     };
     window.addEventListener("pageshow", onPageShow);
+
+    // Hash changes = SPA route changes; visibilitychange = app re-focus.
+    window.addEventListener("hashchange", resetScroll);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") resetScroll();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
 
     // Service worker registration (only on secure origins or localhost)
     const isSecure =
@@ -125,6 +145,8 @@ export function usePwaSetup() {
       }
       window.removeEventListener("resize", setVvh);
       window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("hashchange", resetScroll);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 }

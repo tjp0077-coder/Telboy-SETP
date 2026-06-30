@@ -80,34 +80,47 @@ export default function Root({ children }: PropsWithChildren) {
           }}
         />
 
-        {/* ── Layout-stability: safe-area + bfcache back-nav fix ────── */}
+        {/* ── Layout-stability: iOS scroll-reset + bfcache fix ─────── */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function () {
-                // Keep --sat CSS var in sync with actual inset so RN components
-                // that use it stay correctly positioned after back navigation.
-                function updateSat() {
-                  var sat = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--sat')) || 0;
-                  document.documentElement.style.setProperty('--sat-px', sat + 'px');
+                // ── 1. Disable browser scroll-position restoration immediately.
+                // iOS Safari restores document.scrollTop even on a position:fixed
+                // body, physically offsetting the fixed layer upward on back nav.
+                if ('scrollRestoration' in history) {
+                  history.scrollRestoration = 'manual';
                 }
-                updateSat();
 
-                // pageshow fires when page is restored from bfcache (back button).
-                // Force a reflow so position:fixed root realigns with the viewport.
+                // ── 2. Hard-reset every scroll anchor to zero.
+                function resetScroll() {
+                  window.scrollTo(0, 0);
+                  document.documentElement.scrollTop = 0;
+                  document.body.scrollTop = 0;
+                }
+                resetScroll();
+
+                // ── 3. pageshow fires on bfcache restore (back button on iOS).
                 window.addEventListener('pageshow', function (e) {
+                  resetScroll();
                   if (e.persisted) {
+                    // Extra reflow to unstick any cached paint position.
                     var el = document.body;
                     el.style.display = 'none';
                     void el.offsetHeight;
                     el.style.display = '';
-                    updateSat();
+                    resetScroll();
                   }
                 });
 
-                // Keep a --vvh custom property that tracks the visual viewport
-                // height. On iOS the browser chrome can resize it; 100dvh alone
-                // is not always stable across navigations.
+                // ── 4. Also reset on hash/SPA route changes and tab re-focus.
+                window.addEventListener('hashchange', resetScroll);
+                document.addEventListener('visibilitychange', function () {
+                  if (document.visibilityState === 'visible') resetScroll();
+                });
+
+                // ── 5. Track visual-viewport height as --vvh.
+                // 100dvh alone is not stable across iOS navigations.
                 function setVvh() {
                   var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
                   document.documentElement.style.setProperty('--vvh', h + 'px');
