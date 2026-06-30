@@ -17,6 +17,7 @@ const HERO = require("@/assets/images/brand/hero.jpg");
 const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
+const COMMITTEE_CARD_DATE = "2026-07-26";
 
 const CATEGORY_ICON: Record<string, keyof typeof Ionicons.glyphMap> = {
   session: "document-text",
@@ -145,25 +146,32 @@ export default function ScheduleListScreen() {
           </View>
         }
         ListFooterComponent={
-          activeDate === LANDING_FEE_DATE ? (
-            <View style={styles.paymentWrap} testID="landing-fee-card">
-              <Pressable
-                onPress={openLandingFeePayment}
-                style={[styles.paymentHeader, shadow.card]}
-                testID="pay-landing-fee-image"
-              >
-                <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
-              </Pressable>
+          <>
+            {activeDate === COMMITTEE_CARD_DATE ? (
+              <View style={styles.committeeCard} testID="meet-committee-card">
+                <Text style={styles.committeeTitle}>Meet the Committee</Text>
+              </View>
+            ) : null}
+            {activeDate === LANDING_FEE_DATE ? (
+              <View style={styles.paymentWrap} testID="landing-fee-card">
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentHeader, shadow.card]}
+                  testID="pay-landing-fee-image"
+                >
+                  <Image source={INCHOLM_PAY_BUTTON} style={styles.paymentBanner} contentFit="cover" />
+                </Pressable>
 
-              <Pressable
-                onPress={openLandingFeePayment}
-                style={[styles.paymentBtn, shadow.card]}
-                testID="pay-landing-fee-single"
-              >
-                <Text style={styles.paymentBtnTitle}>Pay Historic Scotland £8.50 landing fee</Text>
-              </Pressable>
-            </View>
-          ) : null
+                <Pressable
+                  onPress={openLandingFeePayment}
+                  style={[styles.paymentBtn, shadow.card]}
+                  testID="pay-landing-fee-single"
+                >
+                  <Text style={styles.paymentBtnTitle}>Pay Historic Scotland £8.50 landing fee</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </>
         }
         renderItem={({ item }) => {
           const fav = favorites.has(item.id);
@@ -314,6 +322,22 @@ const styles = StyleSheet.create({
   paymentWrap: {
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
+  },
+  committeeCard: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.sm,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    borderRadius: radius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: "rgba(15,26,46,0.35)",
+  },
+  committeeTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    fontFamily: "Georgia",
   },
   paymentHeader: {
     backgroundColor: colors.surfaceSecondary,
