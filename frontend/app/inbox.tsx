@@ -329,9 +329,7 @@ export default function InboxScreen() {
           }}
         />
       )}
-          replyLabelRow: { gap: 4 },
       <AdminFooterNav />
-          replyHint: { fontSize: 11, color: colors.onSurfaceMuted },
     </View>
   );
 }
@@ -408,7 +406,9 @@ const styles = StyleSheet.create({
   actionGhost: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   actionGhostText: { color: colors.error, fontWeight: "700", fontSize: 13 },
   replyComposer: { marginTop: spacing.md, gap: spacing.sm },
+  replyLabelRow: { gap: 4 },
   replyLabel: { fontSize: 12, fontWeight: "700", color: colors.onSurfaceMuted },
+  replyHint: { fontSize: 11, color: colors.onSurfaceMuted },
   replyInput: {
     minHeight: 100,
     borderRadius: radius.md,
