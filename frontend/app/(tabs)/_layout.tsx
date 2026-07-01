@@ -1,10 +1,39 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useCallback, useEffect, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
+import { api } from "@/src/api";
+import { useAuth } from "@/src/AuthContext";
 import { useUnread } from "@/src/UnreadContext";
 
 export default function TabLayout() {
   const { unreadCount } = useUnread();
+  const { auth } = useAuth();
+  const [hasUnreadInbox, setHasUnreadInbox] = useState(false);
+
+  const refreshUnreadInbox = useCallback(async () => {
+    if (!auth.username) {
+      setHasUnreadInbox(false);
+      return;
+    }
+    try {
+      const threads = await api.listContact();
+      setHasUnreadInbox(threads.some((thread) => !thread.read));
+    } catch {
+      // Keep current state if refresh fails.
+    }
+  }, [auth.username]);
+
+  useEffect(() => {
+    refreshUnreadInbox();
+  }, [refreshUnreadInbox]);
+
+  useEffect(() => {
+    if (!auth.username) return;
+    const intervalId = setInterval(refreshUnreadInbox, 30000);
+    return () => clearInterval(intervalId);
+  }, [auth.username, refreshUnreadInbox]);
+
   const isIOSWeb =
     Platform.OS === "web" &&
     typeof navigator !== "undefined" &&
@@ -102,7 +131,12 @@ export default function TabLayout() {
         options={{
           title: "Profile",
           tabBarTestID: "tab-profile",
-          tabBarIcon: ({ color }) => <Ionicons name="person-circle" size={28} color={color} />,
+          tabBarIcon: ({ color }) => (
+            <View style={styles.profileIconWrap}>
+              <Ionicons name="person-circle" size={28} color={color} />
+              {auth.username && hasUnreadInbox ? <View style={styles.profileUnreadDot} /> : null}
+            </View>
+          ),
         }}
       />
       </Tabs>
@@ -115,5 +149,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#0F1A2E",
     height: Platform.OS === "web" ? "100vh" : "100%",
+  },
+  profileIconWrap: {
+    position: "relative",
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileUnreadDot: {
+    position: "absolute",
+    right: 0,
+    bottom: 1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E63946",
   },
 });
