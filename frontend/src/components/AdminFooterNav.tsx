@@ -53,6 +53,14 @@ export default function AdminFooterNav() {
   );
 
   useEffect(() => {
+    if (!auth.username) {
+      setHasUnreadDelegateMessage(false);
+      return;
+    }
+    refreshUnreadDelegateMessages();
+  }, [auth.username, refreshUnreadDelegateMessages]);
+
+  useEffect(() => {
     if (!auth.username) return;
     const intervalId = setInterval(refreshUnreadDelegateMessages, 30000);
     return () => clearInterval(intervalId);
