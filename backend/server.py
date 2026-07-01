@@ -6,6 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import httpx
 import os
 import logging
+import html
 from pathlib import Path
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import List, Optional
@@ -47,6 +48,7 @@ RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com"
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
 RESEND_CONTACT_REPLY_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_REPLY_TEMPLATE_ID", "setp-template-1").strip()
+RESEND_REPLY_DEBUG_SUBJECT_SUFFIX = os.environ.get("RESEND_REPLY_DEBUG_SUBJECT_SUFFIX", " [tpl:setp-template-1]")
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
 RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
@@ -1341,21 +1343,32 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
     if not item.get("email"):
         raise HTTPException(status_code=400, detail="This contact did not provide an email address")
 
+    outbound_subject = f"{subject}{RESEND_REPLY_DEBUG_SUBJECT_SUFFIX}" if RESEND_REPLY_DEBUG_SUBJECT_SUFFIX else subject
+
     payload = {
         "from": RESEND_FROM_EMAIL,
         "to": [item["email"]],
         "reply_to": [RESEND_CONTACT_RECIPIENT],
-        "subject": subject,
+        "subject": outbound_subject,
         "template": {
             "id": RESEND_CONTACT_REPLY_TEMPLATE_ID,
             "variables": {
+                "replyHtml": html.escape(message).replace("\n", "<br/>") if message else "",
                 # Include common key aliases so existing template placeholders resolve
                 # without requiring immediate template edits.
                 "reply": message,
+                "replyText": message,
+                "reply_text": message,
                 "replyMessage": message,
+                "reply_message": message,
                 "message": message,
+                "body": message,
+                "content": message,
                 "adminReply": message,
+                "admin_message": message,
                 "adminName": admin_name,
+                "signatureName": admin_name,
+                "signatureLine": f"Committee Admin - {admin_name}" if admin_name else "Committee Admin",
                 "senderName": admin_name,
                 "delegateName": item.get("name") or "Delegate",
                 "delegateEmail": item.get("email") or "",
