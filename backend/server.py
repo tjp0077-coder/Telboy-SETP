@@ -46,7 +46,7 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com")
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
-RESEND_CONTACT_REPLY_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_REPLY_TEMPLATE_ID", "").strip()
+RESEND_CONTACT_REPLY_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_REPLY_TEMPLATE_ID", "setp-template-1").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
 RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
@@ -1341,36 +1341,31 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
     if not item.get("email"):
         raise HTTPException(status_code=400, detail="This contact did not provide an email address")
 
-    body = (
-        f"{message}\n\n"
-        f"---\n"
-        f"Sent by {admin_name} via the SETP admin inbox\n\n"
-        f"Original enquiry from {item['name']} on {item['created_at']}:\n"
-        f"Subject: {item['subject']}\n"
-        f"{item['message']}"
-    )
-
     payload = {
         "from": RESEND_FROM_EMAIL,
         "to": [item["email"]],
         "reply_to": [RESEND_CONTACT_RECIPIENT],
         "subject": subject,
-    }
-    if RESEND_CONTACT_REPLY_TEMPLATE_ID:
-        payload["template"] = {
+        "template": {
             "id": RESEND_CONTACT_REPLY_TEMPLATE_ID,
             "variables": {
+                # Include common key aliases so existing template placeholders resolve
+                # without requiring immediate template edits.
+                "reply": message,
                 "replyMessage": message,
+                "message": message,
+                "adminReply": message,
                 "adminName": admin_name,
+                "senderName": admin_name,
                 "delegateName": item.get("name") or "Delegate",
                 "delegateEmail": item.get("email") or "",
                 "originalSubject": item.get("subject") or "",
+                "subject": item.get("subject") or "",
                 "originalMessage": item.get("message") or "",
                 "originalCreatedAt": item.get("created_at") or "",
             },
-        }
-    else:
-        payload["text"] = body
+        },
+    }
 
     try:
         async with httpx.AsyncClient() as client:
