@@ -1,9 +1,12 @@
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { api } from "@/src/api";
+import { useAuth } from "@/src/AuthContext";
 import { colors, radius, spacing } from "@/src/theme";
 
 type NavItem = {
@@ -25,13 +28,42 @@ export default function AdminFooterNav() {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { auth } = useAuth();
+  const [hasUnreadDelegateMessage, setHasUnreadDelegateMessage] = useState(false);
   const bottomPad = Math.max(insets.bottom, Platform.OS === "ios" ? 20 : 14);
+
+  const refreshUnreadDelegateMessages = useCallback(async () => {
+    if (!auth.username) {
+      setHasUnreadDelegateMessage(false);
+      return;
+    }
+    try {
+      const threads = await api.listContact();
+      setHasUnreadDelegateMessage(threads.some((thread) => !thread.read));
+    } catch {
+      // Keep the existing dot state if refresh fails.
+    }
+  }, [auth.username]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshUnreadDelegateMessages();
+      return () => {};
+    }, [refreshUnreadDelegateMessages])
+  );
+
+  useEffect(() => {
+    if (!auth.username) return;
+    const intervalId = setInterval(refreshUnreadDelegateMessages, 30000);
+    return () => clearInterval(intervalId);
+  }, [auth.username, refreshUnreadDelegateMessages]);
 
   return (
     <View style={[styles.wrap, { paddingBottom: bottomPad }]}>
       <View style={styles.bar}>
         {NAV_ITEMS.map((item) => {
           const active = item.match(pathname);
+          const showProfileUnreadDot = item.label === "Profile" && hasUnreadDelegateMessage;
           return (
             <Pressable
               key={item.label}
@@ -39,7 +71,10 @@ export default function AdminFooterNav() {
               style={styles.item}
               testID={`admin-footer-${item.label.toLowerCase()}`}
             >
-              <Ionicons name={item.icon} size={22} color={active ? colors.brand : colors.onSurfaceMuted} />
+              <View style={styles.iconWrap}>
+                <Ionicons name={item.icon} size={22} color={active ? colors.brand : colors.onSurfaceMuted} />
+                {showProfileUnreadDot ? <View style={styles.profileUnreadDot} testID="admin-footer-profile-unread-dot" /> : null}
+              </View>
               <Text style={[styles.label, active && styles.labelActive]}>{item.label}</Text>
             </Pressable>
           );
@@ -81,6 +116,24 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 2,
     paddingVertical: 4,
+  },
+  iconWrap: {
+    position: "relative",
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  profileUnreadDot: {
+    position: "absolute",
+    right: -1,
+    bottom: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#D7263D",
+    borderWidth: 1,
+    borderColor: colors.surfaceSecondary,
   },
   label: {
     fontSize: 10,
