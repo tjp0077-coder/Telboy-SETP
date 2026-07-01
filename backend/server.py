@@ -1354,6 +1354,9 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
 
     outbound_subject = f"{base_subject}{RESEND_REPLY_DEBUG_SUBJECT_SUFFIX}" if RESEND_REPLY_DEBUG_SUBJECT_SUFFIX else base_subject
 
+    delegate_name = (item.get("name") or "<Delegate>").strip() or "<Delegate>"
+    admin_display = (admin_name or "").strip() or "<Dave Mackay>"
+
     payload = {
         "from": RESEND_FROM_EMAIL,
         "to": [item["email"]],
@@ -1376,11 +1379,21 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
                 "adminReply": message,
                 "admin_message": message,
                 "adminName": admin_name,
+                "adminDisplayName": admin_display,
                 "signatureName": admin_name,
-                "signatureLine": f"Committee Admin - {admin_name}" if admin_name else "Committee Admin",
+                "signatureLine": f"Committee Admin - {admin_name}" if admin_name else "Committee Admin - <Dave Mackay>",
                 "senderName": admin_name,
-                "delegateName": item.get("name") or "Delegate",
+                "delegateName": delegate_name,
                 "delegateEmail": item.get("email") or "",
+                "greeting": f"Dear {delegate_name},",
+                "salutation": f"Dear {delegate_name},",
+                "dearLine": f"Dear {delegate_name},",
+                "dearDelegate": f"Dear {delegate_name},",
+                "respondedBy": admin_display,
+                "responderName": admin_display,
+                "responderLine": f"Response from Admin {admin_display}",
+                "fromAdmin": f"Response from Admin {admin_display}",
+                "signoff": "Kind regards,",
                 "originalSubject": item.get("subject") or "",
                 "subject": outbound_subject,
                 "subjectLine": outbound_subject,
