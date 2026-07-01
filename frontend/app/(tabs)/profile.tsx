@@ -5,6 +5,7 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { api, SessionItem } from "@/src/api";
@@ -21,6 +22,8 @@ export default function ProfileScreen() {
   const { favorites, toggle } = useFavorites();
   const [items, setItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasUnreadInbox, setHasUnreadInbox] = useState(false);
+  const [hasUnreviewedQuestions, setHasUnreviewedQuestions] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -30,6 +33,41 @@ export default function ProfileScreen() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const refreshAdminNotificationState = useCallback(async () => {
+    if (!auth.username) {
+      setHasUnreadInbox(false);
+      setHasUnreviewedQuestions(false);
+      return;
+    }
+    try {
+      const [contactThreads, questions] = await Promise.all([
+        api.listContact(),
+        api.listQuestions(),
+      ]);
+      setHasUnreadInbox(contactThreads.some((thread) => !thread.read));
+      setHasUnreviewedQuestions(questions.some((question) => !question.reviewed));
+    } catch {
+      // Keep previous indicator state if a refresh fails.
+    }
+  }, [auth.username]);
+
+  useEffect(() => {
+    refreshAdminNotificationState();
+  }, [refreshAdminNotificationState]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshAdminNotificationState();
+      return () => {};
+    }, [refreshAdminNotificationState])
+  );
+
+  useEffect(() => {
+    if (!auth.username) return;
+    const intervalId = setInterval(refreshAdminNotificationState, 30000);
+    return () => clearInterval(intervalId);
+  }, [auth.username, refreshAdminNotificationState]);
 
   const saved = items.filter((i) => favorites.has(i.id));
 
@@ -113,7 +151,10 @@ export default function ProfileScreen() {
             style={styles.inboxBtn}
             testID="open-inbox-btn"
           >
-            <Ionicons name="mail-open" size={22} color={colors.brand} />
+            <View style={styles.notifyIconWrap}>
+              <Ionicons name={hasUnreadInbox ? "mail" : "mail-open"} size={22} color={colors.brand} />
+              {hasUnreadInbox ? <View style={styles.notifyDot} testID="profile-inbox-unread-dot" /> : null}
+            </View>
             <Text style={styles.inboxBtnText}>Open inbox</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
@@ -122,7 +163,10 @@ export default function ProfileScreen() {
             style={styles.inboxBtn}
             testID="open-chair-questions-btn"
           >
-            <Ionicons name="help-buoy" size={22} color={colors.brand} />
+            <View style={styles.notifyIconWrap}>
+              <Ionicons name="help-buoy" size={22} color={colors.brand} />
+              {hasUnreviewedQuestions ? <View style={styles.notifyDot} testID="profile-questions-unread-dot" /> : null}
+            </View>
             <Text style={styles.inboxBtnText}>Speaker questions</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
@@ -262,6 +306,24 @@ const styles = StyleSheet.create({
     flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.md,
     paddingVertical: 12, paddingHorizontal: 12, borderRadius: radius.md,
     backgroundColor: "#E8ECF2",
+  },
+  notifyIconWrap: {
+    position: "relative",
+    width: 22,
+    height: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notifyDot: {
+    position: "absolute",
+    right: -2,
+    top: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#E63946",
+    borderWidth: 1,
+    borderColor: "#E8ECF2",
   },
   inboxBtnText: { color: colors.brand, fontWeight: "700", fontSize: 14 },
   logoutBtn: {
