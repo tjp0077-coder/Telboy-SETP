@@ -282,7 +282,10 @@ export default function InboxScreen() {
                     ) : null}
                     {replyOpen ? (
                       <View style={styles.replyComposer} testID={`inbox-reply-composer-${item.id}`}>
-                        <Text style={styles.replyLabel}>Reply to {item.name}</Text>
+                        <View style={styles.replyLabelRow}>
+                          <Text style={styles.replyLabel}>Reply {item.name || "<Delegate>"}</Text>
+                          <Text style={styles.replyHint}>To/From is prepopulated in the email response.</Text>
+                        </View>
                         <TextInput
                           style={styles.replyInput}
                           multiline
@@ -326,7 +329,9 @@ export default function InboxScreen() {
           }}
         />
       )}
+          replyLabelRow: { gap: 4 },
       <AdminFooterNav />
+          replyHint: { fontSize: 11, color: colors.onSurfaceMuted },
     </View>
   );
 }
