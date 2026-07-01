@@ -1343,7 +1343,16 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
     if not item.get("email"):
         raise HTTPException(status_code=400, detail="This contact did not provide an email address")
 
-    outbound_subject = f"{subject}{RESEND_REPLY_DEBUG_SUBJECT_SUFFIX}" if RESEND_REPLY_DEBUG_SUBJECT_SUFFIX else subject
+    clean_subject = (subject or "").strip()
+    if clean_subject:
+        if clean_subject.lower().startswith("thank you for your enquiry"):
+            base_subject = clean_subject
+        else:
+            base_subject = f"Thank you for your Enquiry - {clean_subject}"
+    else:
+        base_subject = "Thank you for your Enquiry"
+
+    outbound_subject = f"{base_subject}{RESEND_REPLY_DEBUG_SUBJECT_SUFFIX}" if RESEND_REPLY_DEBUG_SUBJECT_SUFFIX else base_subject
 
     payload = {
         "from": RESEND_FROM_EMAIL,
