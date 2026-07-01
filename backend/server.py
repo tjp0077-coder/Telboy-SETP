@@ -46,6 +46,7 @@ RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "setp@edi.zeneagles.com")
 RESEND_CONTACT_RECIPIENT = os.environ.get("RESEND_CONTACT_RECIPIENT", "").strip()
 RESEND_CONTACT_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_TEMPLATE_ID", "").strip()
+RESEND_CONTACT_REPLY_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_REPLY_TEMPLATE_ID", "").strip()
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
 RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
@@ -1178,7 +1179,7 @@ async def create_contact(data: ContactCreate):
     )
 
     if thread_id:
-        existing = await contact_col.find_one({"id": thread_id}, {"_id": 0})
+        existing = await contact_col.find_one({"id": thread_id, "deleted": {"$ne": True}}, {"_id": 0})
         if not existing:
             raise HTTPException(status_code=404, detail="Thread not found")
         existing = normalize_contact_thread(existing)
@@ -1222,6 +1223,9 @@ async def create_contact(data: ContactCreate):
         "read": False,
         "event_id": event_id,
         "messages": [delegate_message],
+        "deleted": False,
+        "deleted_at": None,
+        "deleted_by": None,
     }
     await contact_col.insert_one(item)
     await send_contact_email(item)
@@ -1346,6 +1350,28 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
         f"{item['message']}"
     )
 
+    payload = {
+        "from": RESEND_FROM_EMAIL,
+        "to": [item["email"]],
+        "reply_to": [RESEND_CONTACT_RECIPIENT],
+        "subject": subject,
+    }
+    if RESEND_CONTACT_REPLY_TEMPLATE_ID:
+        payload["template"] = {
+            "id": RESEND_CONTACT_REPLY_TEMPLATE_ID,
+            "variables": {
+                "replyMessage": message,
+                "adminName": admin_name,
+                "delegateName": item.get("name") or "Delegate",
+                "delegateEmail": item.get("email") or "",
+                "originalSubject": item.get("subject") or "",
+                "originalMessage": item.get("message") or "",
+                "originalCreatedAt": item.get("created_at") or "",
+            },
+        }
+    else:
+        payload["text"] = body
+
     try:
         async with httpx.AsyncClient() as client:
             response = await client.post(
@@ -1354,13 +1380,7 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
                     "Authorization": f"Bearer {RESEND_API_KEY}",
                     "Content-Type": "application/json",
                 },
-                json={
-                    "from": RESEND_FROM_EMAIL,
-                    "to": [item["email"]],
-                    "replyTo": [RESEND_CONTACT_RECIPIENT],
-                    "subject": subject,
-                    "text": body,
-                },
+                json=payload,
                 timeout=15,
             )
             response.raise_for_status()

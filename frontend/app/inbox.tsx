@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, ContactItem, ContactThreadMessage } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
@@ -50,6 +51,15 @@ export default function InboxScreen() {
     }
     if (auth.username) load();
   }, [auth.username, auth.loading, load, router]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (auth.username) {
+        load();
+      }
+      return () => {};
+    }, [auth.username, load])
+  );
 
   const toggleExpand = async (item: ContactItem) => {
     if (expandedId === item.id) {
@@ -316,11 +326,10 @@ export default function InboxScreen() {
           }}
         />
       )}
+      <AdminFooterNav />
     </View>
   );
 }
-
-      <AdminFooterNav />
 
 function formatDate(iso: string): string {
   try {

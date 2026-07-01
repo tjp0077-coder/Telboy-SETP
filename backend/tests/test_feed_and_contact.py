@@ -85,6 +85,29 @@ class TestContactPublicCreate:
         assert d.get("ok") is True
         assert d.get("id")
 
+    def test_create_contact_appears_in_admin_inbox(self, s, H):
+        payload = {
+            "name": "TEST_InboxVisible",
+            "email": "inbox-visible@example.com",
+            "subject": "TEST_inbox_visible_subject",
+            "message": "This should appear in admin inbox.",
+        }
+        r = s.post(f"{API}/contact", json=payload)
+        assert r.status_code == 200, r.text
+        cid = r.json()["id"]
+        try:
+            items = s.get(f"{API}/contact", headers=H)
+            assert items.status_code == 200, items.text
+            found = next((i for i in items.json() if i["id"] == cid), None)
+            assert found is not None
+            assert found["subject"] == payload["subject"]
+            assert len(found["messages"]) >= 1
+            assert found["messages"][-1]["sender_role"] == "delegate"
+            assert found["messages"][-1]["message"] == payload["message"]
+        finally:
+            s.delete(f"{API}/contact/{cid}", headers=H)
+            s.delete(f"{API}/contact/{cid}/permanent", headers=H)
+
     def test_create_contact_follow_up_appends_to_existing_thread(self, s, H):
         seed = s.post(f"{API}/contact", json={
             "name": "TEST_ThreadSeed",
