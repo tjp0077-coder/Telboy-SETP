@@ -1356,6 +1356,8 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
 
     delegate_name = (item.get("name") or "<Delegate>").strip() or "<Delegate>"
     admin_display = (admin_name or "").strip() or "<Dave Mackay>"
+    delegate_name_html = html.escape(delegate_name)
+    admin_display_html = html.escape(admin_display)
 
     payload = {
         "from": RESEND_FROM_EMAIL,
@@ -1378,21 +1380,23 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
                 "content": message,
                 "adminReply": message,
                 "admin_message": message,
-                "adminName": admin_name,
+                "adminName": admin_display,
                 "adminDisplayName": admin_display,
-                "signatureName": admin_name,
+                "signatureName": admin_display,
                 "signatureLine": f"Committee Admin - {admin_name}" if admin_name else "Committee Admin - <Dave Mackay>",
-                "senderName": admin_name,
+                "senderName": admin_display,
                 "delegateName": delegate_name,
                 "delegateEmail": item.get("email") or "",
-                "greeting": f"Dear {delegate_name},",
-                "salutation": f"Dear {delegate_name},",
-                "dearLine": f"Dear {delegate_name},",
-                "dearDelegate": f"Dear {delegate_name},",
+                "name": delegate_name,
+                "recipientName": delegate_name,
+                "greeting": f"Dear {delegate_name_html},",
+                "salutation": f"Dear {delegate_name_html},",
+                "dearLine": f"Dear {delegate_name_html},",
+                "dearDelegate": f"Dear {delegate_name_html},",
                 "respondedBy": admin_display,
                 "responderName": admin_display,
-                "responderLine": f"Response from Admin {admin_display}",
-                "fromAdmin": f"Response from Admin {admin_display}",
+                "responderLine": f"Response from Admin {admin_display_html}",
+                "fromAdmin": f"Response from Admin {admin_display_html}",
                 "signoff": "Kind regards,",
                 "originalSubject": item.get("subject") or "",
                 "subject": outbound_subject,
