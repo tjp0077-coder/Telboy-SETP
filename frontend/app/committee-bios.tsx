@@ -88,6 +88,9 @@ const INITIAL_BIOS: CommitteeBio[] = [
   },
 ];
 
+// Keep edits alive for the duration of the app session, even if the screen remounts.
+let committeeBiosSessionStore: CommitteeBio[] = INITIAL_BIOS.map((item) => ({ ...item }));
+
 function countWords(value: string) {
   const trimmed = (value || "").trim();
   if (!trimmed) return 0;
@@ -99,7 +102,7 @@ export default function CommitteeBiosScreen() {
   const insets = useSafeAreaInsets();
   const { auth } = useAuth();
 
-  const [bios, setBios] = useState<CommitteeBio[]>(INITIAL_BIOS);
+  const [bios, setBios] = useState<CommitteeBio[]>(() => committeeBiosSessionStore.map((item) => ({ ...item })));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CommitteeBio | null>(null);
 
@@ -126,7 +129,12 @@ export default function CommitteeBiosScreen() {
 
   const saveEdit = () => {
     if (!draft || !canSaveDraft) return;
-    setBios((prev) => prev.map((item) => (item.id === draft.id ? { ...draft } : item)));
+    const normalizedDraft = {
+      ...draft,
+      imageUrl: draft.imageUrl?.trim() || undefined,
+    };
+    committeeBiosSessionStore = bios.map((item) => (item.id === normalizedDraft.id ? { ...normalizedDraft } : item));
+    setBios(committeeBiosSessionStore.map((item) => ({ ...item })));
     setEditingId(null);
     setDraft(null);
   };
@@ -173,7 +181,7 @@ export default function CommitteeBiosScreen() {
                 <>
                   <View style={styles.cardHead}>
                     <Image
-                      source={editing && draft.imageUrl?.trim() ? { uri: draft.imageUrl.trim() } : item.imageSource}
+                      source={item.imageUrl?.trim() ? { uri: item.imageUrl.trim() } : item.imageSource}
                       style={styles.avatar}
                       contentFit="cover"
                     />
