@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,6 +25,11 @@ type CommitteeBio = {
   imageSource: number | { uri: string };
   imageUrl?: string;
   bio: string;
+};
+
+type ExpandedImage = {
+  name: string;
+  source: number | { uri: string };
 };
 
 const committeeBioAssets = {
@@ -105,6 +111,8 @@ export default function CommitteeBiosScreen() {
   const [bios, setBios] = useState<CommitteeBio[]>(() => committeeBiosSessionStore.map((item) => ({ ...item })));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CommitteeBio | null>(null);
+  const [expandedBioIds, setExpandedBioIds] = useState<Set<string>>(new Set());
+  const [expandedImage, setExpandedImage] = useState<ExpandedImage | null>(null);
 
   const isAdmin = !!auth.username;
 
@@ -125,6 +133,15 @@ export default function CommitteeBiosScreen() {
   const cancelEdit = () => {
     setEditingId(null);
     setDraft(null);
+  };
+
+  const toggleExpandedBio = (id: string) => {
+    setExpandedBioIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   const saveEdit = () => {
@@ -174,17 +191,28 @@ export default function CommitteeBiosScreen() {
         {bios.map((item) => {
           const editing = isAdmin && editingId === item.id && draft;
           const bioWordCount = countWords(item.bio);
+          const isExpanded = expandedBioIds.has(item.id);
+          const hasBio = !!item.bio.trim();
+          const imageSource = item.imageUrl?.trim() ? { uri: item.imageUrl.trim() } : item.imageSource;
 
           return (
             <View key={item.id} style={[styles.card, shadow.card]} testID={`committee-bio-${item.id}`}>
               {!editing ? (
                 <>
                   <View style={styles.cardHead}>
-                    <Image
-                      source={item.imageUrl?.trim() ? { uri: item.imageUrl.trim() } : item.imageSource}
-                      style={styles.avatar}
-                      contentFit="cover"
-                    />
+                    <Pressable
+                      onPress={() => setExpandedImage({ name: item.name, source: imageSource })}
+                      hitSlop={6}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Expand profile image for ${item.name}`}
+                      testID={`committee-bio-image-expand-${item.id}`}
+                    >
+                      <Image
+                        source={imageSource}
+                        style={styles.avatar}
+                        contentFit="cover"
+                      />
+                    </Pressable>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.name}>{item.name}</Text>
                       <Text style={styles.meta}>{bioWordCount} / 400 words</Text>
@@ -201,9 +229,19 @@ export default function CommitteeBiosScreen() {
                     ) : null}
                   </View>
 
-                  <Text style={styles.bioText}>
-                    {item.bio.trim() ? item.bio : "Bio coming soon."}
+                  <Text style={styles.bioText} numberOfLines={isExpanded ? undefined : 3}>
+                    {hasBio ? item.bio : "Bio coming soon."}
                   </Text>
+                  {hasBio ? (
+                    <Pressable
+                      onPress={() => toggleExpandedBio(item.id)}
+                      hitSlop={8}
+                      style={styles.readMoreBtn}
+                      testID={`committee-bio-toggle-${item.id}`}
+                    >
+                      <Text style={styles.readMoreText}>{isExpanded ? "Show less" : "Read more"}</Text>
+                    </Pressable>
+                  ) : null}
                 </>
               ) : (
                 <>
@@ -270,6 +308,38 @@ export default function CommitteeBiosScreen() {
         })}
       </ScrollView>
 
+      <Modal
+        visible={!!expandedImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExpandedImage(null)}
+      >
+        <View style={styles.imageModalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setExpandedImage(null)}
+            testID="committee-bio-image-dismiss"
+          />
+          <View style={styles.imageModalCard}>
+            <Text style={styles.imageModalTitle}>{expandedImage?.name}</Text>
+            {expandedImage ? (
+              <Image
+                source={expandedImage.source}
+                style={styles.expandedImage}
+                contentFit="contain"
+              />
+            ) : null}
+            <Pressable
+              onPress={() => setExpandedImage(null)}
+              style={styles.closeImageBtn}
+              testID="committee-bio-image-close"
+            >
+              <Text style={styles.closeImageBtnText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
       <AdminFooterNav />
     </View>
   );
@@ -325,6 +395,15 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
     fontSize: 13,
     lineHeight: 20,
+  },
+  readMoreBtn: {
+    alignSelf: "flex-start",
+    marginTop: spacing.xs,
+  },
+  readMoreText: {
+    color: colors.brand,
+    fontSize: 12,
+    fontWeight: "700",
   },
   editBtn: {
     flexDirection: "row",
@@ -388,6 +467,47 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brand,
   },
   saveBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  imageModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  imageModalCard: {
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: "center",
+    ...shadow.card,
+  },
+  imageModalTitle: {
+    color: colors.onSurface,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
+    fontFamily: "Georgia",
+  },
+  expandedImage: {
+    width: "100%",
+    aspectRatio: 1,
+    maxHeight: 420,
+    borderRadius: radius.md,
+    backgroundColor: "#DDE3EA",
+  },
+  closeImageBtn: {
+    marginTop: spacing.md,
+    backgroundColor: colors.brand,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  closeImageBtnText: {
     color: "#fff",
     fontWeight: "700",
   },
