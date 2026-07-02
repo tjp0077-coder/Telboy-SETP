@@ -17,6 +17,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, CommitteeBioItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import AdminFooterNav from "@/src/components/AdminFooterNav";
+import { COMMITTEE_SEED_BIOS } from "@/src/constants/committeeBios";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -34,67 +35,12 @@ type ExpandedImage = {
   source: number | { uri: string };
 };
 
-const committeeBioAssets = {
-  davidMackay: require("@/assets/images/committee-bios/dave_mackay.jpg"),
-  terryParker: require("@/assets/images/committee-bios/terry_parker.jpg"),
-  laurieBalderas: require("@/assets/images/committee-bios/lauri_balderas.jpg"),
-  clarkChilders: require("@/assets/images/committee-bios/clark-childers.jpg"),
-  timBelow: require("@/assets/images/committee-bios/tim_below.jpg"),
-  paulEdwards: require("@/assets/images/committee-bios/paul_edwards.jpg"),
-  rhysWilliams: require("@/assets/images/committee-bios/rhys-williams.jpg"),
-  geoffConnolly: require("@/assets/images/committee-bios/geoff-connolly.jpg"),
-} as const;
-
-const INITIAL_BIOS: CommitteeBio[] = [
-  {
-    id: "david-mackay",
-    name: "David Mackay",
-    imageSource: committeeBioAssets.davidMackay,
-    bio: "",
-  },
-  {
-    id: "laurie-balderas",
-    name: "Laurie Balderas",
-    imageSource: committeeBioAssets.laurieBalderas,
-    bio: "",
-  },
-  {
-    id: "tim-below",
-    name: "Tim Below",
-    imageSource: committeeBioAssets.timBelow,
-    bio: "",
-  },
-  {
-    id: "clark-childers",
-    name: "Clark Childers",
-    imageSource: committeeBioAssets.clarkChilders,
-    bio: "",
-  },
-  {
-    id: "geoff-connolly",
-    name: "Geoff Connolly",
-    imageSource: committeeBioAssets.geoffConnolly,
-    bio: "",
-  },
-  {
-    id: "paul-edwards",
-    name: "Paul Edwards",
-    imageSource: committeeBioAssets.paulEdwards,
-    bio: "",
-  },
-  {
-    id: "terry-parker",
-    name: "Terry Parker",
-    imageSource: committeeBioAssets.terryParker,
-    bio: "",
-  },
-  {
-    id: "rhys-williams",
-    name: "Rhys Williams",
-    imageSource: committeeBioAssets.rhysWilliams,
-    bio: "",
-  },
-];
+const INITIAL_BIOS: CommitteeBio[] = COMMITTEE_SEED_BIOS.map((item) => ({
+  id: item.id,
+  name: item.name,
+  imageSource: item.imageSource,
+  bio: "",
+}));
 
 function countWords(value: string) {
   const trimmed = (value || "").trim();

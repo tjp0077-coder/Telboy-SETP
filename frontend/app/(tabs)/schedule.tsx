@@ -1,14 +1,15 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, Pressable, ActivityIndicator,
-  RefreshControl, FlatList, Dimensions, Linking, Alert,
+  RefreshControl, FlatList, Dimensions, Linking, Alert, Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { api, SessionItem } from "@/src/api";
+import { api, CommitteeBioItem, SessionItem } from "@/src/api";
+import { COMMITTEE_DAY26_ORDER, COMMITTEE_SEED_BY_ID } from "@/src/constants/committeeBios";
 import { useFavorites } from "@/src/useFavorites";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg } from "@/src/components/ScreenBg";
@@ -37,6 +38,18 @@ const CATEGORY_COLOR: Record<string, string> = {
 const isTechnicalTalk = (item: SessionItem) =>
   item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
 
+type CommitteeCardBio = {
+  id: string;
+  name: string;
+  bio: string;
+  imageSource: number;
+};
+
+type ExpandedCommitteeImage = {
+  name: string;
+  source: number;
+};
+
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -45,13 +58,34 @@ export default function ScheduleListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeDate, setActiveDate] = useState<string | null>(null);
+  const [committeeBios, setCommitteeBios] = useState<CommitteeCardBio[]>([]);
+  const [expandedCommitteeImage, setExpandedCommitteeImage] = useState<ExpandedCommitteeImage | null>(null);
   const { favorites, toggle } = useFavorites();
 
   const load = useCallback(async () => {
     try {
-      const data = await api.listSchedule();
+      const [data, persistedCommittee] = await Promise.all([
+        api.listSchedule(),
+        api.listCommitteeBios().catch(() => [] as CommitteeBioItem[]),
+      ]);
       setItems(data);
       if (data.length && !activeDate) setActiveDate(data[0].date);
+
+      const persistedById = new Map<string, CommitteeBioItem>(persistedCommittee.map((item) => [item.id, item]));
+      const merged = COMMITTEE_DAY26_ORDER
+        .map((id) => {
+          const seeded = COMMITTEE_SEED_BY_ID[id];
+          if (!seeded) return null;
+          const stored = persistedById.get(id);
+          return {
+            id,
+            name: stored?.name || seeded.name,
+            bio: stored?.bio || "",
+            imageSource: seeded.imageSource,
+          };
+        })
+        .filter((item): item is CommitteeCardBio => !!item);
+      setCommitteeBios(merged);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -151,7 +185,20 @@ export default function ScheduleListScreen() {
               <View style={[styles.committeeCard, styles.committeeCardFill]} testID="meet-committee-card">
                 <View style={styles.committeeTitleRow}>
                   <Text style={styles.committeeTitle}>Meet the Committee</Text>
-                  <Text style={styles.committeeTbc}>TBC ...</Text>
+                </View>
+                <Text style={styles.committeeSubTitle}>Tap a photo to expand</Text>
+                <View style={styles.committeeGrid}>
+                  {committeeBios.map((member) => (
+                    <Pressable
+                      key={member.id}
+                      style={styles.committeeMember}
+                      onPress={() => setExpandedCommitteeImage({ name: member.name, source: member.imageSource })}
+                      testID={`committee-day26-${member.id}`}
+                    >
+                      <Image source={member.imageSource} style={styles.committeeAvatar} contentFit="cover" />
+                      <Text style={styles.committeeMemberName} numberOfLines={2}>{member.name}</Text>
+                    </Pressable>
+                  ))}
                 </View>
               </View>
             ) : null}
@@ -256,6 +303,34 @@ export default function ScheduleListScreen() {
           );
         }}
       />
+
+      <Modal
+        visible={!!expandedCommitteeImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setExpandedCommitteeImage(null)}
+      >
+        <View style={styles.imageModalBackdrop}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setExpandedCommitteeImage(null)}
+            testID="committee-day26-image-dismiss"
+          />
+          <View style={styles.imageModalCard}>
+            <Text style={styles.imageModalTitle}>{expandedCommitteeImage?.name}</Text>
+            {expandedCommitteeImage ? (
+              <Image source={expandedCommitteeImage.source} style={styles.expandedImage} contentFit="contain" />
+            ) : null}
+            <Pressable
+              onPress={() => setExpandedCommitteeImage(null)}
+              style={styles.closeImageBtn}
+              testID="committee-day26-image-close"
+            >
+              <Text style={styles.closeImageBtnText}>Close</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -337,12 +412,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(15,26,46,0.35)",
   },
   committeeCardFill: {
-    minHeight: 360,
+    minHeight: Math.max(420, Dimensions.get("window").height * 0.58),
   },
   committeeTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing.sm,
   },
   committeeTitle: {
     color: "#FFFFFF",
@@ -350,12 +424,43 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontFamily: "Georgia",
   },
-  committeeTbc: {
+  committeeSubTitle: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
-    opacity: 0.9,
+    opacity: 0.85,
     fontFamily: "Georgia",
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  committeeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm,
+  },
+  committeeMember: {
+    width: "31%",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: radius.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  committeeAvatar: {
+    width: 74,
+    height: 74,
+    borderRadius: 37,
+    backgroundColor: "#DDE3EA",
+  },
+  committeeMemberName: {
+    marginTop: 8,
+    color: "#FFFFFF",
+    fontSize: 12,
+    lineHeight: 15,
+    textAlign: "center",
+    fontWeight: "700",
   },
   paymentHeader: {
     backgroundColor: colors.surfaceSecondary,
@@ -379,5 +484,46 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12,
     color: colors.onSurfaceMuted,
+  },
+  imageModalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: spacing.lg,
+  },
+  imageModalCard: {
+    width: "100%",
+    maxWidth: 520,
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    alignItems: "center",
+    ...shadow.card,
+  },
+  imageModalTitle: {
+    color: colors.onSurface,
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: spacing.sm,
+    fontFamily: "Georgia",
+  },
+  expandedImage: {
+    width: "100%",
+    aspectRatio: 1,
+    maxHeight: 420,
+    borderRadius: radius.md,
+    backgroundColor: "#DDE3EA",
+  },
+  closeImageBtn: {
+    marginTop: spacing.md,
+    backgroundColor: colors.brand,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  closeImageBtnText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });
