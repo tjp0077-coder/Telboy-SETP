@@ -1,7 +1,7 @@
 import React from "react";
 import { Alert, StyleProp, StyleSheet, Text, TouchableOpacity, View, ViewStyle } from "react-native";
 import * as Linking from "expo-linking";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome5, Ionicons } from "@expo/vector-icons";
 
 const WHATSAPP_GROUP_URL = "https://chat.whatsapp.com/FbIa9hKQR9zDucG8xdG3OU";
 const WHATSAPP_GREEN = "#25D366";
@@ -43,7 +43,7 @@ export default function WhatsAppGroupButton({
         title="Join Admin WhatsApp Group"
       >
         <View style={styles.iconWrap}>
-          <FontAwesome name="whatsapp" size={26} color="#fff" />
+          <FontAwesome5 name="whatsapp" size={24} color="#fff" solid />
           {showBadge ? <View style={styles.badge} /> : null}
         </View>
       </TouchableOpacity>
@@ -62,14 +62,14 @@ export default function WhatsAppGroupButton({
       title="Join Admin WhatsApp Group"
     >
       <View style={styles.cardIconWrap}>
-        <FontAwesome name="whatsapp" size={24} color="#fff" />
+        <FontAwesome5 name="whatsapp" size={22} color="#fff" solid />
         {showBadge ? <View style={styles.badge} /> : null}
       </View>
       <View style={styles.cardTextWrap}>
         <Text style={styles.cardTitle}>Admin WhatsApp Group</Text>
         <Text style={styles.cardSubtitle}>Quick join for real-time committee updates</Text>
       </View>
-      <FontAwesome name="angle-right" size={20} color={WHATSAPP_GREEN} />
+      <Ionicons name="open-outline" size={20} color={WHATSAPP_GREEN} />
     </TouchableOpacity>
   );
 }
