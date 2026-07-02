@@ -7,6 +7,7 @@ import httpx
 import os
 import logging
 import html
+import re
 from pathlib import Path
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import List, Optional
@@ -1353,6 +1354,9 @@ async def send_contact_reply_email(item: dict, subject: str, message: str, admin
         base_subject = "Thank you for your Enquiry"
 
     outbound_subject = f"{base_subject}{RESEND_REPLY_DEBUG_SUBJECT_SUFFIX}" if RESEND_REPLY_DEBUG_SUBJECT_SUFFIX else base_subject
+    # Remove dynamic template/tracking tags like [tpl:setp-template-1] and normalize spacing.
+    outbound_subject = re.sub(r"\s*\[tpl:[^\]]+\]\s*", " ", outbound_subject)
+    outbound_subject = re.sub(r"\s{2,}", " ", outbound_subject).strip()
 
     delegate_name = (item.get("name") or "<Delegate>").strip() or "<Delegate>"
     admin_display = (admin_name or "").strip() or "<Dave Mackay>"
