@@ -184,9 +184,6 @@ export default function AskSpeakerScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.intro}>
-          <View style={styles.introIcon}>
-            <Ionicons name="mic-outline" size={22} color={colors.brand} />
-          </View>
           <Text style={styles.introTitle}>Send a question to the speaker</Text>
           <Text style={styles.introText}>
             Questions are one-way for delegates. If you choose a technical talk, the chair team will file it against that session.
@@ -364,10 +361,6 @@ const styles = StyleSheet.create({
   topTitle: { fontSize: 17, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
 
   intro: { marginBottom: spacing.lg },
-  introIcon: {
-    width: 44, height: 44, borderRadius: 22, backgroundColor: "#E8ECF2",
-    alignItems: "center", justifyContent: "center", marginBottom: spacing.md,
-  },
   introTitle: { fontSize: 22, fontWeight: "700", color: "#fff", fontFamily: "Georgia", lineHeight: 28 },
   introText: { fontSize: 13, color: "#fff", marginTop: spacing.xs, lineHeight: 18 },
 
