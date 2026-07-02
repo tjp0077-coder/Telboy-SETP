@@ -23,7 +23,6 @@ type CommitteeBio = {
   id: string;
   name: string;
   imageSource: number | { uri: string };
-  imageUrl?: string;
   bio: string;
 };
 
@@ -51,21 +50,9 @@ const INITIAL_BIOS: CommitteeBio[] = [
     bio: "",
   },
   {
-    id: "terry-parker",
-    name: "Terry Parker",
-    imageSource: committeeBioAssets.terryParker,
-    bio: "",
-  },
-  {
     id: "laurie-balderas",
     name: "Laurie Balderas",
     imageSource: committeeBioAssets.laurieBalderas,
-    bio: "",
-  },
-  {
-    id: "clark-childers",
-    name: "Clark Childers",
-    imageSource: committeeBioAssets.clarkChilders,
     bio: "",
   },
   {
@@ -75,21 +62,33 @@ const INITIAL_BIOS: CommitteeBio[] = [
     bio: "",
   },
   {
-    id: "paul-edwards",
-    name: "Paul Edwards",
-    imageSource: committeeBioAssets.paulEdwards,
-    bio: "",
-  },
-  {
-    id: "rhys-williams",
-    name: "Rhys Williams",
-    imageSource: committeeBioAssets.rhysWilliams,
+    id: "clark-childers",
+    name: "Clark Childers",
+    imageSource: committeeBioAssets.clarkChilders,
     bio: "",
   },
   {
     id: "geoff-connolly",
     name: "Geoff Connolly",
     imageSource: committeeBioAssets.geoffConnolly,
+    bio: "",
+  },
+  {
+    id: "paul-edwards",
+    name: "Paul Edwards",
+    imageSource: committeeBioAssets.paulEdwards,
+    bio: "",
+  },
+  {
+    id: "terry-parker",
+    name: "Terry Parker",
+    imageSource: committeeBioAssets.terryParker,
+    bio: "",
+  },
+  {
+    id: "rhys-williams",
+    name: "Rhys Williams",
+    imageSource: committeeBioAssets.rhysWilliams,
     bio: "",
   },
 ];
@@ -146,11 +145,7 @@ export default function CommitteeBiosScreen() {
 
   const saveEdit = () => {
     if (!draft || !canSaveDraft) return;
-    const normalizedDraft = {
-      ...draft,
-      imageUrl: draft.imageUrl?.trim() || undefined,
-    };
-    committeeBiosSessionStore = bios.map((item) => (item.id === normalizedDraft.id ? { ...normalizedDraft } : item));
+    committeeBiosSessionStore = bios.map((item) => (item.id === draft.id ? { ...draft } : item));
     setBios(committeeBiosSessionStore.map((item) => ({ ...item })));
     setEditingId(null);
     setDraft(null);
@@ -185,7 +180,7 @@ export default function CommitteeBiosScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.helpText}>
-          Committee profile cards are shown below. Admins can edit name, profile image URL, and bio text inline.
+          Committee profile cards are shown below. Admins can edit name and bio text inline.
         </Text>
 
         {bios.map((item) => {
@@ -193,7 +188,7 @@ export default function CommitteeBiosScreen() {
           const bioWordCount = countWords(item.bio);
           const isExpanded = expandedBioIds.has(item.id);
           const hasBio = !!item.bio.trim();
-          const imageSource = item.imageUrl?.trim() ? { uri: item.imageUrl.trim() } : item.imageSource;
+          const imageSource = item.imageSource;
 
           return (
             <View key={item.id} style={[styles.card, shadow.card]} testID={`committee-bio-${item.id}`}>
@@ -214,7 +209,10 @@ export default function CommitteeBiosScreen() {
                       />
                     </Pressable>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.name}>{item.name}</Text>
+                      <View style={styles.nameRow}>
+                        <Text style={styles.name}>{item.name}</Text>
+                        {item.id === "david-mackay" ? <Text style={styles.chairTag}>&lt;Chairman&gt;</Text> : null}
+                      </View>
                       <Text style={styles.meta}>{bioWordCount} / 400 words</Text>
                     </View>
                     {isAdmin ? (
@@ -254,18 +252,6 @@ export default function CommitteeBiosScreen() {
                     placeholder="Committee member name"
                     placeholderTextColor={colors.onSurfaceMuted}
                     testID={`committee-bio-name-${item.id}`}
-                  />
-
-                  <Text style={styles.inputLabel}>Profile image URL</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={draft.imageUrl || ""}
-                    onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, imageUrl: value } : prev))}
-                    placeholder="Paste an image URL to override the uploaded headshot"
-                    placeholderTextColor={colors.onSurfaceMuted}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    testID={`committee-bio-image-${item.id}`}
                   />
 
                   <Text style={styles.inputLabel}>Bio (max 400 words)</Text>
@@ -384,6 +370,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     fontFamily: "Georgia",
+  },
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  chairTag: {
+    color: colors.brand,
+    fontSize: 12,
+    fontWeight: "700",
   },
   meta: {
     marginTop: 2,
