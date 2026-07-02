@@ -53,7 +53,8 @@ type ExpandedCommitteeImage = {
 
 type CommitteeGridItem =
   | { kind: "member"; member: CommitteeCardBio }
-  | { kind: "icon"; id: string };
+  | { kind: "icon"; id: string }
+  | { kind: "spacer"; id: string };
 
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
@@ -68,16 +69,24 @@ export default function ScheduleListScreen() {
   const { favorites, toggle } = useFavorites();
 
   const committeeGridItems = useMemo<CommitteeGridItem[]>(() => {
+    const dave = committeeBios.find((item) => item.id === "david-mackay");
     const terryIdx = committeeBios.findIndex((item) => item.id === "terry-parker");
     const rhysIdx = committeeBios.findIndex((item) => item.id === "rhys-williams");
-    if (terryIdx === -1 || rhysIdx === -1 || rhysIdx <= terryIdx) {
+    if (!dave || terryIdx === -1 || rhysIdx === -1 || rhysIdx <= terryIdx) {
       return committeeBios.map((member) => ({ kind: "member", member }));
     }
 
-    const beforeRhys = committeeBios.slice(0, rhysIdx).map((member) => ({ kind: "member", member } as const));
+    const withoutDave = committeeBios.filter((item) => item.id !== "david-mackay");
+    const beforeRhys = withoutDave
+      .slice(0, Math.max(0, rhysIdx - 1))
+      .map((member) => ({ kind: "member", member } as const));
     const rhys = committeeBios[rhysIdx];
     return [
+      { kind: "spacer", id: "dave-spacer-left" },
+      { kind: "member", member: dave },
+      { kind: "spacer", id: "dave-spacer-right" },
       ...beforeRhys,
+      { kind: "spacer", id: "rhys-row-left-spacer" },
       { kind: "icon", id: "setp-icon-slot" },
       { kind: "member", member: rhys },
     ];
@@ -207,9 +216,12 @@ export default function ScheduleListScreen() {
                 <View style={styles.committeeTitleRow}>
                   <Text style={styles.committeeTitle}>Meet the Committee</Text>
                 </View>
-                <Text style={styles.committeeSubTitle}>Tap a photo to expand</Text>
                 <View style={styles.committeeGrid}>
                   {committeeGridItems.map((item) => {
+                    if (item.kind === "spacer") {
+                      return <View key={item.id} style={styles.committeeSpacer} />;
+                    }
+
                     if (item.kind === "icon") {
                       return (
                         <View key={item.id} style={styles.committeeMember} testID="committee-day26-icon-slot">
@@ -458,26 +470,23 @@ const styles = StyleSheet.create({
   committeeTitleRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
   },
   committeeTitle: {
     color: "#FFFFFF",
     fontSize: 18,
     fontWeight: "700",
     fontFamily: "Georgia",
-  },
-  committeeSubTitle: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-    opacity: 0.85,
-    fontFamily: "Georgia",
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
+    textAlign: "center",
   },
   committeeGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  committeeSpacer: {
+    width: "31%",
   },
   committeeMember: {
     width: "31%",
