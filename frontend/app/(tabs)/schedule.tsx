@@ -16,6 +16,7 @@ import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
 const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
+const APP_ICON = require("@/assets/images/icon.png");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
 const COMMITTEE_CARD_DATE = "2026-07-26";
@@ -50,6 +51,10 @@ type ExpandedCommitteeImage = {
   source: number;
 };
 
+type CommitteeGridItem =
+  | { kind: "member"; member: CommitteeCardBio }
+  | { kind: "icon"; id: string };
+
 export default function ScheduleListScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
@@ -61,6 +66,22 @@ export default function ScheduleListScreen() {
   const [committeeBios, setCommitteeBios] = useState<CommitteeCardBio[]>([]);
   const [expandedCommitteeImage, setExpandedCommitteeImage] = useState<ExpandedCommitteeImage | null>(null);
   const { favorites, toggle } = useFavorites();
+
+  const committeeGridItems = useMemo<CommitteeGridItem[]>(() => {
+    const terryIdx = committeeBios.findIndex((item) => item.id === "terry-parker");
+    const rhysIdx = committeeBios.findIndex((item) => item.id === "rhys-williams");
+    if (terryIdx === -1 || rhysIdx === -1 || rhysIdx <= terryIdx) {
+      return committeeBios.map((member) => ({ kind: "member", member }));
+    }
+
+    const beforeRhys = committeeBios.slice(0, rhysIdx).map((member) => ({ kind: "member", member } as const));
+    const rhys = committeeBios[rhysIdx];
+    return [
+      ...beforeRhys,
+      { kind: "icon", id: "setp-icon-slot" },
+      { kind: "member", member: rhys },
+    ];
+  }, [committeeBios]);
 
   const load = useCallback(async () => {
     try {
@@ -188,18 +209,38 @@ export default function ScheduleListScreen() {
                 </View>
                 <Text style={styles.committeeSubTitle}>Tap a photo to expand</Text>
                 <View style={styles.committeeGrid}>
-                  {committeeBios.map((member) => (
-                    <Pressable
-                      key={member.id}
-                      style={styles.committeeMember}
-                      onPress={() => setExpandedCommitteeImage({ name: member.name, source: member.imageSource })}
-                      testID={`committee-day26-${member.id}`}
-                    >
-                      <Image source={member.imageSource} style={styles.committeeAvatar} contentFit="cover" />
-                      <Text style={styles.committeeMemberName} numberOfLines={2}>{member.name}</Text>
-                    </Pressable>
-                  ))}
+                  {committeeGridItems.map((item) => {
+                    if (item.kind === "icon") {
+                      return (
+                        <View key={item.id} style={styles.committeeMember} testID="committee-day26-icon-slot">
+                          <Image source={APP_ICON} style={styles.committeeAvatar} contentFit="contain" />
+                          <Text style={styles.committeeMemberName} numberOfLines={2}>SETP 2026</Text>
+                        </View>
+                      );
+                    }
+
+                    const member = item.member;
+                    return (
+                      <Pressable
+                        key={member.id}
+                        style={styles.committeeMember}
+                        onPress={() => setExpandedCommitteeImage({ name: member.name, source: member.imageSource })}
+                        testID={`committee-day26-${member.id}`}
+                      >
+                        <Image source={member.imageSource} style={styles.committeeAvatar} contentFit="cover" />
+                        <Text style={styles.committeeMemberName} numberOfLines={2}>{member.name}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
+                <Pressable
+                  onPress={() => router.push("/committee-bios")}
+                  style={styles.committeeBioBtn}
+                  testID="committee-day26-bio-btn"
+                >
+                  <Ionicons name="book-outline" size={14} color={colors.brand} />
+                  <Text style={styles.committeeBioBtnText}>Bio</Text>
+                </Pressable>
               </View>
             ) : null}
             {activeDate === LANDING_FEE_DATE ? (
@@ -461,6 +502,22 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     textAlign: "center",
     fontWeight: "700",
+  },
+  committeeBioBtn: {
+    marginTop: spacing.md,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#E8ECF2",
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  committeeBioBtnText: {
+    color: colors.brand,
+    fontSize: 12,
+    fontWeight: "800",
   },
   paymentHeader: {
     backgroundColor: colors.surfaceSecondary,

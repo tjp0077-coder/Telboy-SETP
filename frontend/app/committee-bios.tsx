@@ -64,14 +64,6 @@ export default function CommitteeBiosScreen() {
   const isAdmin = !!auth.username;
 
   useEffect(() => {
-    if (!auth.username && !auth.loading) {
-      router.replace("/login");
-    }
-  }, [auth.username, auth.loading, router]);
-
-  useEffect(() => {
-    if (!auth.username) return;
-
     let isMounted = true;
     const load = async () => {
       setLoading(true);
@@ -101,7 +93,7 @@ export default function CommitteeBiosScreen() {
     return () => {
       isMounted = false;
     };
-  }, [auth.username]);
+  }, []);
 
   const draftWordCount = useMemo(() => countWords(draft?.bio || ""), [draft?.bio]);
   const canSaveDraft = !!draft && draft.name.trim().length > 0 && draftWordCount <= 400;
@@ -156,7 +148,7 @@ export default function CommitteeBiosScreen() {
     run();
   };
 
-  if (auth.loading || loading) {
+  if (loading) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ScreenBg />
@@ -332,7 +324,7 @@ export default function CommitteeBiosScreen() {
         </View>
       </Modal>
 
-      <AdminFooterNav />
+      {isAdmin ? <AdminFooterNav /> : null}
     </View>
   );
 }
