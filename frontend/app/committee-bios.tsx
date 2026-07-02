@@ -21,57 +21,69 @@ import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 type CommitteeBio = {
   id: string;
   name: string;
-  imageUrl: string;
+  imageSource: number | { uri: string };
+  imageUrl?: string;
   bio: string;
 };
+
+const committeeBioAssets = {
+  davidMackay: require("@/assets/images/committee-bios/dave_mackay.jpg"),
+  terryParker: require("@/assets/images/committee-bios/terry_parker.jpg"),
+  laurieBalderas: require("@/assets/images/committee-bios/lauri_balderas.jpg"),
+  clarkChilders: require("@/assets/images/committee-bios/clark-childers.jpg"),
+  timBelow: require("@/assets/images/committee-bios/tim_below.jpg"),
+  paulEdwards: require("@/assets/images/committee-bios/paul_edwards.jpg"),
+  rhysWilliams: require("@/assets/images/committee-bios/rhys-williams.jpg"),
+  geoffConnolly: require("@/assets/images/committee-bios/geoff-connolly.jpg"),
+} as const;
 
 const INITIAL_BIOS: CommitteeBio[] = [
   {
     id: "david-mackay",
     name: "David Mackay",
-    imageUrl: "https://ui-avatars.com/api/?name=David+Mackay&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.davidMackay,
     bio: "",
   },
   {
     id: "terry-parker",
     name: "Terry Parker",
-    imageUrl: "https://ui-avatars.com/api/?name=Terry+Parker&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.terryParker,
     bio: "",
   },
   {
     id: "laurie-balderas",
     name: "Laurie Balderas",
-    imageUrl: "https://ui-avatars.com/api/?name=Laurie+Balderas&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.laurieBalderas,
     bio: "",
   },
   {
     id: "clark-childers",
     name: "Clark Childers",
-    imageUrl: "https://ui-avatars.com/api/?name=Clark+Childers&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.clarkChilders,
     bio: "",
   },
   {
     id: "tim-below",
     name: "Tim Below",
-    imageUrl: "https://ui-avatars.com/api/?name=Tim+Below&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.timBelow,
     bio: "",
   },
   {
     id: "paul-edwards",
     name: "Paul Edwards",
-    imageUrl: "https://ui-avatars.com/api/?name=Paul+Edwards&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.paulEdwards,
     bio: "",
   },
   {
     id: "rhys-williams",
     name: "Rhys Williams",
-    imageUrl: "https://ui-avatars.com/api/?name=Rhys+Williams&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.rhysWilliams,
     bio: "",
   },
   {
     id: "geoff-connolly",
     name: "Geoff Connolly",
-    imageUrl: "https://ui-avatars.com/api/?name=Geoff+Connolly&background=1A2841&color=fff",
+    imageSource: committeeBioAssets.geoffConnolly,
     bio: "",
   },
 ];
@@ -160,7 +172,11 @@ export default function CommitteeBiosScreen() {
               {!editing ? (
                 <>
                   <View style={styles.cardHead}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.avatar} contentFit="cover" />
+                    <Image
+                      source={editing && draft.imageUrl?.trim() ? { uri: draft.imageUrl.trim() } : item.imageSource}
+                      style={styles.avatar}
+                      contentFit="cover"
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={styles.name}>{item.name}</Text>
                       <Text style={styles.meta}>{bioWordCount} / 400 words</Text>
@@ -197,9 +213,9 @@ export default function CommitteeBiosScreen() {
                   <Text style={styles.inputLabel}>Profile image URL</Text>
                   <TextInput
                     style={styles.input}
-                    value={draft.imageUrl}
+                    value={draft.imageUrl || ""}
                     onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, imageUrl: value } : prev))}
-                    placeholder="https://example.com/profile.jpg"
+                    placeholder="Paste an image URL to override the uploaded headshot"
                     placeholderTextColor={colors.onSurfaceMuted}
                     autoCapitalize="none"
                     autoCorrect={false}
