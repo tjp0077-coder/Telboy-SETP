@@ -1,0 +1,370 @@
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
+import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { useAuth } from "@/src/AuthContext";
+import AdminFooterNav from "@/src/components/AdminFooterNav";
+import { colors, spacing, radius, shadow } from "@/src/theme";
+import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
+
+type CommitteeBio = {
+  id: string;
+  name: string;
+  imageUrl: string;
+  bio: string;
+};
+
+const INITIAL_BIOS: CommitteeBio[] = [
+  {
+    id: "david-mackay",
+    name: "David Mackay",
+    imageUrl: "https://ui-avatars.com/api/?name=David+Mackay&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "terry-parker",
+    name: "Terry Parker",
+    imageUrl: "https://ui-avatars.com/api/?name=Terry+Parker&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "laurie-balderas",
+    name: "Laurie Balderas",
+    imageUrl: "https://ui-avatars.com/api/?name=Laurie+Balderas&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "clark-childers",
+    name: "Clark Childers",
+    imageUrl: "https://ui-avatars.com/api/?name=Clark+Childers&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "tim-below",
+    name: "Tim Below",
+    imageUrl: "https://ui-avatars.com/api/?name=Tim+Below&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "paul-edwards",
+    name: "Paul Edwards",
+    imageUrl: "https://ui-avatars.com/api/?name=Paul+Edwards&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "rhys-williams",
+    name: "Rhys Williams",
+    imageUrl: "https://ui-avatars.com/api/?name=Rhys+Williams&background=1A2841&color=fff",
+    bio: "",
+  },
+  {
+    id: "geoff-connolly",
+    name: "Geoff Connolly",
+    imageUrl: "https://ui-avatars.com/api/?name=Geoff+Connolly&background=1A2841&color=fff",
+    bio: "",
+  },
+];
+
+function countWords(value: string) {
+  const trimmed = (value || "").trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
+export default function CommitteeBiosScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { auth } = useAuth();
+
+  const [bios, setBios] = useState<CommitteeBio[]>(INITIAL_BIOS);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<CommitteeBio | null>(null);
+
+  const isAdmin = !!auth.username;
+
+  useEffect(() => {
+    if (!auth.username && !auth.loading) {
+      router.replace("/login");
+    }
+  }, [auth.username, auth.loading, router]);
+
+  const draftWordCount = useMemo(() => countWords(draft?.bio || ""), [draft?.bio]);
+  const canSaveDraft = !!draft && draft.name.trim().length > 0 && draftWordCount <= 400;
+
+  const startEdit = (item: CommitteeBio) => {
+    setEditingId(item.id);
+    setDraft({ ...item });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(null);
+  };
+
+  const saveEdit = () => {
+    if (!draft || !canSaveDraft) return;
+    setBios((prev) => prev.map((item) => (item.id === draft.id ? { ...draft } : item)));
+    setEditingId(null);
+    setDraft(null);
+  };
+
+  if (auth.loading) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <ScreenBg />
+        <ActivityIndicator size="large" color={onSunset.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.screen, { paddingTop: insets.top }]} testID="committee-bios-screen">
+      <ScreenBg />
+      <View style={styles.topBar}>
+        <Pressable
+          onPress={() => (router.canGoBack() ? router.back() : router.replace("/(tabs)/profile"))}
+          hitSlop={10}
+          testID="committee-bios-back"
+        >
+          <Ionicons name="chevron-back" size={26} color={onSunset.primary} />
+        </Pressable>
+        <Text style={styles.topTitle}>Committee Bios</Text>
+        <View style={{ width: 26 }} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + 120 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.helpText}>
+          Committee profile cards are shown below. Admins can edit name, profile image URL, and bio text inline.
+        </Text>
+
+        {bios.map((item) => {
+          const editing = isAdmin && editingId === item.id && draft;
+          const bioWordCount = countWords(item.bio);
+
+          return (
+            <View key={item.id} style={[styles.card, shadow.card]} testID={`committee-bio-${item.id}`}>
+              {!editing ? (
+                <>
+                  <View style={styles.cardHead}>
+                    <Image source={{ uri: item.imageUrl }} style={styles.avatar} contentFit="cover" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.name}>{item.name}</Text>
+                      <Text style={styles.meta}>{bioWordCount} / 400 words</Text>
+                    </View>
+                    {isAdmin ? (
+                      <Pressable
+                        onPress={() => startEdit(item)}
+                        style={styles.editBtn}
+                        testID={`committee-bio-edit-${item.id}`}
+                      >
+                        <Ionicons name="create-outline" size={14} color={colors.brand} />
+                        <Text style={styles.editBtnText}>Edit</Text>
+                      </Pressable>
+                    ) : null}
+                  </View>
+
+                  <Text style={styles.bioText}>
+                    {item.bio.trim() ? item.bio : "Bio coming soon."}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  {/* Inline editor for this card only. */}
+                  <Text style={styles.inputLabel}>Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={draft.name}
+                    onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, name: value } : prev))}
+                    placeholder="Committee member name"
+                    placeholderTextColor={colors.onSurfaceMuted}
+                    testID={`committee-bio-name-${item.id}`}
+                  />
+
+                  <Text style={styles.inputLabel}>Profile image URL</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={draft.imageUrl}
+                    onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, imageUrl: value } : prev))}
+                    placeholder="https://example.com/profile.jpg"
+                    placeholderTextColor={colors.onSurfaceMuted}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    testID={`committee-bio-image-${item.id}`}
+                  />
+
+                  <Text style={styles.inputLabel}>Bio (max 400 words)</Text>
+                  <TextInput
+                    style={[styles.input, styles.inputMulti]}
+                    value={draft.bio}
+                    onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, bio: value } : prev))}
+                    multiline
+                    textAlignVertical="top"
+                    placeholder="Paste or write committee bio..."
+                    placeholderTextColor={colors.onSurfaceMuted}
+                    testID={`committee-bio-text-${item.id}`}
+                  />
+
+                  <Text style={[styles.counter, draftWordCount > 400 && styles.counterError]}>
+                    {draftWordCount} / 400 words
+                  </Text>
+
+                  <View style={styles.actionsRow}>
+                    <Pressable
+                      onPress={cancelEdit}
+                      style={[styles.actionBtn, styles.cancelBtn]}
+                      testID={`committee-bio-cancel-${item.id}`}
+                    >
+                      <Text style={styles.cancelBtnText}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={saveEdit}
+                      disabled={!canSaveDraft}
+                      style={[styles.actionBtn, styles.saveBtn, !canSaveDraft && { opacity: 0.45 }]}
+                      testID={`committee-bio-save-${item.id}`}
+                    >
+                      <Text style={styles.saveBtnText}>Save</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
+            </View>
+          );
+        })}
+      </ScrollView>
+
+      <AdminFooterNav />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1 },
+  center: { alignItems: "center", justifyContent: "center" },
+  topBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  topTitle: { fontSize: 20, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
+  helpText: {
+    color: onSunset.secondary,
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: spacing.md,
+  },
+  card: {
+    backgroundColor: colors.surfaceSecondary,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  cardHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+  },
+  avatar: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#E8ECF2",
+  },
+  name: {
+    color: colors.onSurface,
+    fontSize: 16,
+    fontWeight: "700",
+    fontFamily: "Georgia",
+  },
+  meta: {
+    marginTop: 2,
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+  },
+  bioText: {
+    marginTop: spacing.sm,
+    color: colors.onSurface,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "#E8ECF2",
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  editBtnText: { color: colors.brand, fontSize: 12, fontWeight: "700" },
+  inputLabel: {
+    color: colors.onSurface,
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.onSurface,
+    padding: spacing.md,
+    fontSize: 14,
+  },
+  inputMulti: {
+    minHeight: 120,
+  },
+  counter: {
+    marginTop: spacing.xs,
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+    textAlign: "right",
+  },
+  counterError: {
+    color: colors.error,
+    fontWeight: "700",
+  },
+  actionsRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  actionBtn: {
+    flex: 1,
+    borderRadius: radius.md,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtn: {
+    backgroundColor: "#E8ECF2",
+  },
+  cancelBtnText: {
+    color: colors.onSurface,
+    fontWeight: "700",
+  },
+  saveBtn: {
+    backgroundColor: colors.brand,
+  },
+  saveBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+});

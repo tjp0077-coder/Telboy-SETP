@@ -21,7 +21,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Schedule", icon: "calendar", href: "/(tabs)/schedule", match: (pathname) => pathname.includes("/schedule") },
   { label: "Messages", icon: "megaphone", href: "/(tabs)/messages", match: (pathname) => pathname.includes("/messages") || pathname.includes("/feed") },
   { label: "City", icon: "map", href: "/(tabs)/city", match: (pathname) => pathname.includes("/city") },
-  { label: "Profile", icon: "person-circle", href: "/(tabs)/profile", match: (pathname) => pathname.includes("/profile") || pathname.includes("/admins") || pathname.includes("/inbox") || pathname.includes("/prototypes") || pathname.includes("/questions") },
+  { label: "Profile", icon: "person-circle", href: "/(tabs)/profile", match: (pathname) => pathname.includes("/profile") || pathname.includes("/admins") || pathname.includes("/inbox") || pathname.includes("/committee-bios") || pathname.includes("/questions") },
 ];
 
 export default function AdminFooterNav() {

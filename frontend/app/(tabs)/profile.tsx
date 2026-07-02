@@ -181,12 +181,12 @@ export default function ProfileScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
           <Pressable
-            onPress={() => router.push("/prototypes")}
+            onPress={() => router.push("/committee-bios")}
             style={styles.inboxBtn}
-            testID="open-prototype-lab-btn"
+            testID="open-committee-bios-btn"
           >
-            <Ionicons name="flask" size={22} color={colors.brand} />
-            <Text style={styles.inboxBtnText}>Prototype Lab</Text>
+            <Ionicons name="people-circle" size={22} color={colors.brand} />
+            <Text style={styles.inboxBtnText}>Committee Bio's</Text>
             <Ionicons name="chevron-forward" size={20} color={colors.onSurfaceMuted} style={{ marginLeft: "auto" }} />
           </Pressable>
           <Pressable onPress={logout} style={styles.logoutBtn} testID="logout-btn">

@@ -44,7 +44,7 @@ export default function RootLayout() {
                 <Stack.Screen name="deleted-inbox" />
                 <Stack.Screen name="deleted-feed" />
                 <Stack.Screen name="admins" />
-                <Stack.Screen name="prototypes" />
+                <Stack.Screen name="committee-bios" />
               </Stack>
               <PwaInstallBanner />
             </UnreadProvider>
