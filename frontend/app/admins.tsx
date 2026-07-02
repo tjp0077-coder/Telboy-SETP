@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, AdminInfo } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import AdminFooterNav from "@/src/components/AdminFooterNav";
+import WhatsAppGroupButton from "@/src/components/WhatsAppGroupButton";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -109,6 +110,14 @@ export default function AdminsScreen() {
         Anyone listed here can sign in and post live messages. Only Terry Parker and Dave Mackay can add or remove committee members.
       </Text>
 
+      <View style={{ paddingHorizontal: spacing.lg, marginBottom: spacing.sm }}>
+        <WhatsAppGroupButton
+          variant="card"
+          showBadge
+          testID="admin-whatsapp-card"
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator color={onSunset.primary} style={{ marginTop: 40 }} />
       ) : (
@@ -169,6 +178,13 @@ export default function AdminsScreen() {
       )}
 
       <AdminFooterNav />
+
+      <WhatsAppGroupButton
+        variant="fab"
+        showBadge
+        style={{ bottom: insets.bottom + 22 }}
+        testID="admin-whatsapp-fab"
+      />
 
       {/* Compose modal */}
       <Modal
