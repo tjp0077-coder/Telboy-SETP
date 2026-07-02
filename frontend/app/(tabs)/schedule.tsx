@@ -69,27 +69,24 @@ export default function ScheduleListScreen() {
   const { favorites, toggle } = useFavorites();
 
   const committeeGridItems = useMemo<CommitteeGridItem[]>(() => {
-    const dave = committeeBios.find((item) => item.id === "david-mackay");
-    const terryIdx = committeeBios.findIndex((item) => item.id === "terry-parker");
-    const rhysIdx = committeeBios.findIndex((item) => item.id === "rhys-williams");
-    if (!dave || terryIdx === -1 || rhysIdx === -1 || rhysIdx <= terryIdx) {
-      return committeeBios.map((member) => ({ kind: "member", member }));
-    }
-
-    const withoutDave = committeeBios.filter((item) => item.id !== "david-mackay");
-    const beforeRhys = withoutDave
-      .slice(0, Math.max(0, rhysIdx - 1))
-      .map((member) => ({ kind: "member", member } as const));
-    const rhys = committeeBios[rhysIdx];
-    return [
-      { kind: "spacer", id: "dave-spacer-left" },
-      { kind: "member", member: dave },
-      { kind: "spacer", id: "dave-spacer-right" },
-      ...beforeRhys,
-      { kind: "spacer", id: "rhys-row-left-spacer" },
-      { kind: "icon", id: "setp-icon-slot" },
-      { kind: "member", member: rhys },
+    const byId = new Map<string, CommitteeCardBio>(committeeBios.map((item) => [item.id, item]));
+    const orderedIds = [
+      "laurie-balderas",
+      "david-mackay",
+      "geoff-connolly",
+      "tim-below",
+      "setp-icon-slot",
+      "paul-edwards",
+      "clark-childers",
+      "terry-parker",
+      "rhys-williams",
     ];
+
+    return orderedIds.map((id) => {
+      if (id === "setp-icon-slot") return { kind: "icon", id } as CommitteeGridItem;
+      const member = byId.get(id);
+      return member ? ({ kind: "member", member } as CommitteeGridItem) : ({ kind: "spacer", id: `missing-${id}` } as CommitteeGridItem);
+    });
   }, [committeeBios]);
 
   const load = useCallback(async () => {
