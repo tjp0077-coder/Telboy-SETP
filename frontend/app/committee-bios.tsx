@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { api, CommitteeBioItem } from "@/src/api";
 import { useAuth } from "@/src/AuthContext";
 import AdminFooterNav from "@/src/components/AdminFooterNav";
 import { colors, spacing, radius, shadow } from "@/src/theme";
@@ -24,6 +25,8 @@ type CommitteeBio = {
   name: string;
   imageSource: number | { uri: string };
   bio: string;
+  updated_at?: string | null;
+  updated_by?: string | null;
 };
 
 type ExpandedImage = {
@@ -93,9 +96,6 @@ const INITIAL_BIOS: CommitteeBio[] = [
   },
 ];
 
-// Keep edits alive for the duration of the app session, even if the screen remounts.
-let committeeBiosSessionStore: CommitteeBio[] = INITIAL_BIOS.map((item) => ({ ...item }));
-
 function countWords(value: string) {
   const trimmed = (value || "").trim();
   if (!trimmed) return 0;
@@ -107,7 +107,9 @@ export default function CommitteeBiosScreen() {
   const insets = useSafeAreaInsets();
   const { auth } = useAuth();
 
-  const [bios, setBios] = useState<CommitteeBio[]>(() => committeeBiosSessionStore.map((item) => ({ ...item })));
+  const [bios, setBios] = useState<CommitteeBio[]>(INITIAL_BIOS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<CommitteeBio | null>(null);
   const [expandedBioIds, setExpandedBioIds] = useState<Set<string>>(new Set());
@@ -120,6 +122,40 @@ export default function CommitteeBiosScreen() {
       router.replace("/login");
     }
   }, [auth.username, auth.loading, router]);
+
+  useEffect(() => {
+    if (!auth.username) return;
+
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const persisted = await api.listCommitteeBios();
+        if (!isMounted) return;
+        const byId = new Map<string, CommitteeBioItem>(persisted.map((item) => [item.id, item]));
+        setBios(
+          INITIAL_BIOS.map((seeded) => {
+            const stored = byId.get(seeded.id);
+            if (!stored) return seeded;
+            return {
+              ...seeded,
+              name: stored.name || seeded.name,
+              bio: stored.bio || "",
+              updated_at: stored.updated_at,
+              updated_by: stored.updated_by,
+            };
+          })
+        );
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [auth.username]);
 
   const draftWordCount = useMemo(() => countWords(draft?.bio || ""), [draft?.bio]);
   const canSaveDraft = !!draft && draft.name.trim().length > 0 && draftWordCount <= 400;
@@ -144,14 +180,37 @@ export default function CommitteeBiosScreen() {
   };
 
   const saveEdit = () => {
-    if (!draft || !canSaveDraft) return;
-    committeeBiosSessionStore = bios.map((item) => (item.id === draft.id ? { ...draft } : item));
-    setBios(committeeBiosSessionStore.map((item) => ({ ...item })));
-    setEditingId(null);
-    setDraft(null);
+    if (!draft || !canSaveDraft || saving) return;
+    const run = async () => {
+      setSaving(true);
+      try {
+        const updated = await api.updateCommitteeBio(draft.id, {
+          name: draft.name.trim(),
+          bio: draft.bio,
+        });
+        setBios((prev) =>
+          prev.map((item) =>
+            item.id === updated.id
+              ? {
+                  ...item,
+                  name: updated.name,
+                  bio: updated.bio,
+                  updated_at: updated.updated_at,
+                  updated_by: updated.updated_by,
+                }
+              : item
+          )
+        );
+        setEditingId(null);
+        setDraft(null);
+      } finally {
+        setSaving(false);
+      }
+    };
+    run();
   };
 
-  if (auth.loading) {
+  if (auth.loading || loading) {
     return (
       <View style={[styles.screen, styles.center]}>
         <ScreenBg />
@@ -273,18 +332,19 @@ export default function CommitteeBiosScreen() {
                   <View style={styles.actionsRow}>
                     <Pressable
                       onPress={cancelEdit}
-                      style={[styles.actionBtn, styles.cancelBtn]}
+                      disabled={saving}
+                      style={[styles.actionBtn, styles.cancelBtn, saving && { opacity: 0.6 }]}
                       testID={`committee-bio-cancel-${item.id}`}
                     >
                       <Text style={styles.cancelBtnText}>Cancel</Text>
                     </Pressable>
                     <Pressable
                       onPress={saveEdit}
-                      disabled={!canSaveDraft}
-                      style={[styles.actionBtn, styles.saveBtn, !canSaveDraft && { opacity: 0.45 }]}
+                      disabled={!canSaveDraft || saving}
+                      style={[styles.actionBtn, styles.saveBtn, (!canSaveDraft || saving) && { opacity: 0.45 }]}
                       testID={`committee-bio-save-${item.id}`}
                     >
-                      <Text style={styles.saveBtnText}>Save</Text>
+                      <Text style={styles.saveBtnText}>{saving ? "Saving..." : "Save"}</Text>
                     </Pressable>
                   </View>
                 </>

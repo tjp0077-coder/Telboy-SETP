@@ -39,6 +39,7 @@ contact_col = db["contact_messages"]
 questions_col = db["speaker_questions"]
 prototype_ideas_col = db["prototype_ideas"]
 speakers_col = db["speakers"]
+committee_bios_col = db["committee_bios"]
 
 # ---------- Auth helpers ----------
 JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "change-me-in-production")
@@ -298,6 +299,37 @@ class PrototypeIdeaCreate(BaseModel):
     summary: str
     proposed_screen: Optional[str] = ""
     mock_link: Optional[str] = ""
+
+
+class CommitteeBioItem(BaseModel):
+    id: str
+    name: str
+    bio: str = ""
+    updated_at: Optional[str] = None
+    updated_by: Optional[str] = None
+
+    @field_validator("bio")
+    @classmethod
+    def validate_bio_text(cls, value: str):
+        words = count_words(value)
+        if words > 400:
+            raise ValueError("bio must be between 0 and 400 words")
+        return value
+
+
+class CommitteeBioUpdate(BaseModel):
+    name: Optional[str] = None
+    bio: Optional[str] = None
+
+    @field_validator("bio")
+    @classmethod
+    def validate_bio_text(cls, value: Optional[str]):
+        if value is None:
+            return value
+        words = count_words(value)
+        if words > 400:
+            raise ValueError("bio must be between 0 and 400 words")
+        return value
 
 
 class ContactCreate(BaseModel):
@@ -657,6 +689,19 @@ SEED_SPEAKERS = [
     },
 ]
 
+SEED_COMMITTEE_BIOS = [
+    {"id": "david-mackay", "name": "David Mackay", "bio": ""},
+    {"id": "terry-parker", "name": "Terry Parker", "bio": ""},
+    {"id": "laurie-balderas", "name": "Laurie Balderas", "bio": ""},
+    {"id": "clark-childers", "name": "Clark Childers", "bio": ""},
+    {"id": "tim-below", "name": "Tim Below", "bio": ""},
+    {"id": "paul-edwards", "name": "Paul Edwards", "bio": ""},
+    {"id": "rhys-williams", "name": "Rhys Williams", "bio": ""},
+    {"id": "geoff-connolly", "name": "Geoff Connolly", "bio": ""},
+]
+
+COMMITTEE_BIO_ORDER = {item["id"]: idx for idx, item in enumerate(SEED_COMMITTEE_BIOS)}
+
 
 TECHNICAL_SESSION_PAPERS = {
     "Technical Session 1": "Papers 1 and 2",
@@ -825,12 +870,30 @@ async def seed_speakers():
         )
 
 
+async def seed_committee_bios():
+    for item in SEED_COMMITTEE_BIOS:
+        await committee_bios_col.update_one(
+            {"id": item["id"]},
+            {
+                "$setOnInsert": {
+                    "id": item["id"],
+                    "name": item["name"],
+                    "bio": item.get("bio", ""),
+                    "updated_at": None,
+                    "updated_by": None,
+                }
+            },
+            upsert=True,
+        )
+
+
 @app.on_event("startup")
 async def on_startup():
     await seed_admins()
     await seed_speakers()
     await seed_schedule()
     await seed_messages()
+    await seed_committee_bios()
 
 
 # ---------- Auth routes ----------
@@ -985,6 +1048,35 @@ async def update_speaker(speaker_id: str, data: SpeakerUpdate, admin=Depends(get
     if update_data:
         await speakers_col.update_one({"id": speaker_id}, {"$set": update_data})
     updated = await speakers_col.find_one({"id": speaker_id}, {"_id": 0})
+    return updated
+
+
+# ---------- Committee Bios ----------
+@api.get("/committee-bios", response_model=List[CommitteeBioItem])
+async def list_committee_bios():
+    docs = await committee_bios_col.find({}, {"_id": 0}).to_list(200)
+    docs.sort(key=lambda d: COMMITTEE_BIO_ORDER.get(d.get("id", ""), 999))
+    return docs
+
+
+@api.put("/committee-bios/{bio_id}", response_model=CommitteeBioItem)
+async def update_committee_bio(bio_id: str, data: CommitteeBioUpdate, admin=Depends(get_current_admin)):
+    existing = await committee_bios_col.find_one({"id": bio_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Committee bio not found")
+
+    update_data = {k: v for k, v in data.dict().items() if v is not None}
+    if "name" in update_data:
+        update_data["name"] = update_data["name"].strip()
+        if not update_data["name"]:
+            raise HTTPException(status_code=400, detail="name is required")
+
+    if update_data:
+        update_data["updated_at"] = datetime.now(timezone.utc).isoformat()
+        update_data["updated_by"] = admin_display_name(admin)
+        await committee_bios_col.update_one({"id": bio_id}, {"$set": update_data})
+
+    updated = await committee_bios_col.find_one({"id": bio_id}, {"_id": 0})
     return updated
 
 

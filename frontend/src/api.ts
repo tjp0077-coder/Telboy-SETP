@@ -199,6 +199,14 @@ export type QuestionItem = {
   deleted_by?: string | null;
 };
 
+export type CommitteeBioItem = {
+  id: string;
+  name: string;
+  bio: string;
+  updated_at?: string | null;
+  updated_by?: string | null;
+};
+
 export const api = {
   // schedule
   listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
@@ -288,6 +296,11 @@ export const api = {
     request<{ ok: boolean }>(`/questions/${id}/restore`, { method: "POST" }, true),
   permanentDeleteQuestion: (id: string) =>
     request<{ deleted: boolean }>(`/questions/${id}/permanent`, { method: "DELETE" }, true),
+
+  // committee bios
+  listCommitteeBios: () => request<CommitteeBioItem[]>("/committee-bios"),
+  updateCommitteeBio: (id: string, data: { name?: string; bio?: string }) =>
+    request<CommitteeBioItem>(`/committee-bios/${id}`, { method: "PUT", body: JSON.stringify(data) }, true),
 
   // admins (committee management)
   listAdmins: () => request<AdminInfo[]>("/admins", {}, true),
