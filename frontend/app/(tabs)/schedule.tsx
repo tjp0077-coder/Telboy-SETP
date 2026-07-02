@@ -16,7 +16,7 @@ import { ScreenBg } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/hero.jpg");
 const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg");
-const APP_ICON = require("@/assets/images/icon.png");
+const APP_ICON = require("@/assets/images/small_logo.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const LANDING_FEE_DATE = "2026-07-30";
 const COMMITTEE_CARD_DATE = "2026-07-26";
