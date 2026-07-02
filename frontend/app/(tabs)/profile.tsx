@@ -11,6 +11,7 @@ import { useRouter } from "expo-router";
 import { api, SessionItem } from "@/src/api";
 import { useFavorites } from "@/src/useFavorites";
 import { useAuth } from "@/src/AuthContext";
+import WhatsAppGroupButton from "@/src/components/WhatsAppGroupButton";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -226,6 +227,16 @@ export default function ProfileScreen() {
         </View>
         <Ionicons name="chevron-forward" size={22} color={colors.onSurfaceMuted} />
       </Pressable>
+
+      {auth.username ? (
+        <View style={{ marginHorizontal: spacing.lg, marginTop: spacing.sm }}>
+          <WhatsAppGroupButton
+            variant="card"
+            showBadge
+            testID="profile-admin-whatsapp-btn"
+          />
+        </View>
+      ) : null}
 
       <View style={styles.footerWrap}>
         <Image
