@@ -28,7 +28,7 @@ export const COMMITTEE_SEED_BIOS: CommitteeSeedBio[] = [
   {
     id: "geoff-connolly",
     name: "Geoff Connolly",
-    imageSource: require("@/assets/images/committee-bios/geoff-connolly.jpg"),
+    imageSource: require("@/assets/images/committee-bios/goeff-connolly.jpg"),
   },
   {
     id: "paul-edwards",
@@ -38,7 +38,7 @@ export const COMMITTEE_SEED_BIOS: CommitteeSeedBio[] = [
   {
     id: "terry-parker",
     name: "Terry Parker",
-    imageSource: require("@/assets/images/committee-bios/terry_parker.jpg"),
+    imageSource: require("@/assets/images/committee-bios/terry-parker.jpg"),
   },
   {
     id: "rhys-williams",
