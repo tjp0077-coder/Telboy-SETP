@@ -77,6 +77,18 @@ export default function CityGuideScreen() {
 
       {/* Essentials grid */}
       <Pressable
+        onPress={() => Linking.openURL("https://theknightsvault.com/").catch(() => {})}
+        style={styles.kiltBanner}
+        testID="knights-vault-banner"
+      >
+        <Image
+          source={require("@/assets/images/brand/knights_vault.png")}
+          style={styles.kiltImage}
+          contentFit="cover"
+        />
+      </Pressable>
+
+      <Pressable
         onPress={() => Linking.openURL("https://www.a1kilthire.co.uk/index").catch(() => {})}
         style={styles.kiltBanner}
         testID="kilt-hire-banner"
