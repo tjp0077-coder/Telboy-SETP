@@ -176,10 +176,6 @@ export default function CommitteeBiosScreen() {
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: insets.bottom + 120 }}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.helpText}>
-          Committee profile cards are shown below. Admins can edit name and bio text inline.
-        </Text>
-
         {bios.map((item) => {
           const editing = isAdmin && editingId === item.id && draft;
           const bioWordCount = countWords(item.bio);
@@ -324,7 +320,7 @@ export default function CommitteeBiosScreen() {
         </View>
       </Modal>
 
-      {isAdmin ? <AdminFooterNav /> : null}
+      <AdminFooterNav />
     </View>
   );
 }
@@ -340,12 +336,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
   },
   topTitle: { fontSize: 20, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
-  helpText: {
-    color: onSunset.secondary,
-    fontSize: 13,
-    lineHeight: 18,
-    marginBottom: spacing.md,
-  },
   card: {
     backgroundColor: colors.surfaceSecondary,
     borderRadius: radius.md,
