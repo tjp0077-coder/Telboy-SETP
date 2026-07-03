@@ -210,7 +210,7 @@ export default function CommitteeBiosScreen() {
                         <Text style={styles.name}>{item.name}</Text>
                         {item.id === "david-mackay" ? <Text style={styles.chairTag}>&lt;Chairman&gt;</Text> : null}
                       </View>
-                      <Text style={styles.meta}>{bioWordCount} / 400 words</Text>
+                      {isAdmin ? <Text style={styles.meta}>{bioWordCount} / 400 words</Text> : null}
                     </View>
                     {isAdmin ? (
                       <Pressable
