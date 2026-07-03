@@ -488,12 +488,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: spacing.sm,
     marginTop: spacing.sm,
+    justifyContent: "center",
   },
   committeeSpacer: {
-    width: "31%",
+    width: "30%",
   },
   committeeMember: {
-    width: "31%",
+    width: "30%",
     alignItems: "center",
     backgroundColor: "rgba(255,255,255,0.08)",
     borderRadius: radius.md,
