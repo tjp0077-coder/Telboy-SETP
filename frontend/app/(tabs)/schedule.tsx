@@ -39,6 +39,9 @@ const CATEGORY_COLOR: Record<string, string> = {
 const isTechnicalTalk = (item: SessionItem) =>
   item.category === "session" && /technical session|paper/i.test(`${item.title} ${item.description || ""}`);
 
+const isRegistrationReception = (item: SessionItem) =>
+  /registration\s*&\s*welcome reception/i.test(item.title || "");
+
 type CommitteeCardBio = {
   id: string;
   name: string;
@@ -278,12 +281,13 @@ export default function ScheduleListScreen() {
           const cIcon = CATEGORY_ICON[item.category] || "ellipse";
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
           const askSpeaker = isTechnicalTalk(item);
+          const compactReceptionCard = isRegistrationReception(item);
           const hasSpeakerBios = (item.speakerBios || []).length > 0 || !!item.speakerId;
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
             <Pressable
               onPress={() => router.push(`/event/${item.id}`)}
-              style={[styles.card, shadow.card]}
+              style={[styles.card, compactReceptionCard && styles.cardCompact, shadow.card]}
               testID={`session-card-${item.id}`}
             >
               <View style={styles.cardLeft}>
@@ -305,7 +309,7 @@ export default function ScheduleListScreen() {
                     <Text style={styles.coachMetaText}>{coachMeta}</Text>
                   </View>
                 ) : null}
-                {item.description ? (
+                {item.description && !compactReceptionCard ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
                 ) : null}
                 {askSpeaker && hasSpeakerBios ? (
@@ -408,6 +412,9 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row", backgroundColor: colors.surfaceSecondary, padding: spacing.md,
     borderRadius: radius.md, marginBottom: spacing.sm, alignItems: "flex-start",
+  },
+  cardCompact: {
+    paddingVertical: spacing.sm,
   },
   cardLeft: { width: 64, alignItems: "flex-start" },
   cardTime: { fontSize: 16, fontWeight: "700", color: colors.brand, fontFamily: "Georgia" },
