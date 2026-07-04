@@ -131,7 +131,12 @@ export default function HomeScreen() {
         onPress={() => router.push("/(tabs)/share")}
         accessibilityRole="button"
         accessibilityLabel="Open app share QR"
-        style={[styles.shareLink, { top: insets.top + 112 }]}
+        style={[
+          styles.shareLink,
+          {
+            bottom: Platform.OS === "web" ? 74 : insets.bottom + 70,
+          },
+        ]}
         testID="home-share-link"
       >
         <Ionicons name="share-social-outline" size={14} color="#F5F0E6" />
@@ -237,7 +242,7 @@ const styles = StyleSheet.create({
   },
   shareLink: {
     position: "absolute",
-    alignSelf: "center",
+    right: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
