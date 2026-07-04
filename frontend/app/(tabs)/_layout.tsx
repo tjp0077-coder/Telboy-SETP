@@ -139,6 +139,12 @@ export default function TabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="share"
+        options={{
+          href: null,
+        }}
+      />
       </Tabs>
     </View>
   );

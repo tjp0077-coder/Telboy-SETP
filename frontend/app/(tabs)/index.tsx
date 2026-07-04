@@ -10,6 +10,7 @@ import {
   StatusBar,
   Text,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,6 +46,7 @@ const ASPECT = 240 / 360; // portrait 2:3
  *  - Fixed layout, no scroll
  */
 export default function HomeScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const [open, setOpen] = useState(false);
   const [playerReady, setPlayerReady] = useState(false);
@@ -123,6 +125,18 @@ export default function HomeScreen() {
           <Ionicons name="play" size={32} color="#FFFFFF" style={{ marginLeft: 4 }} />
         </Pressable>
       </View>
+
+      {/* Small share link under the poster badge area */}
+      <Pressable
+        onPress={() => router.push("/(tabs)/share")}
+        accessibilityRole="button"
+        accessibilityLabel="Open app share QR"
+        style={[styles.shareLink, { top: insets.top + 112 }]}
+        testID="home-share-link"
+      >
+        <Ionicons name="share-social-outline" size={14} color="#F5F0E6" />
+        <Text style={styles.shareLinkText}>Share App</Text>
+      </Pressable>
 
       {/* ─── Fullscreen modal player ─────────────────────────────────── */}
       <Modal
@@ -220,6 +234,26 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 14,
     elevation: 10,
+  },
+  shareLink: {
+    position: "absolute",
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: "rgba(15, 26, 46, 0.6)",
+    borderWidth: 1,
+    borderColor: "rgba(245,240,230,0.35)",
+  },
+  shareLinkText: {
+    color: "#F5F0E6",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
   },
 
   // Modal
