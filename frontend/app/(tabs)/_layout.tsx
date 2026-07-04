@@ -34,17 +34,6 @@ export default function TabLayout() {
     return () => clearInterval(intervalId);
   }, [auth.username, refreshUnreadInbox]);
 
-  const isIOSWeb =
-    Platform.OS === "web" &&
-    typeof navigator !== "undefined" &&
-    /iPad|iPhone|iPod/.test(navigator.userAgent || "");
-  const webSafeInset = isIOSWeb
-    ? "env(safe-area-inset-bottom, constant(safe-area-inset-bottom))"
-    : "env(safe-area-inset-bottom, 0px)";
-  const webTabBarHeight = isIOSWeb
-    ? `calc(48px + ${webSafeInset})`
-    : `calc(60px + ${webSafeInset})`;
-
   return (
     <View style={styles.root}>
       <Tabs
@@ -67,8 +56,8 @@ export default function TabLayout() {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                height: webTabBarHeight,
-                paddingBottom: webSafeInset,
+                height: 60,
+                paddingBottom: 0,
               },
               default: {
                 height: 60,
