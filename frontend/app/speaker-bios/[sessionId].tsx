@@ -61,6 +61,10 @@ export default function SessionSpeakerBiosScreen() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasBackup, setHasBackup] = useState(false);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMessage, setBackupMessage] = useState("");
+  const [backupMessageError, setBackupMessageError] = useState(false);
+  const [backupSavedAt, setBackupSavedAt] = useState<string | null>(null);
 
   const backupKey = useMemo(
     () => (sessionId ? `backup:speaker-bios:${sessionId}` : null),
@@ -96,9 +100,20 @@ export default function SessionSpeakerBiosScreen() {
       }
       try {
         const raw = await AsyncStorage.getItem(backupKey);
-        if (isMounted) setHasBackup(!!raw);
+        if (!isMounted) return;
+        if (!raw) {
+          setHasBackup(false);
+          setBackupSavedAt(null);
+          return;
+        }
+        const parsed = JSON.parse(raw) as SpeakerBiosBackup;
+        setHasBackup(true);
+        setBackupSavedAt(parsed?.savedAt || null);
       } catch {
-        if (isMounted) setHasBackup(false);
+        if (isMounted) {
+          setHasBackup(false);
+          setBackupSavedAt(null);
+        }
       }
     };
     checkBackup();
@@ -154,6 +169,9 @@ export default function SessionSpeakerBiosScreen() {
 
   const saveBackup = useCallback(async () => {
     if (!backupKey) return;
+    setBackupBusy(true);
+    setBackupMessageError(false);
+    setBackupMessage("Saving backup...");
     try {
       const snapshot: SpeakerBiosBackup = {
         savedAt: new Date().toISOString(),
@@ -161,9 +179,13 @@ export default function SessionSpeakerBiosScreen() {
       };
       await AsyncStorage.setItem(backupKey, JSON.stringify(snapshot));
       setHasBackup(true);
-      Alert.alert("Backup saved", "Current speaker bios are saved locally for quick restore.");
+      setBackupSavedAt(snapshot.savedAt);
+      setBackupMessage(`Backup saved (${new Date(snapshot.savedAt).toLocaleString()}).`);
     } catch {
-      Alert.alert("Backup failed", "Could not save a local backup on this device.");
+      setBackupMessageError(true);
+      setBackupMessage("Backup failed. Could not save locally on this device.");
+    } finally {
+      setBackupBusy(false);
     }
   }, [backupKey, bios]);
 
@@ -173,20 +195,26 @@ export default function SessionSpeakerBiosScreen() {
       const raw = await AsyncStorage.getItem(backupKey);
       if (!raw) {
         setHasBackup(false);
-        Alert.alert("No backup found", "Save a backup first, then you can reload it here.");
+        setBackupSavedAt(null);
+        setBackupMessageError(true);
+        setBackupMessage("No backup found yet. Tap Save Backup first.");
         return;
       }
       const parsed = JSON.parse(raw) as SpeakerBiosBackup;
       const restored = sanitizeBios(Array.isArray(parsed?.bios) ? parsed.bios : []);
       if (!restored.length) {
-        Alert.alert("Backup is empty", "This backup has no speaker bios to restore.");
+        setBackupMessageError(true);
+        setBackupMessage("Backup is empty. Save a fresh backup first.");
         return;
       }
       setBios(restored);
       setEditing(true);
-      Alert.alert("Backup loaded", "Review the restored bios, then tap Save Bios to publish them.");
+      setBackupSavedAt(parsed?.savedAt || null);
+      setBackupMessageError(false);
+      setBackupMessage("Backup loaded. Review and tap Save Bios to publish.");
     } catch {
-      Alert.alert("Restore failed", "Could not load the local backup.");
+      setBackupMessageError(true);
+      setBackupMessage("Restore failed. Could not load the local backup.");
     }
   }, [backupKey]);
 
@@ -245,13 +273,19 @@ export default function SessionSpeakerBiosScreen() {
         </View>
 
         {isAdmin ? (
+          <>
           <View style={styles.backupRow}>
-            <Pressable style={styles.backupBtn} onPress={saveBackup} testID="speaker-bios-backup-save">
+            <Pressable
+              style={[styles.backupBtn, backupBusy && { opacity: 0.7 }]}
+              onPress={saveBackup}
+              disabled={backupBusy}
+              testID="speaker-bios-backup-save"
+            >
               <Ionicons name="save-outline" size={16} color={colors.brand} />
-              <Text style={styles.backupBtnText}>Save Backup</Text>
+              <Text style={styles.backupBtnText}>{backupBusy ? "Saving..." : "Save Backup"}</Text>
             </Pressable>
             <Pressable
-              style={[styles.backupBtn, !hasBackup && styles.backupBtnDisabled]}
+              style={[styles.backupBtn, (!hasBackup || backupBusy) && styles.backupBtnDisabled]}
               onPress={() => {
                 Alert.alert(
                   "Reload backup?",
@@ -262,13 +296,19 @@ export default function SessionSpeakerBiosScreen() {
                   ]
                 );
               }}
-              disabled={!hasBackup}
+              disabled={!hasBackup || backupBusy}
               testID="speaker-bios-backup-reload"
             >
-              <Ionicons name="refresh-outline" size={16} color={hasBackup ? colors.brand : colors.onSurfaceMuted} />
-              <Text style={[styles.backupBtnText, !hasBackup && styles.backupBtnTextDisabled]}>Reload Backup</Text>
+              <Ionicons name="refresh-outline" size={16} color={hasBackup && !backupBusy ? colors.brand : colors.onSurfaceMuted} />
+              <Text style={[styles.backupBtnText, (!hasBackup || backupBusy) && styles.backupBtnTextDisabled]}>Reload Backup</Text>
             </Pressable>
           </View>
+          <Text style={[styles.backupHint, backupMessageError && styles.backupHintError]}>
+            {backupMessage || (hasBackup
+              ? `Backup ready${backupSavedAt ? ` (${new Date(backupSavedAt).toLocaleString()})` : ""}.`
+              : "No backup saved yet.")}
+          </Text>
+          </>
         ) : null}
 
         {bios.length === 0 ? (
@@ -459,6 +499,14 @@ const styles = StyleSheet.create({
   },
   backupBtnTextDisabled: {
     color: colors.onSurfaceMuted,
+  },
+  backupHint: {
+    marginBottom: spacing.xs,
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+  },
+  backupHintError: {
+    color: colors.error,
   },
 
   bioCard: {
