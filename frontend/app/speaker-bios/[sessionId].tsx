@@ -9,7 +9,6 @@ import {
   TextInput,
   Alert,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -43,11 +42,6 @@ function sanitizeBios(items: SessionSpeakerBio[]): SessionSpeakerBio[] {
   return items.map((bio) => ({ ...bio, title: "" }));
 }
 
-type SpeakerBiosBackup = {
-  savedAt: string;
-  bios: SessionSpeakerBio[];
-};
-
 export default function SessionSpeakerBiosScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const router = useRouter();
@@ -60,16 +54,6 @@ export default function SessionSpeakerBiosScreen() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [hasBackup, setHasBackup] = useState(false);
-  const [backupBusy, setBackupBusy] = useState(false);
-  const [backupMessage, setBackupMessage] = useState("");
-  const [backupMessageError, setBackupMessageError] = useState(false);
-  const [backupSavedAt, setBackupSavedAt] = useState<string | null>(null);
-
-  const backupKey = useMemo(
-    () => (sessionId ? `backup:speaker-bios:${sessionId}` : null),
-    [sessionId]
-  );
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -90,37 +74,6 @@ export default function SessionSpeakerBiosScreen() {
   useEffect(() => {
     load();
   }, [load]);
-
-  useEffect(() => {
-    let isMounted = true;
-    const checkBackup = async () => {
-      if (!backupKey) {
-        if (isMounted) setHasBackup(false);
-        return;
-      }
-      try {
-        const raw = await AsyncStorage.getItem(backupKey);
-        if (!isMounted) return;
-        if (!raw) {
-          setHasBackup(false);
-          setBackupSavedAt(null);
-          return;
-        }
-        const parsed = JSON.parse(raw) as SpeakerBiosBackup;
-        setHasBackup(true);
-        setBackupSavedAt(parsed?.savedAt || null);
-      } catch {
-        if (isMounted) {
-          setHasBackup(false);
-          setBackupSavedAt(null);
-        }
-      }
-    };
-    checkBackup();
-    return () => {
-      isMounted = false;
-    };
-  }, [backupKey]);
 
   const validation = useMemo(() => {
     return bios.map((bio) => {
@@ -166,57 +119,6 @@ export default function SessionSpeakerBiosScreen() {
       setSaving(false);
     }
   };
-
-  const saveBackup = useCallback(async () => {
-    if (!backupKey) return;
-    setBackupBusy(true);
-    setBackupMessageError(false);
-    setBackupMessage("Saving backup...");
-    try {
-      const snapshot: SpeakerBiosBackup = {
-        savedAt: new Date().toISOString(),
-        bios: sanitizeBios(bios),
-      };
-      await AsyncStorage.setItem(backupKey, JSON.stringify(snapshot));
-      setHasBackup(true);
-      setBackupSavedAt(snapshot.savedAt);
-      setBackupMessage(`Backup saved (${new Date(snapshot.savedAt).toLocaleString()}).`);
-    } catch {
-      setBackupMessageError(true);
-      setBackupMessage("Backup failed. Could not save locally on this device.");
-    } finally {
-      setBackupBusy(false);
-    }
-  }, [backupKey, bios]);
-
-  const restoreBackup = useCallback(async () => {
-    if (!backupKey) return;
-    try {
-      const raw = await AsyncStorage.getItem(backupKey);
-      if (!raw) {
-        setHasBackup(false);
-        setBackupSavedAt(null);
-        setBackupMessageError(true);
-        setBackupMessage("No backup found yet. Tap Save Backup first.");
-        return;
-      }
-      const parsed = JSON.parse(raw) as SpeakerBiosBackup;
-      const restored = sanitizeBios(Array.isArray(parsed?.bios) ? parsed.bios : []);
-      if (!restored.length) {
-        setBackupMessageError(true);
-        setBackupMessage("Backup is empty. Save a fresh backup first.");
-        return;
-      }
-      setBios(restored);
-      setEditing(true);
-      setBackupSavedAt(parsed?.savedAt || null);
-      setBackupMessageError(false);
-      setBackupMessage("Backup loaded. Review and tap Save Bios to publish.");
-    } catch {
-      setBackupMessageError(true);
-      setBackupMessage("Restore failed. Could not load the local backup.");
-    }
-  }, [backupKey]);
 
   const backToSchedule = () => {
     if (router.canGoBack()) {
@@ -271,45 +173,6 @@ export default function SessionSpeakerBiosScreen() {
           <Text style={styles.sessionTitle}>{session.title}</Text>
           <Text style={styles.sessionMeta}>{session.day_label} · {session.time} · {session.location}</Text>
         </View>
-
-        {isAdmin ? (
-          <>
-          <View style={styles.backupRow}>
-            <Pressable
-              style={[styles.backupBtn, backupBusy && { opacity: 0.7 }]}
-              onPress={saveBackup}
-              disabled={backupBusy}
-              testID="speaker-bios-backup-save"
-            >
-              <Ionicons name="save-outline" size={16} color={colors.brand} />
-              <Text style={styles.backupBtnText}>{backupBusy ? "Saving..." : "Save Backup"}</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.backupBtn, (!hasBackup || backupBusy) && styles.backupBtnDisabled]}
-              onPress={() => {
-                Alert.alert(
-                  "Reload backup?",
-                  "This replaces the current on-screen bios with the saved backup.",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Reload", style: "destructive", onPress: restoreBackup },
-                  ]
-                );
-              }}
-              disabled={!hasBackup || backupBusy}
-              testID="speaker-bios-backup-reload"
-            >
-              <Ionicons name="refresh-outline" size={16} color={hasBackup && !backupBusy ? colors.brand : colors.onSurfaceMuted} />
-              <Text style={[styles.backupBtnText, (!hasBackup || backupBusy) && styles.backupBtnTextDisabled]}>Reload Backup</Text>
-            </Pressable>
-          </View>
-          <Text style={[styles.backupHint, backupMessageError && styles.backupHintError]}>
-            {backupMessage || (hasBackup
-              ? `Backup ready${backupSavedAt ? ` (${new Date(backupSavedAt).toLocaleString()})` : ""}.`
-              : "No backup saved yet.")}
-          </Text>
-          </>
-        ) : null}
 
         {bios.length === 0 ? (
           <View style={[styles.bioCard, shadow.card]}>
@@ -471,43 +334,6 @@ const styles = StyleSheet.create({
   },
   sessionTitle: { fontSize: 17, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
   sessionMeta: { marginTop: 4, fontSize: 12, color: colors.onSurfaceMuted },
-
-  backupRow: {
-    marginBottom: spacing.xs,
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  backupBtn: {
-    flex: 1,
-    minHeight: 42,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceSecondary,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-  },
-  backupBtnDisabled: {
-    backgroundColor: colors.surface,
-  },
-  backupBtnText: {
-    color: colors.brand,
-    fontSize: 13,
-    fontWeight: "700",
-  },
-  backupBtnTextDisabled: {
-    color: colors.onSurfaceMuted,
-  },
-  backupHint: {
-    marginBottom: spacing.xs,
-    fontSize: 12,
-    color: colors.onSurfaceMuted,
-  },
-  backupHintError: {
-    color: colors.error,
-  },
 
   bioCard: {
     backgroundColor: colors.surfaceSecondary,
