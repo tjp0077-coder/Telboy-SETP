@@ -83,7 +83,7 @@ export default function ProfileScreen() {
       >
       <View style={styles.headerWrap}>
         <Image
-          source={require("@/assets/images/brand/badge.png")}
+          source={require("@/assets/images/small_logo.png")}
           style={styles.brandBadge}
           contentFit="contain"
         />
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     width: 60, height: 60, borderRadius: 30, backgroundColor: colors.brand,
     alignItems: "center", justifyContent: "center",
   },
-  brandBadge: { width: 72, height: 72, borderRadius: 36, overflow: "hidden" },
+  brandBadge: { width: 72, height: 72 },
   name: { fontSize: 22, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
   role: { fontSize: 13, color: onSunset.secondary, marginTop: 2 },
   committeeBtn: {
