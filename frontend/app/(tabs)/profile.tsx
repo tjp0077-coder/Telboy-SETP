@@ -12,6 +12,7 @@ import { api, SessionItem } from "@/src/api";
 import { useFavorites } from "@/src/useFavorites";
 import { useAuth } from "@/src/AuthContext";
 import WhatsAppGroupButton from "@/src/components/WhatsAppGroupButton";
+import { COMMITTEE_SEED_BY_ID } from "@/src/constants/committeeBios";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [hasUnreadInbox, setHasUnreadInbox] = useState(false);
   const [hasUnreviewedQuestions, setHasUnreviewedQuestions] = useState(false);
+  const daveMackay = COMMITTEE_SEED_BY_ID["david-mackay"];
 
   const load = useCallback(async () => {
     try {
@@ -94,6 +96,28 @@ export default function ProfileScreen() {
           </Text>
         </View>
       </View>
+
+      <Pressable
+        onPress={() => router.push("/committee-bios")}
+        style={[styles.committeeBtn, shadow.card]}
+        testID="meet-committee-btn"
+      >
+        <Image
+          source={daveMackay.imageSource}
+          style={styles.committeeBtnImage}
+          contentFit="cover"
+        />
+        <View style={styles.committeeBtnCopy}>
+          <Text style={styles.committeeBtnTitle}>Meet the Committee</Text>
+          <Text style={styles.committeeBtnSubtitle}>Tap to view profiles and bios</Text>
+        </View>
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={colors.onSurfaceMuted}
+          style={{ marginLeft: "auto" }}
+        />
+      </Pressable>
 
       {/* Saved Sessions */}
       <Text style={styles.sectionTitle}>My Agenda</Text>
@@ -267,6 +291,33 @@ const styles = StyleSheet.create({
   brandBadge: { width: 72, height: 72 },
   name: { fontSize: 22, fontWeight: "700", color: onSunset.primary, fontFamily: "Georgia" },
   role: { fontSize: 13, color: onSunset.secondary, marginTop: 2 },
+  committeeBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceSecondary,
+  },
+  committeeBtnImage: {
+    width: 68,
+    height: 68,
+    borderRadius: radius.md,
+  },
+  committeeBtnCopy: { flex: 1 },
+  committeeBtnTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  committeeBtnSubtitle: {
+    marginTop: 4,
+    fontSize: 12,
+    color: colors.onSurfaceMuted,
+    lineHeight: 17,
+  },
 
   sectionTitle: {
     fontSize: 13, fontWeight: "800", letterSpacing: 1.2, color: onSunset.primary,
