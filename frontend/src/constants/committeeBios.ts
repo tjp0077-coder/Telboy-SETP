@@ -13,7 +13,7 @@ export const COMMITTEE_SEED_BIOS: CommitteeSeedBio[] = [
   {
     id: "laurie-balderas",
     name: "Laurie Balderas",
-    imageSource: require("@/assets/images/committee-bios/lauri_balderas.jpg"),
+    imageSource: require("@/assets/images/committee-bios/laurie_balderas.jpg"),
   },
   {
     id: "tim-below",
