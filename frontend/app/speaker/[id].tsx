@@ -47,8 +47,10 @@ export default function SpeakerBioScreen() {
     setLoading(true);
     try {
       const data = await api.getSpeaker(id);
-      setSpeaker(data);
-      setDraft(data);
+      // Speaker title is deprecated; keep local state sanitized.
+      const sanitized = { ...data, title: "" };
+      setSpeaker(sanitized);
+      setDraft(sanitized);
     } catch {
       setSpeaker(null);
       setDraft(null);
@@ -102,13 +104,14 @@ export default function SpeakerBioScreen() {
       // Hook backend save here (already wired to PUT /api/speakers/:id).
       const updated = await api.updateSpeaker(id, {
         name: draft.name,
-        title: draft.title,
+        title: "",
         company: draft.company,
         imageUrl: draft.imageUrl,
         bioText: draft.bioText,
       });
-      setSpeaker(updated);
-      setDraft(updated);
+      const sanitized = { ...updated, title: "" };
+      setSpeaker(sanitized);
+      setDraft(sanitized);
       setEditing(false);
     } catch {
       Alert.alert("Save failed", "Could not save speaker bio. Please try again.");
@@ -172,26 +175,16 @@ export default function SpeakerBioScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={[styles.card, shadow.card]}>
           <Image source={{ uri: draft.imageUrl || speaker.imageUrl }} style={styles.avatar} contentFit="cover" />
-          <Text style={styles.name}>{draft.title} {draft.name}</Text>
+          <Text style={styles.name}>{draft.name}</Text>
           <Text style={styles.company}>{draft.company}</Text>
 
           {!editing ? (
             <>
-              <Text style={styles.wordMeta}>{bioWordCount} words</Text>
+              {isAdmin ? <Text style={styles.wordMeta}>{bioWordCount} words</Text> : null}
               <Text style={styles.bioText}>{speaker.bioText}</Text>
             </>
           ) : (
             <View style={styles.formWrap}>
-              <Text style={styles.label}>Title</Text>
-              <TextInput
-                value={draft.title}
-                onChangeText={(value) => setDraft((prev) => (prev ? { ...prev, title: value } : prev))}
-                style={styles.input}
-                placeholder="e.g. Capt."
-                placeholderTextColor={colors.onSurfaceMuted}
-                testID="speaker-input-title"
-              />
-
               <Text style={styles.label}>Name</Text>
               <TextInput
                 value={draft.name}

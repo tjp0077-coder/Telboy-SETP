@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -38,6 +39,15 @@ function createEmptyBio(): SessionSpeakerBio {
   };
 }
 
+function sanitizeBios(items: SessionSpeakerBio[]): SessionSpeakerBio[] {
+  return items.map((bio) => ({ ...bio, title: "" }));
+}
+
+type SpeakerBiosBackup = {
+  savedAt: string;
+  bios: SessionSpeakerBio[];
+};
+
 export default function SessionSpeakerBiosScreen() {
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const router = useRouter();
@@ -50,6 +60,12 @@ export default function SessionSpeakerBiosScreen() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [hasBackup, setHasBackup] = useState(false);
+
+  const backupKey = useMemo(
+    () => (sessionId ? `backup:speaker-bios:${sessionId}` : null),
+    [sessionId]
+  );
 
   const load = useCallback(async () => {
     if (!sessionId) return;
@@ -57,7 +73,8 @@ export default function SessionSpeakerBiosScreen() {
     try {
       const data = await api.getSession(sessionId);
       setSession(data);
-      setBios((data.speakerBios || []).map((bio) => ({ ...bio })));
+      // Speaker title is deprecated; keep local state sanitized.
+      setBios(sanitizeBios(data.speakerBios || []));
     } catch {
       setSession(null);
       setBios([]);
@@ -70,11 +87,31 @@ export default function SessionSpeakerBiosScreen() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    let isMounted = true;
+    const checkBackup = async () => {
+      if (!backupKey) {
+        if (isMounted) setHasBackup(false);
+        return;
+      }
+      try {
+        const raw = await AsyncStorage.getItem(backupKey);
+        if (isMounted) setHasBackup(!!raw);
+      } catch {
+        if (isMounted) setHasBackup(false);
+      }
+    };
+    checkBackup();
+    return () => {
+      isMounted = false;
+    };
+  }, [backupKey]);
+
   const validation = useMemo(() => {
     return bios.map((bio) => {
       const words = countWords(bio.bioText);
       const validWords = words <= 500;
-      const validRequired = !!bio.paperTitle.trim() && !!bio.name.trim() && !!bio.title.trim() && !!bio.company.trim() && !!bio.imageUrl.trim();
+      const validRequired = !!bio.paperTitle.trim() && !!bio.name.trim() && !!bio.company.trim() && !!bio.imageUrl.trim();
       return { words, validWords, validRequired, valid: validWords && validRequired };
     });
   }, [bios]);
@@ -103,9 +140,10 @@ export default function SessionSpeakerBiosScreen() {
 
     setSaving(true);
     try {
-      const updated = await api.updateSession(sessionId, { speakerBios: bios });
+      const sanitizedBios = sanitizeBios(bios);
+      const updated = await api.updateSession(sessionId, { speakerBios: sanitizedBios });
       setSession(updated);
-      setBios((updated.speakerBios || []).map((bio) => ({ ...bio })));
+      setBios(sanitizeBios(updated.speakerBios || []));
       setEditing(false);
     } catch {
       Alert.alert("Save failed", "Could not save speaker bios. Please try again.");
@@ -113,6 +151,44 @@ export default function SessionSpeakerBiosScreen() {
       setSaving(false);
     }
   };
+
+  const saveBackup = useCallback(async () => {
+    if (!backupKey) return;
+    try {
+      const snapshot: SpeakerBiosBackup = {
+        savedAt: new Date().toISOString(),
+        bios: sanitizeBios(bios),
+      };
+      await AsyncStorage.setItem(backupKey, JSON.stringify(snapshot));
+      setHasBackup(true);
+      Alert.alert("Backup saved", "Current speaker bios are saved locally for quick restore.");
+    } catch {
+      Alert.alert("Backup failed", "Could not save a local backup on this device.");
+    }
+  }, [backupKey, bios]);
+
+  const restoreBackup = useCallback(async () => {
+    if (!backupKey) return;
+    try {
+      const raw = await AsyncStorage.getItem(backupKey);
+      if (!raw) {
+        setHasBackup(false);
+        Alert.alert("No backup found", "Save a backup first, then you can reload it here.");
+        return;
+      }
+      const parsed = JSON.parse(raw) as SpeakerBiosBackup;
+      const restored = sanitizeBios(Array.isArray(parsed?.bios) ? parsed.bios : []);
+      if (!restored.length) {
+        Alert.alert("Backup is empty", "This backup has no speaker bios to restore.");
+        return;
+      }
+      setBios(restored);
+      setEditing(true);
+      Alert.alert("Backup loaded", "Review the restored bios, then tap Save Bios to publish them.");
+    } catch {
+      Alert.alert("Restore failed", "Could not load the local backup.");
+    }
+  }, [backupKey]);
 
   const backToSchedule = () => {
     if (router.canGoBack()) {
@@ -168,6 +244,33 @@ export default function SessionSpeakerBiosScreen() {
           <Text style={styles.sessionMeta}>{session.day_label} · {session.time} · {session.location}</Text>
         </View>
 
+        {isAdmin ? (
+          <View style={styles.backupRow}>
+            <Pressable style={styles.backupBtn} onPress={saveBackup} testID="speaker-bios-backup-save">
+              <Ionicons name="save-outline" size={16} color={colors.brand} />
+              <Text style={styles.backupBtnText}>Save Backup</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.backupBtn, !hasBackup && styles.backupBtnDisabled]}
+              onPress={() => {
+                Alert.alert(
+                  "Reload backup?",
+                  "This replaces the current on-screen bios with the saved backup.",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Reload", style: "destructive", onPress: restoreBackup },
+                  ]
+                );
+              }}
+              disabled={!hasBackup}
+              testID="speaker-bios-backup-reload"
+            >
+              <Ionicons name="refresh-outline" size={16} color={hasBackup ? colors.brand : colors.onSurfaceMuted} />
+              <Text style={[styles.backupBtnText, !hasBackup && styles.backupBtnTextDisabled]}>Reload Backup</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
         {bios.length === 0 ? (
           <View style={[styles.bioCard, shadow.card]}>
             <Text style={styles.emptyText}>No bios yet for this session.</Text>
@@ -182,9 +285,9 @@ export default function SessionSpeakerBiosScreen() {
                 <>
                   <Image source={{ uri: bio.imageUrl }} style={styles.avatar} contentFit="cover" />
                   <Text style={styles.paperTitle}>{bio.paperTitle}</Text>
-                  <Text style={styles.speakerName}>{bio.title} {bio.name}</Text>
+                  <Text style={styles.speakerName}>{bio.name}</Text>
                   <Text style={styles.company}>{bio.company}</Text>
-                  <Text style={styles.wordMeta}>{check?.words || 0} words</Text>
+                  {isAdmin ? <Text style={styles.wordMeta}>{check?.words || 0} words</Text> : null}
                   <Text style={styles.bioText}>{bio.bioText}</Text>
                 </>
               ) : (
@@ -204,16 +307,6 @@ export default function SessionSpeakerBiosScreen() {
                     placeholder="e.g. Paper 12: Digital Avionics..."
                     placeholderTextColor={colors.onSurfaceMuted}
                     testID={`bio-paper-title-${index}`}
-                  />
-
-                  <Text style={styles.label}>Speaker Title</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={bio.title}
-                    onChangeText={(value) => updateBio(index, { title: value })}
-                    placeholder="e.g. Dr."
-                    placeholderTextColor={colors.onSurfaceMuted}
-                    testID={`bio-title-${index}`}
                   />
 
                   <Text style={styles.label}>Speaker Name</Text>
@@ -279,7 +372,7 @@ export default function SessionSpeakerBiosScreen() {
               <Pressable
                 style={[styles.actionBtn, styles.cancelBtn]}
                 onPress={() => {
-                  setBios((session.speakerBios || []).map((bio) => ({ ...bio })));
+                  setBios(sanitizeBios(session.speakerBios || []));
                   setEditing(false);
                 }}
                 testID="speaker-bios-cancel"
@@ -338,6 +431,35 @@ const styles = StyleSheet.create({
   },
   sessionTitle: { fontSize: 17, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
   sessionMeta: { marginTop: 4, fontSize: 12, color: colors.onSurfaceMuted },
+
+  backupRow: {
+    marginBottom: spacing.xs,
+    flexDirection: "row",
+    gap: spacing.sm,
+  },
+  backupBtn: {
+    flex: 1,
+    minHeight: 42,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceSecondary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  backupBtnDisabled: {
+    backgroundColor: colors.surface,
+  },
+  backupBtnText: {
+    color: colors.brand,
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  backupBtnTextDisabled: {
+    color: colors.onSurfaceMuted,
+  },
 
   bioCard: {
     backgroundColor: colors.surfaceSecondary,
