@@ -429,16 +429,24 @@ class SessionSpeakerBio(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     paperTitle: str
     name: str
-    title: str
+    # Deprecated field kept for backward compatibility with existing clients/data.
+    title: str = ""
     company: str
     bioText: str
     imageUrl: str
 
-    @field_validator("paperTitle", "name", "title", "company", "imageUrl")
+    @field_validator("paperTitle", "name", "company", "imageUrl")
     @classmethod
     def required_text(cls, value: str):
         if not value or not value.strip():
             raise ValueError("Field is required")
+        return value.strip()
+
+    @field_validator("title")
+    @classmethod
+    def normalize_title(cls, value: Optional[str]):
+        if value is None:
+            return ""
         return value.strip()
 
     @field_validator("bioText")

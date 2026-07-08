@@ -209,6 +209,43 @@ class TestScheduleCRUD:
         r5 = s.get(f"{API}/schedule")
         assert not any(x["id"] == sid for x in r5.json())
 
+    def test_update_session_speaker_bios_allows_blank_deprecated_title(self, s, auth_headers):
+        create_payload = {
+            "date": "2026-07-27",
+            "day_label": "Mon 27 July",
+            "time": "22:15",
+            "title": "TEST_session_speaker_bios",
+            "location": "TestLoc",
+            "category": "session",
+        }
+        create_res = s.post(f"{API}/schedule", json=create_payload, headers=auth_headers)
+        assert create_res.status_code == 200, create_res.text
+        sid = create_res.json()["id"]
+
+        try:
+            speaker_bios = [
+                {
+                    "id": "test-bio-1",
+                    "paperTitle": "Paper 1",
+                    "name": "Test Speaker",
+                    "title": "",
+                    "company": "SETP",
+                    "bioText": "Short biography text.",
+                    "imageUrl": "https://example.com/speaker.jpg",
+                }
+            ]
+            update_res = s.put(
+                f"{API}/schedule/{sid}",
+                json={"speakerBios": speaker_bios},
+                headers=auth_headers,
+            )
+            assert update_res.status_code == 200, update_res.text
+            updated = update_res.json()
+            assert updated["speakerBios"][0]["name"] == "Test Speaker"
+            assert updated["speakerBios"][0]["title"] == ""
+        finally:
+            s.delete(f"{API}/schedule/{sid}", headers=auth_headers)
+
 
 # ---------- Prototype Lab ----------
 class TestPrototypeLab:
