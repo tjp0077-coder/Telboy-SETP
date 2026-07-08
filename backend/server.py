@@ -571,7 +571,9 @@ SEED_SCHEDULE = [
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:00", "title": "Partner's Tour",
         "location": "Departs Courtyard by Marriott Edinburgh",
      "description": "Tour to Rosslyn Castle, The Kelpies, and Linlithgow Palace. Returns by 16:00.",
-        "maps_url": COURTYARD_MARRIOTT_MAPS_URL,
+          "coachTime": "09:45",
+          "transportDetails": "09:45 Coach Leaves",
+          "maps_url": "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA",
      "category": "tour"},
     {"date": "2026-07-27", "day_label": "Mon 27 July", "time": "10:15", "title": "Technical Session 1 (Cont.)",
         "location": "Ps&Gs", "description": "Presentation of Papers 3, 4, and 5.", "category": "session", "speakerId": "capt-james-smith"},
@@ -790,7 +792,14 @@ async def seed_schedule():
         )
         await schedule_col.update_one(
             {"title": "Partner's Tour"},
-            {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": COURTYARD_MARRIOTT_MAPS_URL}},
+            {
+                "$set": {
+                    "location": "Departs Courtyard by Marriott Edinburgh",
+                    "coachTime": "09:45",
+                    "transportDetails": "09:45 Coach Leaves",
+                    "maps_url": "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA",
+                }
+            },
         )
         await schedule_col.update_one(
             {"title": "Partner's Walking Tour"},
