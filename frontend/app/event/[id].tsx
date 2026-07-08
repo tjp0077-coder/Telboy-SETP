@@ -41,6 +41,8 @@ const buildMapsSearchUrl = (query: string) =>
 const isTechnicalTalk = (event: SessionItem | null) =>
   !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
 
+const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -169,12 +171,18 @@ export default function EventDetail() {
 
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
-  const coachMeta = event.transportDetails?.trim() || (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "");
+  const coachMeta =
+    event.transportDetails?.trim() ||
+    (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
+    (event.title === "Partner's Tour" ? "09:45 Coach Leaves" : "");
+  const mapRouteUrl =
+    event.maps_url ||
+    (event.title === "Partner's Tour" ? PARTNERS_TOUR_ROUTE_URL : "");
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
 
   const openLocationMap = async () => {
-    const url = event.maps_url || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
+    const url = mapRouteUrl || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
@@ -242,6 +250,12 @@ export default function EventDetail() {
                 <Ionicons name="bus" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
+            ) : null}
+            {mapRouteUrl ? (
+              <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
+                <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
+              </Pressable>
             ) : null}
             <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
@@ -499,6 +513,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia", lineHeight: 34 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: spacing.sm },
   metaText: { fontSize: 14, color: colors.onSurfaceMuted },
+  mapLinkText: { fontSize: 14, color: colors.brand, textDecorationLine: "underline", flex: 1 },
   coachMetaText: { fontSize: 14, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
   askBtn: {
     flexDirection: "row",
