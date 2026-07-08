@@ -43,6 +43,17 @@ const isTechnicalTalk = (event: SessionItem | null) =>
 
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 
+const isPartnersTourEvent = (event: SessionItem | null): boolean => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  const desc = (event.description || "").toLowerCase();
+  const location = (event.location || "").toLowerCase();
+  const looksLikePartnersTour = title.includes("partner") && title.includes("tour");
+  const mentionsStops = /rosslyn|kelpies|linlithgow/.test(desc);
+  const departsHotel = location.includes("departs") && location.includes("courtyard");
+  return looksLikePartnersTour || mentionsStops || departsHotel;
+};
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -171,13 +182,14 @@ export default function EventDetail() {
 
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
+  const isPartnersTour = isPartnersTourEvent(event);
   const coachMeta =
     event.transportDetails?.trim() ||
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
-    (event.title === "Partner's Tour" ? "09:45 Coach Leaves" : "");
+    (isPartnersTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
     event.maps_url ||
-    (event.title === "Partner's Tour" ? PARTNERS_TOUR_ROUTE_URL : "");
+    (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
 
