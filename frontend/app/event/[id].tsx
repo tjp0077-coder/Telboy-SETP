@@ -329,7 +329,7 @@ export default function EventDetail() {
                 testID="event-map-link-technical-boat-secondary"
               >
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
-                <Text style={styles.mapLinkText}>{TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL}</Text>
+                <Text style={styles.mapLinkText}>Forth Boat Tours</Text>
               </Pressable>
             ) : null}
 
