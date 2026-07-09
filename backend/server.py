@@ -609,7 +609,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
         "location": "Departs Courtyard by Marriott Edinburgh",
      "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
-        "maps_url": COURTYARD_MARRIOTT_MAPS_URL,
+          "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8",
      "category": "tour"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
         "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session", "speakerId": "capt-james-smith"},
@@ -806,7 +806,7 @@ async def seed_schedule():
         )
         await schedule_col.update_one(
             {"title": "Partner's Walking Tour"},
-            {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": COURTYARD_MARRIOTT_MAPS_URL}},
+            {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8"}},
         )
         speaker_map = {
             "Technical Session 1": "capt-james-smith",

@@ -52,6 +52,12 @@ const isRosslynKelpiesPartnersTourEvent = (event: SessionItem | null) => {
   return title.includes("partner's tour") && /rosslyn chapel|the kelpies/.test(title);
 };
 
+const isPartnersWalkingTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("partner") && title.includes("walking") && title.includes("tour");
+};
+
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
@@ -194,10 +200,11 @@ export default function EventDetail() {
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const isPartnersTour = isPartnersTourEvent(event);
+  const isWalkingTour = isPartnersWalkingTourEvent(event);
   const coachMeta =
     event.transportDetails?.trim() ||
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
-    (isPartnersTour ? "09:45 Coach Leaves" : "");
+    (isPartnersTour && !isWalkingTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
     event.maps_url ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
@@ -277,7 +284,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour ? (
+            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
