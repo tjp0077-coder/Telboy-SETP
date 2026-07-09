@@ -344,9 +344,16 @@ export default function ScheduleListScreen() {
                   </View>
                 ) : null}
                 {isTechnicalBoatTour ? (
-                  <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
-                    <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please pay your £8.50 landing fee before this event - see link below</Text>
-                  </View>
+                  <Pressable
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      openLandingFeePayment();
+                    }}
+                    style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}
+                    testID={`technical-boat-landing-fee-${item.id}`}
+                  >
+                    <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please pay your landing fee before the event</Text>
+                  </Pressable>
                 ) : null}
                 {askSpeaker && hasSpeakerBios ? (
                   <Pressable

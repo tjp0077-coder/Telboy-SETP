@@ -88,6 +88,7 @@ const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 const WALKING_TOUR_MAP_URL = "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8";
 const TECHNICAL_BOAT_TOUR_MAP_URL = "https://maps.app.goo.gl/5aXPtbcsrDGBNDmp9";
 const TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL = "https://maps.app.goo.gl/xvL7zdpkp96tu4gV6";
+const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   if (!event) return false;
@@ -312,6 +313,19 @@ export default function EventDetail() {
     }
   };
 
+  const openLandingFeePayment = async () => {
+    try {
+      const supported = await Linking.canOpenURL(LANDING_FEE_LINK);
+      if (!supported) {
+        Alert.alert("Unable to open payment link", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(LANDING_FEE_LINK);
+    } catch {
+      Alert.alert("Unable to open payment link", "Please try again in a few moments.");
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -401,9 +415,13 @@ export default function EventDetail() {
               </View>
             ) : null}
             {isTechnicalBoatTour ? (
-              <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
-                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please pay your £8.50 landing fee before this event - see link below</Text>
-              </View>
+              <Pressable
+                onPress={openLandingFeePayment}
+                style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}
+                testID="technical-boat-landing-fee"
+              >
+                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please pay your landing fee before the event</Text>
+              </Pressable>
             ) : null}
             {isTechnicalBoatTour ? (
               <Pressable
