@@ -38,6 +38,26 @@ const CATEGORIES = ["session", "break", "meal", "social", "tour"];
 const buildMapsSearchUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
+const snapshotForStaleCheck = (value: unknown): unknown => {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "object") return value;
+  if (typeof Blob !== "undefined" && value instanceof Blob) return null;
+  if (typeof ArrayBuffer !== "undefined" && value instanceof ArrayBuffer) return null;
+  if (Array.isArray(value)) return value.map((item) => snapshotForStaleCheck(item));
+
+  const obj = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  Object.keys(obj)
+    .sort()
+    .forEach((key) => {
+      const next = snapshotForStaleCheck(obj[key]);
+      if (next !== undefined) out[key] = next;
+    });
+  return out;
+};
+
+const stableJsonSnapshot = (value: unknown) => JSON.stringify(snapshotForStaleCheck(value));
+
 const isTechnicalTalk = (event: SessionItem | null) =>
   !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
 
@@ -90,6 +110,7 @@ export default function EventDetail() {
   const fav = id ? favorites.has(id) : false;
 
   const [event, setEvent] = useState<SessionItem | null>(null);
+  const [varOriginalRecord, setVarOriginalRecord] = useState<SessionItem | null>(null);
   const [notes, setNotes] = useState<EventNote[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -110,6 +131,7 @@ export default function EventDetail() {
         api.listEventNotes(id).catch(() => []),
       ]);
       setEvent(e);
+      setVarOriginalRecord(e);
       setNotes(n);
     } catch (err) {
       setEvent(null);
@@ -139,8 +161,23 @@ export default function EventDetail() {
     if (!id || !event) return;
     setSaving(true);
     try {
+      const latest = await api.getSession(id);
+      const originalSnapshot = stableJsonSnapshot(varOriginalRecord || event);
+      const latestSnapshot = stableJsonSnapshot(latest);
+
+      if (originalSnapshot !== latestSnapshot) {
+        setEvent(latest);
+        setVarOriginalRecord(latest);
+        Alert.alert(
+          "Record changed",
+          "This record has been modified by another user since you opened it. Please refresh and review the latest changes before saving."
+        );
+        return;
+      }
+
       const updated = await api.updateSession(id, draft);
       setEvent(updated);
+      setVarOriginalRecord(updated);
       setEditing(false);
     } catch (e) {
       // surface but don't crash
