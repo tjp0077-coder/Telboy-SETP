@@ -110,6 +110,11 @@ const isRoyalYachtReceptionEvent = (event: SessionItem | null): boolean => {
   return event.date === "2026-07-28" && /royal yacht britannia(?:\s+networking)?\s+reception/i.test(event.title || "");
 };
 
+const isSymposiumBanquetEvent = (event: SessionItem | null): boolean => {
+  if (!event) return false;
+  return event.date === "2026-07-29" && /symposium banquet/i.test(event.title || "");
+};
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -258,6 +263,7 @@ export default function EventDetail() {
   const isPartnersTour = isPartnersTourEvent(event);
   const isTasteOfScotland = isTasteOfScotlandEvent(event);
   const isRoyalYachtReception = isRoyalYachtReceptionEvent(event);
+  const isSymposiumBanquet = isSymposiumBanquetEvent(event);
   const isWalkingTour = isPartnersWalkingTourEvent(event);
   const isTechnicalBoatTour = isTechnicalBoatTourEvent(event);
   const coachMeta =
@@ -387,6 +393,11 @@ export default function EventDetail() {
             {isRoyalYachtReception ? (
               <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
                 <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember your invitation for the Royal Yacht</Text>
+              </View>
+            ) : null}
+            {isSymposiumBanquet ? (
+              <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your invite</Text>
               </View>
             ) : null}
             {isTechnicalBoatTour ? (

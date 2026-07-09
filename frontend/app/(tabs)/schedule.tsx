@@ -48,6 +48,9 @@ const isTasteOfScotlandEvent = (item: SessionItem) =>
 const isRoyalYachtReceptionEvent = (item: SessionItem) =>
   item.date === "2026-07-28" && /royal yacht britannia(?:\s+networking)?\s+reception/i.test(item.title || "");
 
+const isSymposiumBanquetEvent = (item: SessionItem) =>
+  item.date === "2026-07-29" && /symposium banquet/i.test(item.title || "");
+
 type CommitteeCardBio = {
   id: string;
   name: string;
@@ -290,6 +293,7 @@ export default function ScheduleListScreen() {
           const compactReceptionCard = isRegistrationReception(item);
           const isTasteOfScotland = isTasteOfScotlandEvent(item);
           const isRoyalYachtReception = isRoyalYachtReceptionEvent(item);
+          const isSymposiumBanquet = isSymposiumBanquetEvent(item);
           const hasSpeakerBios = (item.speakerBios || []).length > 0 || !!item.speakerId;
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
@@ -328,6 +332,11 @@ export default function ScheduleListScreen() {
                 {isRoyalYachtReception ? (
                   <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
                     <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember your invitation for the Royal Yacht</Text>
+                  </View>
+                ) : null}
+                {isSymposiumBanquet ? (
+                  <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                    <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your invite</Text>
                   </View>
                 ) : null}
                 {askSpeaker && hasSpeakerBios ? (
