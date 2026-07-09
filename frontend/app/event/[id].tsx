@@ -41,6 +41,11 @@ const buildMapsSearchUrl = (query: string) =>
 const isTechnicalTalk = (event: SessionItem | null) =>
   !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
 
+const isRegistrationReceptionEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  return /registration\s*&\s*welcome reception|reception\s*&\s*welcome reception/i.test(event.title || "");
+};
+
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
@@ -190,6 +195,8 @@ export default function EventDetail() {
   const mapRouteUrl =
     event.maps_url ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
+  const isReceptionEvent = isRegistrationReceptionEvent(event);
+  const locationLabel = isReceptionEvent ? "Apex Grassmarket Hotel" : event.location;
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
 
@@ -263,7 +270,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl ? (
+            {mapRouteUrl && !isReceptionEvent ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
@@ -271,7 +278,7 @@ export default function EventDetail() {
             ) : null}
             <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
-              <Text style={styles.metaText}>{event.location}</Text>
+              <Text style={styles.metaText}>{locationLabel}</Text>
             </Pressable>
 
             {askSpeaker && hasSpeakerBios ? (
