@@ -38,10 +38,56 @@ const CATEGORIES = ["session", "break", "meal", "social", "tour"];
 const buildMapsSearchUrl = (query: string) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
+const snapshotForStaleCheck = (value: unknown): unknown => {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "object") return value;
+  if (typeof Blob !== "undefined" && value instanceof Blob) return null;
+  if (typeof ArrayBuffer !== "undefined" && value instanceof ArrayBuffer) return null;
+  if (Array.isArray(value)) return value.map((item) => snapshotForStaleCheck(item));
+
+  const obj = value as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  Object.keys(obj)
+    .sort()
+    .forEach((key) => {
+      const next = snapshotForStaleCheck(obj[key]);
+      if (next !== undefined) out[key] = next;
+    });
+  return out;
+};
+
+const stableJsonSnapshot = (value: unknown) => JSON.stringify(snapshotForStaleCheck(value));
+
 const isTechnicalTalk = (event: SessionItem | null) =>
   !!event && event.category === "session" && /technical session|paper/i.test(`${event.title} ${event.description || ""}`);
 
+const isRegistrationReceptionEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  return /registration\s*&\s*welcome reception|reception\s*&\s*welcome reception/i.test(event.title || "");
+};
+
+const isRosslynKelpiesPartnersTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("partner's tour") && /rosslyn chapel|the kelpies/.test(title);
+};
+
+const isPartnersWalkingTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("partner") && title.includes("walking") && title.includes("tour");
+};
+
+const isTechnicalBoatTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("technical") && title.includes("boat") && title.includes("tour");
+};
+
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
+const WALKING_TOUR_MAP_URL = "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8";
+const TECHNICAL_BOAT_TOUR_MAP_URL = "https://maps.app.goo.gl/5aXPtbcsrDGBNDmp9";
+const TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL = "https://maps.app.goo.gl/xvL7zdpkp96tu4gV6";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   if (!event) return false;
@@ -69,6 +115,7 @@ export default function EventDetail() {
   const fav = id ? favorites.has(id) : false;
 
   const [event, setEvent] = useState<SessionItem | null>(null);
+  const [varOriginalRecord, setVarOriginalRecord] = useState<SessionItem | null>(null);
   const [notes, setNotes] = useState<EventNote[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -89,6 +136,7 @@ export default function EventDetail() {
         api.listEventNotes(id).catch(() => []),
       ]);
       setEvent(e);
+      setVarOriginalRecord(e);
       setNotes(n);
     } catch (err) {
       setEvent(null);
@@ -118,8 +166,23 @@ export default function EventDetail() {
     if (!id || !event) return;
     setSaving(true);
     try {
+      const latest = await api.getSession(id);
+      const originalSnapshot = stableJsonSnapshot(varOriginalRecord || event);
+      const latestSnapshot = stableJsonSnapshot(latest);
+
+      if (originalSnapshot !== latestSnapshot) {
+        setEvent(latest);
+        setVarOriginalRecord(latest);
+        Alert.alert(
+          "Record changed",
+          "This record has been modified by another user since you opened it. Please refresh and review the latest changes before saving."
+        );
+        return;
+      }
+
       const updated = await api.updateSession(id, draft);
       setEvent(updated);
+      setVarOriginalRecord(updated);
       setEditing(false);
     } catch (e) {
       // surface but don't crash
@@ -189,18 +252,42 @@ export default function EventDetail() {
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const isPartnersTour = isPartnersTourEvent(event);
   const isTasteOfScotland = isTasteOfScotlandEvent(event);
+  const isWalkingTour = isPartnersWalkingTourEvent(event);
+  const isTechnicalBoatTour = isTechnicalBoatTourEvent(event);
   const coachMeta =
     event.transportDetails?.trim() ||
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
-    (isPartnersTour ? "09:45 Coach Leaves" : "");
+    (isPartnersTour && !isWalkingTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
-    (!isTasteOfScotland ? event.maps_url : "") ||
+    (isTasteOfScotland
+      ? ""
+      : isTechnicalBoatTour
+        ? TECHNICAL_BOAT_TOUR_MAP_URL
+        : isWalkingTour
+          ? WALKING_TOUR_MAP_URL
+          : event.maps_url) ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
+  const isReceptionEvent = isRegistrationReceptionEvent(event);
+  const isRosslynKelpiesPartnersTour = isRosslynKelpiesPartnersTourEvent(event);
+  const locationLabel = isReceptionEvent ? "Apex Grassmarket Hotel" : event.location;
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
 
   const openLocationMap = async () => {
     const url = mapRouteUrl || buildMapsSearchUrl(`${event.location} ${event.title}`.trim());
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to open map", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Please try again in a few moments.");
+    }
+  };
+
+  const openMapUrl = async (url: string) => {
     try {
       const supported = await Linking.canOpenURL(url);
       if (!supported) {
@@ -269,7 +356,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl ? (
+            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour && !isTechnicalBoatTour ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
@@ -283,13 +370,24 @@ export default function EventDetail() {
             ) : (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
                 <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
-                <Text style={styles.metaText}>{event.location}</Text>
+                <Text style={styles.metaText}>{locationLabel}</Text>
               </Pressable>
             )}
             {isTasteOfScotland ? (
               <View style={styles.ticketReminderBtn}>
                 <Text style={styles.ticketReminderBtnText}>Please remember your ticket for entry to this event</Text>
               </View>
+            ) : null}
+            {isTechnicalBoatTour ? (
+              <Pressable
+                onPress={() => openMapUrl(TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL)}
+                hitSlop={8}
+                style={styles.metaRow}
+                testID="event-map-link-technical-boat-secondary"
+              >
+                <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.mapLinkText}>Forth Boat Tours</Text>
+              </Pressable>
             ) : null}
 
             {askSpeaker && hasSpeakerBios ? (

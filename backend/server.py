@@ -53,6 +53,7 @@ RESEND_CONTACT_REPLY_TEMPLATE_ID = os.environ.get("RESEND_CONTACT_REPLY_TEMPLATE
 RESEND_REPLY_DEBUG_SUBJECT_SUFFIX = os.environ.get("RESEND_REPLY_DEBUG_SUBJECT_SUFFIX", " [tpl:setp-template-1]")
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
+APEX_GRASSMARKET_HOTEL_MAPS_URL = "https://maps.app.goo.gl/o9HyR3JVd2WvM3b89"
 RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
 FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
 PSGS_MAPS_URL = "https://maps.app.goo.gl/5fqn1CRK6T7GwFts7"
@@ -63,6 +64,8 @@ LOCATION_MAPS_URLS = {
     "departs marriott": COURTYARD_MARRIOTT_MAPS_URL,
     "https://maps.app.goo.gl/s8mciqdkqxve6yhq6": COURTYARD_MARRIOTT_MAPS_URL,
     "departs https://maps.app.goo.gl/s8mciqdkqxve6yhq6": COURTYARD_MARRIOTT_MAPS_URL,
+    "apex grassmarket hotel": APEX_GRASSMARKET_HOTEL_MAPS_URL,
+    "https://maps.app.goo.gl/o9hyr3jvd2wvm3b89": APEX_GRASSMARKET_HOTEL_MAPS_URL,
     "the royal college of physicians of edinburgh": RCPE_MAPS_URL,
     "royal college of physicians of edinburgh": RCPE_MAPS_URL,
     "forth boat tours": FORTH_BOAT_TOURS_MAPS_URL,
@@ -552,9 +555,9 @@ def normalize_question_record(doc: dict) -> dict:
 SEED_SCHEDULE = [
     # Sun 26 July - Registration day
     {"date": "2026-07-26", "day_label": "Sun 26 July", "time": "16:00", "end_time": "20:00",
-    "title": "Registration & Welcome Reception", "location": "Courtyard by Marriott Edinburgh",
+    "title": "Registration & Welcome Reception", "location": "Apex Grassmarket Hotel",
      "description": "Collect delegate badges, welcome packs, and meet fellow attendees over drinks and canapés.",
-    "maps_url": COURTYARD_MARRIOTT_MAPS_URL,
+    "maps_url": APEX_GRASSMARKET_HOTEL_MAPS_URL,
      "category": "social"},
 
     # Mon 27 July
@@ -606,7 +609,7 @@ SEED_SCHEDULE = [
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:00", "title": "Partner's Walking Tour",
         "location": "Departs Courtyard by Marriott Edinburgh",
      "description": "Guided walking tour of the Royal Mile and Edinburgh Castle. Returns by 15:00.",
-        "maps_url": COURTYARD_MARRIOTT_MAPS_URL,
+          "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8",
      "category": "tour"},
     {"date": "2026-07-28", "day_label": "Tue 28 July", "time": "10:15", "title": "Technical Session 3 (Cont.)",
         "location": "Ps&Gs", "description": "Presentation of Papers 12, 13, and 14.", "category": "session", "speakerId": "capt-james-smith"},
@@ -788,7 +791,7 @@ async def seed_schedule():
     if count > 0:
         await schedule_col.update_one(
             {"title": "Registration & Welcome Reception"},
-            {"$set": {"location": "Courtyard by Marriott Edinburgh", "maps_url": COURTYARD_MARRIOTT_MAPS_URL}},
+            {"$set": {"location": "Apex Grassmarket Hotel", "maps_url": APEX_GRASSMARKET_HOTEL_MAPS_URL}},
         )
         await schedule_col.update_one(
             {"title": "Partner's Tour"},
@@ -803,7 +806,7 @@ async def seed_schedule():
         )
         await schedule_col.update_one(
             {"title": "Partner's Walking Tour"},
-            {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": COURTYARD_MARRIOTT_MAPS_URL}},
+            {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8"}},
         )
         speaker_map = {
             "Technical Session 1": "capt-james-smith",
@@ -2055,7 +2058,7 @@ async def city_guide():
         "venues": [
             {"name": "Courtyard by Marriott Edinburgh", "address": "1 – 3 Baxter's Pl, Edinburgh EH1 3AF",
              "notes": "Symposium HQ. Close to Haymarket station and tram stop.",
-             "maps_url": COURTYARD_MARRIOTT_MAPS_URL},
+             "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8"},
             {"name": "Apex Grassmarket Hotel", "address": "31-35 Grassmarket, Edinburgh EH1 2HS",
              "notes": "City-centre hotel beneath Edinburgh Castle on the historic Grassmarket. 5 min walk to the Royal Mile, 10 min to The Royal College of Physicians of Edinburgh.",
              "maps_url": "https://www.google.com/maps/search/Apex+Grassmarket+Hotel+Edinburgh"},
