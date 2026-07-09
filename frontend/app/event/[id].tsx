@@ -54,6 +54,11 @@ const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   return looksLikePartnersTour || mentionsStops || departsHotel;
 };
 
+const isTasteOfScotlandEvent = (event: SessionItem | null): boolean => {
+  if (!event) return false;
+  return event.date === "2026-07-27" && /taste of scotland social/i.test(event.title || "");
+};
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -183,12 +188,13 @@ export default function EventDetail() {
   const cIcon = CATEGORY_ICON[event.category] || "ellipse";
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const isPartnersTour = isPartnersTourEvent(event);
+  const isTasteOfScotland = isTasteOfScotlandEvent(event);
   const coachMeta =
     event.transportDetails?.trim() ||
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
     (isPartnersTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
-    event.maps_url ||
+    (!isTasteOfScotland ? event.maps_url : "") ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
@@ -269,10 +275,22 @@ export default function EventDetail() {
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
               </Pressable>
             ) : null}
-            <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
-              <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
-              <Text style={styles.metaText}>{event.location}</Text>
-            </Pressable>
+            {isTasteOfScotland ? (
+              <View style={styles.metaRow}>
+                <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.metaText}>{event.location}</Text>
+              </View>
+            ) : (
+              <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-map-link">
+                <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.metaText}>{event.location}</Text>
+              </Pressable>
+            )}
+            {isTasteOfScotland ? (
+              <View style={styles.ticketReminderBtn}>
+                <Text style={styles.ticketReminderBtnText}>Please remember your ticket for entry to this event</Text>
+              </View>
+            ) : null}
 
             {askSpeaker && hasSpeakerBios ? (
               <Pressable
@@ -527,6 +545,15 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 14, color: colors.onSurfaceMuted },
   mapLinkText: { fontSize: 14, color: colors.brand, textDecorationLine: "underline", flex: 1 },
   coachMetaText: { fontSize: 14, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
+  ticketReminderBtn: {
+    marginTop: spacing.sm,
+    alignSelf: "flex-start",
+    borderRadius: radius.pill,
+    backgroundColor: "#B3261E",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  ticketReminderBtnText: { color: "#fff", fontSize: 12, fontWeight: "800" },
   askBtn: {
     flexDirection: "row",
     alignItems: "center",

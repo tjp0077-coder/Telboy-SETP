@@ -42,6 +42,9 @@ const isTechnicalTalk = (item: SessionItem) =>
 const isRegistrationReception = (item: SessionItem) =>
   /registration\s*&\s*welcome reception/i.test(item.title || "");
 
+const isTasteOfScotlandEvent = (item: SessionItem) =>
+  item.date === "2026-07-27" && /taste of scotland social/i.test(item.title || "");
+
 type CommitteeCardBio = {
   id: string;
   name: string;
@@ -282,6 +285,7 @@ export default function ScheduleListScreen() {
           const cColor = CATEGORY_COLOR[item.category] || colors.brand;
           const askSpeaker = isTechnicalTalk(item);
           const compactReceptionCard = isRegistrationReception(item);
+          const isTasteOfScotland = isTasteOfScotlandEvent(item);
           const hasSpeakerBios = (item.speakerBios || []).length > 0 || !!item.speakerId;
           const coachMeta = item.transportDetails?.trim() || (item.coachTime ? `${item.coachTime} – Coach leaves hotel` : "");
           return (
@@ -311,6 +315,11 @@ export default function ScheduleListScreen() {
                 ) : null}
                 {item.description && !compactReceptionCard ? (
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
+                ) : null}
+                {isTasteOfScotland ? (
+                  <View style={styles.ticketReminderBtn}>
+                    <Text style={styles.ticketReminderBtnText}>Please remember your ticket for entry to this event</Text>
+                  </View>
                 ) : null}
                 {askSpeaker && hasSpeakerBios ? (
                   <Pressable
@@ -426,6 +435,19 @@ const styles = StyleSheet.create({
   cardMetaText: { fontSize: 12, color: colors.onSurfaceMuted },
   coachMetaText: { fontSize: 12, color: colors.onSurfaceMuted, fontFamily: "Georgia", fontStyle: "italic", fontWeight: "700" },
   cardDesc: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 6, lineHeight: 17 },
+  ticketReminderBtn: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    backgroundColor: "#B3261E",
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  ticketReminderBtnText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
   askBtn: {
     flexDirection: "row",
     alignItems: "center",
