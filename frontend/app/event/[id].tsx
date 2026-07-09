@@ -46,6 +46,12 @@ const isRegistrationReceptionEvent = (event: SessionItem | null) => {
   return /registration\s*&\s*welcome reception|reception\s*&\s*welcome reception/i.test(event.title || "");
 };
 
+const isRosslynKelpiesPartnersTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("partner's tour") && /rosslyn chapel|the kelpies/.test(title);
+};
+
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
@@ -196,6 +202,7 @@ export default function EventDetail() {
     event.maps_url ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
   const isReceptionEvent = isRegistrationReceptionEvent(event);
+  const isRosslynKelpiesPartnersTour = isRosslynKelpiesPartnersTourEvent(event);
   const locationLabel = isReceptionEvent ? "Apex Grassmarket Hotel" : event.location;
   const askSpeaker = isTechnicalTalk(event);
   const hasSpeakerBios = (event.speakerBios || []).length > 0 || !!event.speakerId;
@@ -270,7 +277,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl && !isReceptionEvent ? (
+            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
