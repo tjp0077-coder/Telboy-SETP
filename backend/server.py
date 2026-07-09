@@ -54,7 +54,7 @@ RESEND_REPLY_DEBUG_SUBJECT_SUFFIX = os.environ.get("RESEND_REPLY_DEBUG_SUBJECT_S
 RESEND_API_URL = "https://api.resend.com/emails"
 COURTYARD_MARRIOTT_MAPS_URL = "https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6"
 APEX_GRASSMARKET_HOTEL_MAPS_URL = "https://maps.app.goo.gl/o9HyR3JVd2WvM3b89"
-RCPE_MAPS_URL = "https://maps.app.goo.gl/JhPNGdaKGvw22JUQ8"
+RCPE_MAPS_URL = "https://maps.app.goo.gl/5f1HcxYKgN9jSzjs6"
 FORTH_BOAT_TOURS_MAPS_URL = "https://www.google.com/maps/place/Forth+Boat+Tours/@55.992642,-3.4070465,751m/data=!3m2!1e3!4b1!4m6!3m5!1s0x4887a7ddba653f21:0x5582e10adf18277f!8m2!3d55.992642!4d-3.4070465!16s%2Fg%2F1tk62prr?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI2MDYyNC4wIKXMDSoASAFQAw%3D%3D"
 PSGS_MAPS_URL = "https://maps.app.goo.gl/5fqn1CRK6T7GwFts7"
 LOCATION_MAPS_URLS = {
@@ -807,6 +807,16 @@ async def seed_schedule():
         await schedule_col.update_one(
             {"title": "Partner's Walking Tour"},
             {"$set": {"location": "Departs Courtyard by Marriott Edinburgh", "maps_url": "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8"}},
+        )
+        await schedule_col.update_many(
+            {
+                "date": "2026-07-29",
+                "$or": [
+                    {"location": "The Royal College of Physicians of Edinburgh"},
+                    {"location": "Royal College of Physicians of Edinburgh"},
+                ],
+            },
+            {"$set": {"maps_url": RCPE_MAPS_URL}},
         )
         speaker_map = {
             "Technical Session 1": "capt-james-smith",
