@@ -401,6 +401,11 @@ export default function EventDetail() {
               </View>
             ) : null}
             {isTechnicalBoatTour ? (
+              <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please pay your £8.50 landing fee before this event - see link below</Text>
+              </View>
+            ) : null}
+            {isTechnicalBoatTour ? (
               <Pressable
                 onPress={() => openMapUrl(TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL)}
                 hitSlop={8}
