@@ -59,6 +59,7 @@ const isPartnersWalkingTourEvent = (event: SessionItem | null) => {
 };
 
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
+const WALKING_TOUR_MAP_URL = "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   if (!event) return false;
@@ -206,7 +207,7 @@ export default function EventDetail() {
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
     (isPartnersTour && !isWalkingTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
-    event.maps_url ||
+    (isWalkingTour ? WALKING_TOUR_MAP_URL : event.maps_url) ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
   const isReceptionEvent = isRegistrationReceptionEvent(event);
   const isRosslynKelpiesPartnersTour = isRosslynKelpiesPartnersTourEvent(event);
