@@ -105,6 +105,11 @@ const isTasteOfScotlandEvent = (event: SessionItem | null): boolean => {
   return event.date === "2026-07-27" && /taste of scotland social/i.test(event.title || "");
 };
 
+const isRoyalYachtReceptionEvent = (event: SessionItem | null): boolean => {
+  if (!event) return false;
+  return event.date === "2026-07-28" && /royal yacht britannia(?:\s+networking)?\s+reception/i.test(event.title || "");
+};
+
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -252,6 +257,7 @@ export default function EventDetail() {
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const isPartnersTour = isPartnersTourEvent(event);
   const isTasteOfScotland = isTasteOfScotlandEvent(event);
+  const isRoyalYachtReception = isRoyalYachtReceptionEvent(event);
   const isWalkingTour = isPartnersWalkingTourEvent(event);
   const isTechnicalBoatTour = isTechnicalBoatTourEvent(event);
   const coachMeta =
@@ -376,6 +382,11 @@ export default function EventDetail() {
             {isTasteOfScotland ? (
               <View style={styles.ticketReminderBtn}>
                 <Text style={styles.ticketReminderBtnText}>Please remember your ticket for entry to this event</Text>
+              </View>
+            ) : null}
+            {isRoyalYachtReception ? (
+              <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember your invitation for the Royal Yacht</Text>
               </View>
             ) : null}
             {isTechnicalBoatTour ? (
@@ -652,6 +663,8 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   ticketReminderBtnText: { color: "#fff", fontSize: 12, fontWeight: "800" },
+  ticketReminderBtnCentered: { alignSelf: "stretch", alignItems: "center" },
+  ticketReminderBtnTextCentered: { textAlign: "center" },
   askBtn: {
     flexDirection: "row",
     alignItems: "center",
