@@ -325,8 +325,8 @@ export default function ScheduleListScreen() {
                   <Text style={styles.cardDesc} numberOfLines={3}>{item.description}</Text>
                 ) : null}
                 {isTasteOfScotland ? (
-                  <View style={styles.ticketReminderBtn}>
-                    <Text style={styles.ticketReminderBtnText}>Please remember your ticket for entry to this event</Text>
+                  <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                    <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember your ticket for entry to this event</Text>
                   </View>
                 ) : null}
                 {isRoyalYachtReception ? (
