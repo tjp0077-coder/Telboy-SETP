@@ -67,6 +67,7 @@ const isTechnicalBoatTourEvent = (event: SessionItem | null) => {
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 const WALKING_TOUR_MAP_URL = "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8";
 const TECHNICAL_BOAT_TOUR_MAP_URL = "https://maps.app.goo.gl/5aXPtbcsrDGBNDmp9";
+const TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL = "https://maps.app.goo.gl/xvL7zdpkp96tu4gV6";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   if (!event) return false;
@@ -241,6 +242,19 @@ export default function EventDetail() {
     }
   };
 
+  const openMapUrl = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (!supported) {
+        Alert.alert("Unable to open map", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Unable to open map", "Please try again in a few moments.");
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -307,6 +321,17 @@ export default function EventDetail() {
               <Ionicons name="location" size={16} color={colors.onSurfaceMuted} />
               <Text style={styles.metaText}>{locationLabel}</Text>
             </Pressable>
+            {isTechnicalBoatTour ? (
+              <Pressable
+                onPress={() => openMapUrl(TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL)}
+                hitSlop={8}
+                style={styles.metaRow}
+                testID="event-map-link-technical-boat-secondary"
+              >
+                <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
+                <Text style={styles.mapLinkText}>{TECHNICAL_BOAT_TOUR_SECONDARY_MAP_URL}</Text>
+              </Pressable>
+            ) : null}
 
             {askSpeaker && hasSpeakerBios ? (
               <Pressable
