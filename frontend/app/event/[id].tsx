@@ -356,7 +356,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl && event.date !== "2026-07-27" && !askSpeaker && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour && !isTechnicalBoatTour ? (
+            {mapRouteUrl && event.date !== "2026-07-27" && event.date !== "2026-07-28" && !askSpeaker && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour && !isTechnicalBoatTour ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
