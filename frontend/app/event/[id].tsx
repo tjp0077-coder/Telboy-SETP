@@ -58,8 +58,15 @@ const isPartnersWalkingTourEvent = (event: SessionItem | null) => {
   return title.includes("partner") && title.includes("walking") && title.includes("tour");
 };
 
+const isTechnicalBoatTourEvent = (event: SessionItem | null) => {
+  if (!event) return false;
+  const title = (event.title || "").toLowerCase();
+  return title.includes("technical") && title.includes("boat") && title.includes("tour");
+};
+
 const PARTNERS_TOUR_ROUTE_URL = "https://maps.app.goo.gl/1M2J8i5YVtxDkWVFA";
 const WALKING_TOUR_MAP_URL = "https://maps.app.goo.gl/i7NvbVqTaMmrNzNT8";
+const TECHNICAL_BOAT_TOUR_MAP_URL = "https://maps.app.goo.gl/5aXPtbcsrDGBNDmp9";
 
 const isPartnersTourEvent = (event: SessionItem | null): boolean => {
   if (!event) return false;
@@ -202,12 +209,17 @@ export default function EventDetail() {
   const cColor = CATEGORY_COLOR[event.category] || colors.brand;
   const isPartnersTour = isPartnersTourEvent(event);
   const isWalkingTour = isPartnersWalkingTourEvent(event);
+  const isTechnicalBoatTour = isTechnicalBoatTourEvent(event);
   const coachMeta =
     event.transportDetails?.trim() ||
     (event.coachTime ? `${event.coachTime} – Coach leaves hotel` : "") ||
     (isPartnersTour && !isWalkingTour ? "09:45 Coach Leaves" : "");
   const mapRouteUrl =
-    (isWalkingTour ? WALKING_TOUR_MAP_URL : event.maps_url) ||
+    (isTechnicalBoatTour
+      ? TECHNICAL_BOAT_TOUR_MAP_URL
+      : isWalkingTour
+        ? WALKING_TOUR_MAP_URL
+        : event.maps_url) ||
     (isPartnersTour ? PARTNERS_TOUR_ROUTE_URL : "");
   const isReceptionEvent = isRegistrationReceptionEvent(event);
   const isRosslynKelpiesPartnersTour = isRosslynKelpiesPartnersTourEvent(event);
@@ -285,7 +297,7 @@ export default function EventDetail() {
                 <Text style={styles.coachMetaText}>{coachMeta}</Text>
               </View>
             ) : null}
-            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour ? (
+            {mapRouteUrl && !isReceptionEvent && !isRosslynKelpiesPartnersTour && !isWalkingTour && !isTechnicalBoatTour ? (
               <Pressable onPress={openLocationMap} hitSlop={8} style={styles.metaRow} testID="event-route-link">
                 <Ionicons name="navigate" size={16} color={colors.onSurfaceMuted} />
                 <Text style={styles.mapLinkText}>{mapRouteUrl}</Text>
