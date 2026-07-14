@@ -11,7 +11,7 @@ import { api } from "@/src/api";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
-const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
+const HERO = require("@/assets/images/brand/symposium_hub_hero.png");
 const TRAM = "https://images.unsplash.com/photo-1729639316718-c148801e55bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjB0cmFtfGVufDB8fHx8MTc4MTAyNTMyNnww&ixlib=rb-4.1.0&q=85";
 const SYMPOSIUM_VENUES = require("@/assets/images/brand/symposium_venues.png");
 
