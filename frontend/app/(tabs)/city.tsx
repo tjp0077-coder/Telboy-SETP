@@ -13,7 +13,7 @@ import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 const HERO = "https://images.unsplash.com/photo-1595275842222-bb71d4209726?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzZ8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjBza3lsaW5lfGVufDB8fHxibHVlfDE3ODEwMjUzMjV8MA&ixlib=rb-4.1.0&q=85";
 const TRAM = "https://images.unsplash.com/photo-1729639316718-c148801e55bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjB0cmFtfGVufDB8fHx8MTc4MTAyNTMyNnww&ixlib=rb-4.1.0&q=85";
-const BRITANNIA = "https://images.unsplash.com/photo-1704632992039-a69ea56b5aee?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTV8MHwxfHNlYXJjaHwxfHxSb3lhbCUyMFlhY2h0JTIwQnJpdGFubmlhfGVufDB8fHx8MTc4MTAyNTMyNXww&ixlib=rb-4.1.0&q=85";
+const SYMPOSIUM_VENUES = require("@/assets/images/brand/symposium_venues.png");
 
 const ESSENTIAL_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   "currency-pound": "cash",
@@ -102,7 +102,7 @@ export default function CityGuideScreen() {
         {/* Venues */}
         <Text style={styles.sectionTitle}>Symposium Venues</Text>
         <View style={{ paddingHorizontal: spacing.lg }}>
-          <Image source={BRITANNIA} style={styles.transportHero} contentFit="cover" />
+          <Image source={SYMPOSIUM_VENUES} style={styles.transportHero} contentFit="cover" />
         </View>
         {data.venues.map((v: any) => (
           <View key={v.name} style={[styles.venueCard, shadow.card]} testID={`venue-${v.name}`}>
