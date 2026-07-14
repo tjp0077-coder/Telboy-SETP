@@ -75,6 +75,29 @@ export default function CityGuideScreen() {
         </View>
       </View>
 
+        {/* Venues */}
+        <Text style={styles.sectionTitle}>Symposium Venues</Text>
+        <View style={{ paddingHorizontal: spacing.lg }}>
+          <Image source={BRITANNIA} style={styles.transportHero} contentFit="cover" />
+        </View>
+        {data.venues.map((v: any) => (
+          <View key={v.name} style={[styles.venueCard, shadow.card]} testID={`venue-${v.name}`}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.venueName}>{v.name}</Text>
+              <Text style={styles.venueAddr}>{v.address}</Text>
+              <Text style={styles.venueNotes}>{v.notes}</Text>
+            </View>
+            <Pressable
+              onPress={() => openMap(v.maps_url)}
+              style={styles.mapBtn}
+              testID={`venue-map-${v.name}`}
+            >
+              <Ionicons name="navigate" size={16} color="#fff" />
+              <Text style={styles.mapBtnText}>Open</Text>
+            </Pressable>
+          </View>
+        ))}
+
       {/* Essentials grid */}
       <Pressable
         onPress={() => Linking.openURL("https://theknightsvault.com/").catch(() => {})}
@@ -158,28 +181,6 @@ export default function CityGuideScreen() {
         ))}
       </View>
 
-      {/* Venues */}
-      <Text style={styles.sectionTitle}>Symposium Venues</Text>
-      <View style={{ paddingHorizontal: spacing.lg }}>
-        <Image source={BRITANNIA} style={styles.transportHero} contentFit="cover" />
-      </View>
-      {data.venues.map((v: any) => (
-        <View key={v.name} style={[styles.venueCard, shadow.card]} testID={`venue-${v.name}`}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.venueName}>{v.name}</Text>
-            <Text style={styles.venueAddr}>{v.address}</Text>
-            <Text style={styles.venueNotes}>{v.notes}</Text>
-          </View>
-          <Pressable
-            onPress={() => openMap(v.maps_url)}
-            style={styles.mapBtn}
-            testID={`venue-map-${v.name}`}
-          >
-            <Ionicons name="navigate" size={16} color="#fff" />
-            <Text style={styles.mapBtnText}>Open</Text>
-          </Pressable>
-        </View>
-      ))}
       </ScrollView>
     </View>
   );
