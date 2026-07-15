@@ -203,7 +203,6 @@ export default function HomeScreen() {
             testID="home-shrink-btn"
           >
             <Ionicons name="contract" size={18} color="#1A2841" />
-            <Text style={styles.shrinkBtnText}>Shrink Back</Text>
           </Pressable>
 
           {Platform.OS === "android" && open ? (
@@ -287,23 +286,16 @@ const styles = StyleSheet.create({
   shrinkBtn: {
     position: "absolute",
     right: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    width: 44,
+    height: 44,
     backgroundColor: "#F2C265",
     borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#000",
     shadowOpacity: 0.35,
     shadowOffset: { width: 0, height: 3 },
     shadowRadius: 6,
     elevation: 6,
-  },
-  shrinkBtnText: {
-    color: "#1A2841",
-    fontWeight: "800",
-    fontSize: 12,
-    letterSpacing: 0.4,
   },
 });
