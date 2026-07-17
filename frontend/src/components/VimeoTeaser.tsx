@@ -31,7 +31,7 @@ if (Platform.OS !== "web") {
   }
 }
 
-const VIMEO_ID = "1210136359";
+const VIMEO_ID = "1210895848";
 const VIMEO_PLAYER_URL = `https://player.vimeo.com/video/${VIMEO_ID}?autoplay=0&title=0&byline=0&portrait=0&dnt=1&playsinline=1`;
 const VIMEO_OEMBED_URL = `https://vimeo.com/api/oembed.json?url=https%3A%2F%2Fvimeo.com%2F${VIMEO_ID}`;
 
