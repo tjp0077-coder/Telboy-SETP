@@ -339,9 +339,23 @@ export default function ScheduleListScreen() {
                   </View>
                 ) : null}
                 {isSymposiumBanquet ? (
-                  <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
-                    <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your invite</Text>
-                  </View>
+                  <>
+                    <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
+                      <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your invite</Text>
+                    </View>
+                    <Pressable
+                      onPress={(e) => {
+                        e.stopPropagation?.();
+                        router.push(`/speaker-bios/${item.id}`);
+                      }}
+                      style={styles.speakerBtn}
+                      hitSlop={8}
+                      testID={`will-whitehorn-bio-link-${item.id}`}
+                    >
+                      <Ionicons name="person-outline" size={14} color={colors.brand} />
+                      <Text style={styles.speakerBtnText}>Will Whitehorn Bio</Text>
+                    </Pressable>
+                  </>
                 ) : null}
                 {isTechnicalBoatTour ? (
                   <Pressable
