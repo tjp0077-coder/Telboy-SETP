@@ -75,6 +75,18 @@ export default function CityGuideScreen() {
         </View>
       </View>
 
+          <Pressable
+            onPress={() => Linking.openURL("https://whiskyandwitches.com/").catch(() => {})}
+            style={styles.kiltBanner}
+            testID="whisky-and-witches-banner"
+          >
+            <Image
+              source={require("@/assets/images/brand/wandw.webp")}
+              style={styles.kiltImage}
+              contentFit="cover"
+            />
+          </Pressable>
+
         <Pressable
           onPress={() => Linking.openURL("https://theknightsvault.com/").catch(() => {})}
           style={styles.kiltBanner}
