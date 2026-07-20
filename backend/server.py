@@ -1011,9 +1011,39 @@ async def delete_admin(username: str, admin=Depends(get_current_admin)):
 @api.get("/schedule", response_model=List[SessionItem])
 async def list_schedule():
     docs = await schedule_col.find({}, {"_id": 0}).to_list(1000)
+
+    normalized_docs = []
+    required_keys = ["id", "date", "day_label", "time", "title", "location", "category"]
+
+    for doc in docs:
+        if not isinstance(doc, dict):
+            logging.warning("Skipping non-dict schedule record: %s", type(doc))
+            continue
+
+        item = normalize_session_maps_url(doc)
+        missing_or_invalid = [
+            key for key in required_keys
+            if not isinstance(item.get(key), str) or not item.get(key).strip()
+        ]
+        if missing_or_invalid:
+            logging.warning(
+                "Skipping invalid schedule record id=%s missing/invalid=%s",
+                item.get("id"),
+                ",".join(missing_or_invalid),
+            )
+            continue
+
+        # Keep response-model fields type-safe for Pydantic validation.
+        if item.get("description") is None:
+            item["description"] = ""
+        if item.get("speakerBios") is None:
+            item["speakerBios"] = []
+
+        normalized_docs.append(item)
+
     # sort by date then time
-    docs.sort(key=lambda d: (d.get("date", ""), d.get("time", "")))
-    return [normalize_session_maps_url(doc) for doc in docs]
+    normalized_docs.sort(key=lambda d: (d.get("date", ""), d.get("time", "")))
+    return normalized_docs
 
 
 @api.get("/schedule/{session_id}", response_model=SessionItem)
