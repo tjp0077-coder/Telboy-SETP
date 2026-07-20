@@ -7,7 +7,7 @@
  *   Other requests pass through.
  */
 
-const VERSION = "v2";
+const VERSION = "v3";
 const APP_SHELL_CACHE = `setp2026-shell-${VERSION}`;
 const RUNTIME_CACHE   = `setp2026-runtime-${VERSION}`;
 const API_CACHE       = `setp2026-api-${VERSION}`;

@@ -2097,6 +2097,7 @@ app.include_router(api)
 _default_origins = [
     "https://telboy-setp-git-main-setp.vercel.app",
     "https://telboy-setp.vercel.app",
+    "https://github-sync-app-2.preview.emergentagent.com",
     "http://localhost:3000",
     "http://localhost:8081",
 ]
@@ -2110,7 +2111,7 @@ allowed_origins = list(dict.fromkeys(_env_origins + _default_origins))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.(vercel\.app|emergentagent\.com|netlify\.app)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
