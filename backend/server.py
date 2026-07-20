@@ -629,7 +629,7 @@ SEED_SCHEDULE = [
      "title": "Royal Yacht Britannia Reception", "location": "Royal Yacht Britannia",
      "description": "Reception sponsored by QinetiQ. Transport provided from https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6.",
      "coachTime": "18:30",
-     "transportDetails": "6:30 pm - Coach leaves hotel",
+        "transportDetails": "18:30 - Coach leaves hotel\nMeet at 1815 in Marriot Foyer. Then it is a short walk to the coach at Blenheim Place",
      "category": "social"},
 
     # Wed 29 July
