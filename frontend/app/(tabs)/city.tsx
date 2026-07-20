@@ -1,19 +1,42 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking,
+  View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Linking, TextInput,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/src/api";
+import { useAuth } from "@/src/AuthContext";
 import { colors, spacing, radius, shadow } from "@/src/theme";
 import { ScreenBg, onSunset } from "@/src/components/ScreenBg";
 
 const HERO = require("@/assets/images/brand/symposium_hub_hero.png");
 const TRAM = "https://images.unsplash.com/photo-1729639316718-c148801e55bc?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwxfHxFZGluYnVyZ2glMjB0cmFtfGVufDB8fHx8MTc4MTAyNTMyNnww&ixlib=rb-4.1.0&q=85";
 const SYMPOSIUM_VENUES = require("@/assets/images/brand/symposium_venues.png");
+const CITY_GUIDE_OVERRIDES_KEY = "cache:cityguide:venue-overrides";
+
+type CityGuideVenue = {
+  name: string;
+  address: string;
+  notes: string;
+  maps_url: string;
+};
+
+type CityGuideData = {
+  hero: { title: string; subtitle: string };
+  essentials: Array<{ title: string; icon: string; summary: string }>;
+  transport: Array<{ name: string; icon: string; description: string; tip: string; url?: string }>;
+  phrases: Array<{ phrase: string; meaning: string }>;
+  venues: CityGuideVenue[];
+};
+
+type VenueDraft = {
+  address: string;
+  notes: string;
+};
 
 const ESSENTIAL_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   "currency-pound": "cash",
@@ -34,18 +57,65 @@ const TRANSPORT_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
 export default function CityGuideScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
+  const { auth } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [editingVenue, setEditingVenue] = useState<string | null>(null);
+  const [venueDraft, setVenueDraft] = useState<VenueDraft | null>(null);
+  const isAdmin = !!auth.username;
 
   const load = useCallback(async () => {
     try {
-      const res = await api.cityGuide();
-      setData(res);
+      const [res, overridesRaw] = await Promise.all([
+        api.cityGuide() as Promise<CityGuideData>,
+        AsyncStorage.getItem(CITY_GUIDE_OVERRIDES_KEY),
+      ]);
+      const overrides = overridesRaw ? JSON.parse(overridesRaw) as Record<string, VenueDraft> : {};
+      setData({
+        ...res,
+        venues: (res.venues || []).map((venue) => ({
+          ...venue,
+          ...(overrides[venue.name] || {}),
+        })),
+      });
     } catch {
     } finally { setLoading(false); }
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const startVenueEdit = (venue: CityGuideVenue) => {
+    if (!isAdmin) return;
+    setEditingVenue(venue.name);
+    setVenueDraft({ address: venue.address, notes: venue.notes });
+  };
+
+  const cancelVenueEdit = () => {
+    setEditingVenue(null);
+    setVenueDraft(null);
+  };
+
+  const saveVenueEdit = useCallback(async (venueName: string) => {
+    if (!venueDraft) return;
+    const nextVenue = {
+      address: venueDraft.address.trim(),
+      notes: venueDraft.notes.trim(),
+    };
+    const nextOverridesRaw = await AsyncStorage.getItem(CITY_GUIDE_OVERRIDES_KEY);
+    const nextOverrides = nextOverridesRaw ? JSON.parse(nextOverridesRaw) as Record<string, VenueDraft> : {};
+    nextOverrides[venueName] = nextVenue;
+    await AsyncStorage.setItem(CITY_GUIDE_OVERRIDES_KEY, JSON.stringify(nextOverrides));
+    setData((prev: CityGuideData | null) => (
+      prev ? {
+        ...prev,
+        venues: prev.venues.map((venue) => (
+          venue.name === venueName ? { ...venue, ...nextVenue } : venue
+        )),
+      } : prev
+    ));
+    setEditingVenue(null);
+    setVenueDraft(null);
+  }, [venueDraft]);
 
   if (loading || !data) {
     return <View style={styles.center}><ActivityIndicator size="large" color={colors.brand} /></View>;
@@ -116,12 +186,70 @@ export default function CityGuideScreen() {
         <View style={{ paddingHorizontal: spacing.lg }}>
           <Image source={SYMPOSIUM_VENUES} style={styles.transportHero} contentFit="cover" />
         </View>
-        {data.venues.map((v: any) => (
+        {data.venues.map((v: CityGuideVenue) => {
+          const editing = isAdmin && editingVenue === v.name && venueDraft;
+          return (
           <View key={v.name} style={[styles.venueCard, shadow.card]} testID={`venue-${v.name}`}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.venueName}>{v.name}</Text>
-              <Text style={styles.venueAddr}>{v.address}</Text>
-              <Text style={styles.venueNotes}>{v.notes}</Text>
+              <View style={styles.venueHeadRow}>
+                <Text style={styles.venueName}>{v.name}</Text>
+                {isAdmin && !editing ? (
+                  <Pressable
+                    onPress={() => startVenueEdit(v)}
+                    style={styles.venueEditBtn}
+                    testID={`venue-edit-${v.name}`}
+                  >
+                    <Ionicons name="create-outline" size={13} color={colors.brand} />
+                    <Text style={styles.venueEditBtnText}>Edit</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {!editing ? (
+                <>
+                  <Text style={styles.venueAddr}>{v.address}</Text>
+                  <Text style={styles.venueNotes}>{v.notes}</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.venueFieldLabel}>Address</Text>
+                  <TextInput
+                    value={venueDraft.address}
+                    onChangeText={(value) => setVenueDraft((prev) => (prev ? { ...prev, address: value } : prev))}
+                    placeholder="Venue address"
+                    placeholderTextColor={colors.onSurfaceMuted}
+                    style={styles.venueInput}
+                    multiline
+                    testID={`venue-address-${v.name}`}
+                  />
+                  <Text style={styles.venueFieldLabel}>Notes</Text>
+                  <TextInput
+                    value={venueDraft.notes}
+                    onChangeText={(value) => setVenueDraft((prev) => (prev ? { ...prev, notes: value } : prev))}
+                    placeholder="Venue notes"
+                    placeholderTextColor={colors.onSurfaceMuted}
+                    style={[styles.venueInput, styles.venueInputMulti]}
+                    multiline
+                    textAlignVertical="top"
+                    testID={`venue-notes-${v.name}`}
+                  />
+                  <View style={styles.venueEditorActions}>
+                    <Pressable
+                      onPress={() => saveVenueEdit(v.name)}
+                      style={[styles.venueActionBtn, styles.venueActionPrimary]}
+                      testID={`venue-save-${v.name}`}
+                    >
+                      <Text style={styles.venueActionPrimaryText}>Save</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={cancelVenueEdit}
+                      style={[styles.venueActionBtn, styles.venueActionSecondary]}
+                      testID={`venue-cancel-${v.name}`}
+                    >
+                      <Text style={styles.venueActionSecondaryText}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
             <Pressable
               onPress={() => openMap(v.maps_url)}
@@ -132,7 +260,8 @@ export default function CityGuideScreen() {
               <Text style={styles.mapBtnText}>Open</Text>
             </Pressable>
           </View>
-        ))}
+          );
+        })}
 
         {/* Essentials grid */}
 
@@ -275,9 +404,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceSecondary, borderRadius: radius.md, padding: spacing.md,
     alignItems: "center", gap: spacing.sm,
   },
+  venueHeadRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: spacing.sm },
   venueName: { fontSize: 15, fontWeight: "700", color: colors.onSurface, fontFamily: "Georgia" },
   venueAddr: { fontSize: 12, color: colors.onSurfaceMuted, marginTop: 2 },
   venueNotes: { fontSize: 12, color: colors.onSurface, marginTop: 4, lineHeight: 17 },
+  venueEditBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: radius.pill,
+    backgroundColor: "#F1F5FB",
+  },
+  venueEditBtnText: { color: colors.brand, fontSize: 12, fontWeight: "700" },
+  venueFieldLabel: { marginTop: spacing.sm, marginBottom: 4, fontSize: 11, fontWeight: "800", letterSpacing: 0.7, color: onSunset.primary },
+  venueInput: {
+    borderWidth: 1, borderColor: colors.border, borderRadius: radius.sm, backgroundColor: colors.surface,
+    paddingHorizontal: 10, paddingVertical: 8, color: colors.onSurface, fontSize: 12,
+  },
+  venueInputMulti: { minHeight: 72 },
+  venueEditorActions: { flexDirection: "row", gap: 8, marginTop: spacing.sm },
+  venueActionBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: radius.pill },
+  venueActionPrimary: { backgroundColor: colors.brand },
+  venueActionPrimaryText: { color: "#fff", fontSize: 12, fontWeight: "700" },
+  venueActionSecondary: { backgroundColor: "#ECEFF4" },
+  venueActionSecondaryText: { color: colors.onSurface, fontSize: 12, fontWeight: "700" },
   mapBtn: {
     backgroundColor: colors.brand, paddingHorizontal: 12, paddingVertical: 8,
     borderRadius: radius.pill, flexDirection: "row", alignItems: "center", gap: 4,
