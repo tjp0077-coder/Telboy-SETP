@@ -411,7 +411,7 @@ export default function EventDetail() {
             ) : null}
             {isSymposiumBanquet ? (
               <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
-                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your invite</Text>
+                <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember to bring your name badge</Text>
               </View>
             ) : null}
             {isTechnicalBoatTour ? (
