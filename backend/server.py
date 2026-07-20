@@ -792,6 +792,11 @@ async def seed_schedule():
     count = await schedule_col.count_documents({})
     if count > 0:
         await schedule_col.update_one(
+            {"date": "2026-07-29", "time": "11:15", "title": "Comfort Break", "location": "The Royal College of Physicians of Edinburgh"},
+            {"$set": {"description": "Comfort break.", "category": "break"}},
+            upsert=True,
+        )
+        await schedule_col.update_one(
             {"title": "Registration & Welcome Reception"},
             {"$set": {"location": "Apex Grassmarket Hotel", "maps_url": APEX_GRASSMARKET_HOTEL_MAPS_URL}},
         )
