@@ -2035,7 +2035,6 @@ async def city_guide():
         "transport": [
             {"name": "Edinburgh Trams", "icon": "tram",
              "description": "Single line from Airport → York Place (city centre). Single ticket £1.80. Buy at platform machines or contactless tap (cap £4.80/day).",
-             "tip": "Tram from Edinburgh Airport to https://maps.app.goo.gl/S8MciQDKqXvE6yHQ6 (Edinburgh Park) is fastest — ~10 min.",
              "url": "https://edinburghtrams.com"},
             {"name": "Lothian Buses", "icon": "bus",
              "description": "Extensive network. Single £1.80 (contactless capped at £4.80/day). Exact change cash. Download the 'Lothian Buses' app for live times.",

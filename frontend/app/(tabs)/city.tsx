@@ -301,10 +301,12 @@ export default function CityGuideScreen() {
             <Text style={styles.transportName}>{t.name}</Text>
           </View>
           <Text style={styles.transportDesc}>{t.description}</Text>
-          <View style={styles.tip}>
-            <Ionicons name="bulb" size={14} color={colors.brandTertiary} />
-            <Text style={styles.tipText}>{t.tip}</Text>
-          </View>
+          {t.tip ? (
+            <View style={styles.tip}>
+              <Ionicons name="bulb" size={14} color={colors.brandTertiary} />
+              <Text style={styles.tipText}>{t.tip}</Text>
+            </View>
+          ) : null}
           {t.url ? (
             <Pressable
               onPress={() => Linking.openURL(t.url).catch(() => {})}
