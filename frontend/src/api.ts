@@ -4,6 +4,7 @@ import { Platform } from "react-native";
 
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL || "";
 const TOKEN_KEY = "setp_admin_token";
+const SCHEDULE_CACHE_KEY = "cache:schedule:v2";
 
 async function saveToken(token: string) {
   if (Platform.OS === "web") {
@@ -209,7 +210,7 @@ export type CommitteeBioItem = {
 
 export const api = {
   // schedule
-  listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
+  listSchedule: () => cachedGet<SessionItem[]>("/schedule", SCHEDULE_CACHE_KEY),
   getSession: (id: string) => request<SessionItem>(`/schedule/${id}`),
   createSession: (data: Partial<SessionItem>) =>
     request<SessionItem>("/schedule", { method: "POST", body: JSON.stringify(data) }, true),
