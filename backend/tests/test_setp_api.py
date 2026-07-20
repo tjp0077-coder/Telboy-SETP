@@ -246,6 +246,38 @@ class TestScheduleCRUD:
         finally:
             s.delete(f"{API}/schedule/{sid}", headers=auth_headers)
 
+    def test_schedule_endpoint_survives_malformed_row(self, s, auth_headers):
+        """Regression: a malformed record must not make GET /schedule return 500."""
+        create_payload = {
+            "date": "2026-07-31",
+            "day_label": "Fri 31 July",
+            "time": "23:00",
+            "title": "TEST_malformed_guard",
+            "location": "TestLoc",
+            "category": "session",
+        }
+        create_res = s.post(f"{API}/schedule", json=create_payload, headers=auth_headers)
+        assert create_res.status_code == 200, create_res.text
+        sid = create_res.json()["id"]
+
+        try:
+            # Force a bad row shape (blank required string) via admin update.
+            bad_res = s.put(
+                f"{API}/schedule/{sid}",
+                json={"title": ""},
+                headers=auth_headers,
+            )
+            assert bad_res.status_code == 200, bad_res.text
+
+            # Endpoint should remain healthy and simply skip the malformed row.
+            list_res = s.get(f"{API}/schedule")
+            assert list_res.status_code == 200, list_res.text
+            items = list_res.json()
+            assert isinstance(items, list)
+            assert not any(item.get("id") == sid for item in items)
+        finally:
+            s.delete(f"{API}/schedule/{sid}", headers=auth_headers)
+
 
 # ---------- Prototype Lab ----------
 class TestPrototypeLab:

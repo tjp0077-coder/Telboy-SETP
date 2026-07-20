@@ -83,6 +83,11 @@ Open in a browser / curl:
   https://<your-render-url>/api/city-guide  → should return JSON
 If those return data, the DB seeded correctly and the backend is good.
 
+Optional automated smoke check (recommended after each deploy):
+   python backend/post_deploy_healthcheck.py
+   # or override target URL:
+   EXPO_PUBLIC_BACKEND_URL=https://<your-render-url> python backend/post_deploy_healthcheck.py
+
 (Note: Render free tier sleeps after ~15 min idle; first request after sleep
 takes ~30–60s to wake. Fine for a delegate app; upgrade to a paid instance to
 avoid cold starts during the event.)
