@@ -32,6 +32,25 @@ async function deleteToken() {
 
 export const tokenStore = { saveToken, getToken, deleteToken };
 
+function getApiUrl(path: string): string {
+  const base = BASE.trim().replace(/\/+$/, "");
+
+  if (!base) {
+    if (Platform.OS === "web") {
+      return `/api${path}`;
+    }
+    throw new Error(
+      "EXPO_PUBLIC_BACKEND_URL is not set. Set it to your HTTPS backend URL before building iOS/Android."
+    );
+  }
+
+  if (!/^https?:\/\//i.test(base)) {
+    throw new Error("EXPO_PUBLIC_BACKEND_URL must include http:// or https://");
+  }
+
+  return `${base}/api${path}`;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -45,7 +64,16 @@ async function request<T>(
     const t = await getToken();
     if (t) headers.Authorization = `Bearer ${t}`;
   }
-  const res = await fetch(`${BASE}/api${path}`, { ...options, headers });
+
+  const url = getApiUrl(path);
+  let res: Response;
+  try {
+    res = await fetch(url, { ...options, headers });
+  } catch (err: any) {
+    const reason = err?.message ? ` (${err.message})` : "";
+    throw new Error(`Unable to reach backend at ${url}${reason}`);
+  }
+
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);

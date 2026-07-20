@@ -78,6 +78,7 @@ export default function ScheduleListScreen() {
   const [items, setItems] = useState<SessionItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeDate, setActiveDate] = useState<string | null>(null);
   const [committeeBios, setCommitteeBios] = useState<CommitteeCardBio[]>([]);
   const [expandedCommitteeImage, setExpandedCommitteeImage] = useState<ExpandedCommitteeImage | null>(null);
@@ -106,6 +107,7 @@ export default function ScheduleListScreen() {
 
   const load = useCallback(async () => {
     try {
+      setLoadError(null);
       const [data, persistedCommittee] = await Promise.all([
         api.listSchedule(),
         api.listCommitteeBios().catch(() => [] as CommitteeBioItem[]),
@@ -128,6 +130,9 @@ export default function ScheduleListScreen() {
         })
         .filter((item): item is CommitteeCardBio => !!item);
       setCommitteeBios(merged);
+    } catch (err: any) {
+      const msg = err?.message || "Unable to load schedule.";
+      setLoadError(msg);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -189,6 +194,12 @@ export default function ScheduleListScreen() {
         }
         ListHeaderComponent={
           <View>
+            {loadError ? (
+              <View style={styles.errorBanner} testID="schedule-load-error">
+                <Ionicons name="warning-outline" size={16} color="#7A3E00" />
+                <Text style={styles.errorBannerText}>{loadError}</Text>
+              </View>
+            ) : null}
             <View style={[styles.hero, { height: heroHeight }]}>
               <Image source={HERO} style={StyleSheet.absoluteFill} contentFit="cover" />
             </View>
@@ -218,7 +229,9 @@ export default function ScheduleListScreen() {
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={48} color={colors.onSurfaceMuted} />
-            <Text style={styles.emptyText}>No sessions for this day</Text>
+            <Text style={styles.emptyText}>
+              {loadError ? "Unable to load schedule data" : "No sessions for this day"}
+            </Text>
           </View>
         }
         ListFooterComponent={
@@ -530,6 +543,24 @@ const styles = StyleSheet.create({
   favBtn: { padding: 4 },
   empty: { alignItems: "center", padding: spacing.xxl, gap: spacing.sm },
   emptyText: { color: colors.onSurfaceMuted },
+  errorBanner: {
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: "#FFD9A8",
+    backgroundColor: "#FFF4E5",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
+  },
+  errorBannerText: {
+    flex: 1,
+    color: "#7A3E00",
+    fontSize: 12,
+    fontWeight: "600",
+  },
 
   paymentWrap: {
     marginTop: spacing.sm,
