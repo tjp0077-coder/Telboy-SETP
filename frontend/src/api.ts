@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL || "";
+const PROD_BACKEND_FALLBACK = "https://telboy-setp.onrender.com";
 const TOKEN_KEY = "setp_admin_token";
 
 async function saveToken(token: string) {
@@ -30,6 +31,18 @@ async function deleteToken() {
 
 export const tokenStore = { saveToken, getToken, deleteToken };
 
+function resolveBaseUrl(): string {
+  const explicit = BASE.trim().replace(/\/+$/, "");
+  if (explicit) return explicit;
+
+  if (Platform.OS === "web") {
+    const host = typeof window !== "undefined" ? window.location.hostname : "";
+    if (host === "localhost" || host === "127.0.0.1") return "";
+  }
+
+  return PROD_BACKEND_FALLBACK;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -43,7 +56,8 @@ async function request<T>(
     const t = await getToken();
     if (t) headers.Authorization = `Bearer ${t}`;
   }
-  const res = await fetch(`${BASE}/api${path}`, { ...options, headers });
+  const base = resolveBaseUrl();
+  const res = await fetch(`${base}/api${path}`, { ...options, headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
