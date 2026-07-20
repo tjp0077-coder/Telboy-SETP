@@ -646,11 +646,9 @@ SEED_SCHEDULE = [
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "10:15", "title": "Technical Session 5 (Cont.)",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Presentation of Papers 21, 22, and 23.",
         "category": "session", "speakerId": "prof-liam-byrne"},
-    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:15", "title": "Comfort Break",
-    "location": "The Royal College of Physicians of Edinburgh", "description": "Comfort break.", "category": "break"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:55", "title": "Lunch",
     "location": "The Royal College of Physicians of Edinburgh", "description": "Midday lunch break.", "category": "meal"},
-    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "11:35", "title": "Guest Speaker",
+    {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "13:15", "title": "Guest Speaker",
     "location": "The Royal College of Physicians of Edinburgh",
         "description": "Speaker presentation (Paul Beaver TBC).", "category": "session", "speakerId": "paul-beaver"},
     {"date": "2026-07-29", "day_label": "Wed 29 July", "time": "19:00", "end_time": "23:00",
@@ -791,11 +789,6 @@ async def seed_schedule():
     )
     count = await schedule_col.count_documents({})
     if count > 0:
-        await schedule_col.update_one(
-            {"date": "2026-07-29", "time": "11:15", "title": "Comfort Break", "location": "The Royal College of Physicians of Edinburgh"},
-            {"$set": {"description": "Comfort break.", "category": "break"}},
-            upsert=True,
-        )
         await schedule_col.update_one(
             {"title": "Registration & Welcome Reception"},
             {"$set": {"location": "Apex Grassmarket Hotel", "maps_url": APEX_GRASSMARKET_HOTEL_MAPS_URL}},

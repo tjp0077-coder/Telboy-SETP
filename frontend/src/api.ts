@@ -4,8 +4,6 @@ import { Platform } from "react-native";
 
 const BASE = process.env.EXPO_PUBLIC_BACKEND_URL || "";
 const TOKEN_KEY = "setp_admin_token";
-const SCHEDULE_CACHE_KEY = "cache:schedule:v2";
-const LEGACY_SCHEDULE_CACHE_KEY = "cache:schedule";
 
 async function saveToken(token: string) {
   if (Platform.OS === "web") {
@@ -32,25 +30,6 @@ async function deleteToken() {
 
 export const tokenStore = { saveToken, getToken, deleteToken };
 
-function getApiUrl(path: string): string {
-  const base = BASE.trim().replace(/\/+$/, "");
-
-  if (!base) {
-    if (Platform.OS === "web") {
-      return `/api${path}`;
-    }
-    throw new Error(
-      "EXPO_PUBLIC_BACKEND_URL is not set. Set it to your HTTPS backend URL before building iOS/Android."
-    );
-  }
-
-  if (!/^https?:\/\//i.test(base)) {
-    throw new Error("EXPO_PUBLIC_BACKEND_URL must include http:// or https://");
-  }
-
-  return `${base}/api${path}`;
-}
-
 async function request<T>(
   path: string,
   options: RequestInit = {},
@@ -64,16 +43,7 @@ async function request<T>(
     const t = await getToken();
     if (t) headers.Authorization = `Bearer ${t}`;
   }
-
-  const url = getApiUrl(path);
-  let res: Response;
-  try {
-    res = await fetch(url, { ...options, headers });
-  } catch (err: any) {
-    const reason = err?.message ? ` (${err.message})` : "";
-    throw new Error(`Unable to reach backend at ${url}${reason}`);
-  }
-
+  const res = await fetch(`${BASE}/api${path}`, { ...options, headers });
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || `HTTP ${res.status}`);
@@ -239,12 +209,7 @@ export type CommitteeBioItem = {
 
 export const api = {
   // schedule
-  listSchedule: async () => {
-    try {
-      await AsyncStorage.removeItem(LEGACY_SCHEDULE_CACHE_KEY);
-    } catch {}
-    return cachedGet<SessionItem[]>("/schedule", SCHEDULE_CACHE_KEY);
-  },
+  listSchedule: () => cachedGet<SessionItem[]>("/schedule", "cache:schedule"),
   getSession: (id: string) => request<SessionItem>(`/schedule/${id}`),
   createSession: (data: Partial<SessionItem>) =>
     request<SessionItem>("/schedule", { method: "POST", body: JSON.stringify(data) }, true),

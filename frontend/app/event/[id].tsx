@@ -232,7 +232,6 @@ export default function EventDetail() {
       try {
         const AsyncStorage = require("@react-native-async-storage/async-storage").default;
         await AsyncStorage.removeItem("cache:schedule");
-        await AsyncStorage.removeItem("cache:schedule:v2");
       } catch {}
       router.back();
     } catch {
