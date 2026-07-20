@@ -231,6 +231,7 @@ export default function EventDetail() {
       // Clear the cached schedule so the list refreshes on return
       try {
         const AsyncStorage = require("@react-native-async-storage/async-storage").default;
+        await AsyncStorage.removeItem("cache:schedule");
         await AsyncStorage.removeItem("cache:schedule:v2");
       } catch {}
       router.back();
