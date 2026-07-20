@@ -38,6 +38,15 @@ type VenueDraft = {
   notes: string;
 };
 
+function parseVenueOverrides(raw: string | null): Record<string, VenueDraft> {
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw) as Record<string, VenueDraft>;
+  } catch {
+    return {};
+  }
+}
+
 const ESSENTIAL_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   "currency-pound": "cash",
   "plug": "flash",
@@ -70,7 +79,7 @@ export default function CityGuideScreen() {
         api.cityGuide() as Promise<CityGuideData>,
         AsyncStorage.getItem(CITY_GUIDE_OVERRIDES_KEY),
       ]);
-      const overrides = overridesRaw ? JSON.parse(overridesRaw) as Record<string, VenueDraft> : {};
+      const overrides = parseVenueOverrides(overridesRaw);
       setData({
         ...res,
         venues: (res.venues || []).map((venue) => ({
@@ -102,7 +111,7 @@ export default function CityGuideScreen() {
       notes: venueDraft.notes.trim(),
     };
     const nextOverridesRaw = await AsyncStorage.getItem(CITY_GUIDE_OVERRIDES_KEY);
-    const nextOverrides = nextOverridesRaw ? JSON.parse(nextOverridesRaw) as Record<string, VenueDraft> : {};
+    const nextOverrides = parseVenueOverrides(nextOverridesRaw);
     nextOverrides[venueName] = nextVenue;
     await AsyncStorage.setItem(CITY_GUIDE_OVERRIDES_KEY, JSON.stringify(nextOverrides));
     setData((prev: CityGuideData | null) => (
