@@ -272,6 +272,11 @@ export default function ProfileScreen() {
           EDI SETP 2026{"\n"}
           Built by Zeneagles for delegates with ❤
         </Text>
+        <Image
+          source={require("@/assets/images/brand/ZE-Logosm.png")}
+          style={styles.zeneaglesLogo}
+          contentFit="contain"
+        />
       </View>
     </ScrollView>
     </View>
@@ -399,5 +404,11 @@ const styles = StyleSheet.create({
   footnote: {
     textAlign: "center", fontSize: 11, color: onSunset.secondary,
     lineHeight: 17,
+  },
+  zeneaglesLogo: {
+    width: 110,
+    height: 34,
+    marginTop: spacing.sm,
+    alignSelf: "center",
   },
 });
