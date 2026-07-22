@@ -179,6 +179,18 @@ export default function CityGuideScreen() {
         </Pressable>
 
         <Pressable
+          onPress={() => Linking.openURL("https://www.edinburghgin.com/").catch(() => {})}
+          style={styles.kiltBanner}
+          testID="edinburgh-gin-banner"
+        >
+          <Image
+            source={require("@/assets/images/brand/edinburg-gin.gif")}
+            style={styles.kiltImage}
+            contentFit="cover"
+          />
+        </Pressable>
+
+        <Pressable
           onPress={() => Linking.openURL("https://www.a1kilthire.co.uk/index").catch(() => {})}
           style={styles.kiltBanner}
           testID="kilt-hire-banner"
