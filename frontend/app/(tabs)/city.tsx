@@ -184,7 +184,7 @@ export default function CityGuideScreen() {
           testID="edinburgh-gin-banner"
         >
           <Image
-            source={require("@/assets/images/brand/edinburg-gin.gif")}
+            source={require("@/assets/images/brand/edigin-static.jpg")}
             style={styles.kiltImage}
             contentFit="cover"
           />
