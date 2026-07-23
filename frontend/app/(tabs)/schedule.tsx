@@ -19,6 +19,7 @@ const INCHOLM_PAY_BUTTON = require("@/assets/images/brand/IncholmPayButton.jpg")
 const APP_ICON = require("@/assets/images/small_logo.jpg");
 const LANDING_FEE_LINK = "https://pay.collctiv.com/inchcolm-island-landing-fee-74966";
 const ROYAL_YACHT_MAPS_LINK = "https://www.google.com/maps/search/Royal+Yacht+Britannia";
+const ROYAL_YACHT_INFO_LINK = "https://hidden-forest-683.linkyhost.com/";
 const LANDING_FEE_DATE = "2026-07-30";
 const COMMITTEE_CARD_DATE = "2026-07-26";
 
@@ -175,6 +176,19 @@ export default function ScheduleListScreen() {
       await Linking.openURL(ROYAL_YACHT_MAPS_LINK);
     } catch {
       Alert.alert("Unable to open map", "Please try again in a few moments.");
+    }
+  }, []);
+
+  const openRoyalYachtInfo = useCallback(async () => {
+    try {
+      const supported = await Linking.canOpenURL(ROYAL_YACHT_INFO_LINK);
+      if (!supported) {
+        Alert.alert("Unable to open link", "Please try again in a few moments.");
+        return;
+      }
+      await Linking.openURL(ROYAL_YACHT_INFO_LINK);
+    } catch {
+      Alert.alert("Unable to open link", "Please try again in a few moments.");
     }
   }, []);
 
@@ -369,17 +383,30 @@ export default function ScheduleListScreen() {
                     <View style={[styles.ticketReminderBtn, styles.ticketReminderBtnCentered]}>
                       <Text style={[styles.ticketReminderBtnText, styles.ticketReminderBtnTextCentered]}>Please remember your invitation for the Royal Yacht</Text>
                     </View>
-                    <Pressable
-                      onPress={(e) => {
-                        e.stopPropagation?.();
-                        openRoyalYachtMap();
-                      }}
-                      style={styles.mapBtn}
-                      testID={`royal-yacht-map-${item.id}`}
-                    >
-                      <Ionicons name="navigate" size={16} color="#fff" />
-                      <Text style={styles.mapBtnText}>Open</Text>
-                    </Pressable>
+                    <View style={styles.royalYachtActionRow}>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          openRoyalYachtMap();
+                        }}
+                        style={styles.royalYachtActionBtn}
+                        testID={`royal-yacht-map-${item.id}`}
+                      >
+                        <Ionicons name="navigate" size={16} color="#fff" />
+                        <Text style={styles.royalYachtActionBtnText}>Open</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={(e) => {
+                          e.stopPropagation?.();
+                          openRoyalYachtInfo();
+                        }}
+                        style={[styles.royalYachtActionBtn, styles.royalYachtInfoBtn]}
+                        testID={`royal-yacht-info-${item.id}`}
+                      >
+                        <Ionicons name="information-circle-outline" size={16} color={colors.success} />
+                        <Text style={styles.royalYachtInfoBtnText}>Info</Text>
+                      </Pressable>
+                    </View>
                   </>
                 ) : null}
                 {isSymposiumBanquet ? (
@@ -722,6 +749,35 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "700",
+  },
+  royalYachtActionRow: {
+    marginTop: spacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  royalYachtActionBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.brand,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  royalYachtActionBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  royalYachtInfoBtn: {
+    backgroundColor: "#EAF5EE",
+  },
+  royalYachtInfoBtnText: {
+    color: colors.success,
+    fontSize: 12,
+    fontWeight: "800",
   },
   imageModalBackdrop: {
     flex: 1,
