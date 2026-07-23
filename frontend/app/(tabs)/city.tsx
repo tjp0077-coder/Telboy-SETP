@@ -190,6 +190,14 @@ export default function CityGuideScreen() {
           />
         </Pressable>
 
+        <View style={styles.kiltBanner} testID="storymaker-banner">
+          <Image
+            source={require("@/assets/images/brand/storymaker.jpg")}
+            style={styles.kiltImage}
+            contentFit="cover"
+          />
+        </View>
+
         <Pressable
           onPress={() => Linking.openURL("https://www.a1kilthire.co.uk/index").catch(() => {})}
           style={styles.kiltBanner}
