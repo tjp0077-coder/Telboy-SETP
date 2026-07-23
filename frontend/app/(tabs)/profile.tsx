@@ -273,7 +273,7 @@ export default function ProfileScreen() {
           Built by Zeneagles for delegates with ❤
         </Text>
         <Image
-          source={require("@/assets/images/brand/ZE-Logosm.png")}
+          source={require("@/assets/images/brand/Zeneagles Medium.webp")}
           style={styles.zeneaglesLogo}
           contentFit="contain"
         />
